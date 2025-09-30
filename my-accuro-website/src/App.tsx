@@ -1,5 +1,10 @@
 import { AppRouter } from './AppRouter';
+import { CartProvider } from './contexts/CartContext';
 
 export function App() {
-  return <AppRouter />;
+  return (
+    <CartProvider>
+      <AppRouter />
+    </CartProvider>
+  );
 }

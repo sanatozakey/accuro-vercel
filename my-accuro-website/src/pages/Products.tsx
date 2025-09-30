@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { ChevronRight, ExternalLink, AlertTriangle } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { AddToCartButton } from '../components/cart/AddToCartButton'
+import { MiniCart } from '../components/cart/MiniCart'
+import { getPriceForProduct, formatPrice, isProductAvailable } from '../utils/pricingUtils'
 
 interface Product {
   id: number;
@@ -68,7 +70,7 @@ const products: Product[] = [
     name: 'Beamex MC4',
     category: 'Field Calibrators',
     description: 'Documenting process calibrator with digital calibration data flow',
-    image: '/images/Beamex MC6.png', // Using MC6 image as placeholder
+    image: '/images/Beamex MC6.png',
     productUrl: 'https://www.beamex.com/us/calibrators/beamex-mc4/',
     status: 'current' as const,
     features: ['Documenting calibrator', 'Digital data flow', 'CMX/LOGiCAL integration', 'No manual data entry'],
@@ -105,7 +107,7 @@ const products: Product[] = [
     name: 'Beamex MB Series',
     category: 'Temperature Calibrators',
     description: 'High-accuracy portable temperature dry block delivering bath-level accuracy',
-    image: '/images/Beamex Temperature Sensors.png', // Using temp sensors image as placeholder
+    image: '/images/Beamex Temperature Sensors.png',
     productUrl: 'https://www.beamex.com/us/calibrators/beamex-mb/',
     status: 'current' as const,
     features: ['Bath-level accuracy', 'Portable design', 'Industrial applications', 'Multiple inserts available'],
@@ -118,7 +120,7 @@ const products: Product[] = [
     name: 'Beamex CMX',
     category: 'Calibration Software',
     description: 'Comprehensive calibration management software for planning and managing calibration work',
-    image: '/images/Beamex MC6.png', // Using MC6 as placeholder
+    image: '/images/Beamex MC6.png',
     productUrl: 'https://www.beamex.com/us/calibration-software/beamex-cmx/',
     status: 'current' as const,
     features: ['Asset management', 'Work planning', 'Compliance reporting', 'Digital workflows'],
@@ -129,7 +131,7 @@ const products: Product[] = [
     name: 'Beamex LOGiCAL',
     category: 'Calibration Software',
     description: 'Cloud-based calibration management software as a service (SaaS)',
-    image: '/images/Beamex MC6.png', // Using MC6 as placeholder
+    image: '/images/Beamex MC6.png',
     productUrl: 'https://www.beamex.com/us/calibration-software/beamex-logical/',
     status: 'current' as const,
     features: ['Cloud-based SaaS', 'No IT infrastructure needed', 'Automatic updates', 'Remote access'],
@@ -214,7 +216,7 @@ const products: Product[] = [
     name: 'Beamex MC5',
     category: 'Discontinued Products',
     description: 'Multifunction calibrator (Discontinued 2014 - Replaced by MC6)',
-    image: '/images/Beamex MC6.png', // Using MC6 as placeholder
+    image: '/images/Beamex MC6.png',
     productUrl: 'https://www.beamex.com/us/calibrators/discontinued-products/',
     status: 'discontinued' as const,
     replacedBy: 'MC6-Advanced',
@@ -226,7 +228,7 @@ const products: Product[] = [
     name: 'Beamex MCS200',
     category: 'Discontinued Products',
     description: 'Modular calibration bench (Discontinued - Replaced by CENTRiCAL)',
-    image: '/images/Beamex CENTRiCAL.png', // Using CENTRiCAL as it's the replacement
+    image: '/images/Beamex CENTRiCAL.png',
     productUrl: 'https://www.beamex.com/us/calibrators/discontinued-products/',
     status: 'discontinued' as const,
     replacedBy: 'CENTRiCAL',
@@ -238,7 +240,7 @@ const products: Product[] = [
     name: 'Beamex MC2',
     category: 'Discontinued Products',
     description: 'Compact calibrator for field use (Limited availability)',
-    image: '/images/Beamex MC6.png', // Using MC6 as placeholder
+    image: '/images/Beamex MC6.png',
     productUrl: 'https://www.beamex.com/us/calibrators/discontinued-products/',
     status: 'limited' as const,
     replacedBy: 'MC4 or MC6-Advanced',
@@ -250,7 +252,6 @@ const products: Product[] = [
 export function Products() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [showDiscontinued, setShowDiscontinued] = useState(false)
-  const navigate = useNavigate()
   
   const filteredProducts = selectedCategory
     ? products.filter((product) => product.category === selectedCategory)
@@ -259,13 +260,7 @@ export function Products() {
       : products.filter((product) => product.status === 'current')
 
   const handleViewDetails = (product: Product) => {
-    // Open Beamex product page in new tab
     window.open(product.productUrl, '_blank', 'noopener,noreferrer')
-  }
-
-  const handleGetQuote = () => {
-    // Navigate to contact page
-    navigate('/contact')
   }
 
   const currentProductsCount = products.filter(p => p.status === 'current').length
@@ -326,26 +321,31 @@ export function Products() {
 
       <section className="py-12">
         <div className="container mx-auto px-4">
-          {/* Filter Controls */}
-          <div className="mb-6 flex flex-wrap gap-4 items-center">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={showDiscontinued}
-                onChange={(e) => setShowDiscontinued(e.target.checked)}
-                className="rounded"
-              />
-              <span className="text-sm">Show discontinued products</span>
-            </label>
-            <a 
-              href="https://www.beamex.com/products/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
-            >
-              <ExternalLink size={14} />
-              View on Beamex.com
-            </a>
+          {/* Filter Controls and Cart */}
+          <div className="mb-6 flex flex-wrap gap-4 items-center justify-between">
+            <div className="flex flex-wrap gap-4 items-center">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={showDiscontinued}
+                  onChange={(e) => setShowDiscontinued(e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm">Show discontinued products</span>
+              </label>
+              <a 
+                href="https://www.beamex.com/products/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+              >
+                <ExternalLink size={14} />
+                View on Beamex.com
+              </a>
+            </div>
+            
+            {/* Cart Component */}
+            <MiniCart />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -424,7 +424,6 @@ export function Products() {
                           alt={product.name}
                           className="max-h-full max-w-full object-contain"
                           onError={(e) => {
-                            // Fallback to a placeholder if image fails to load
                             e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5CZWFtZXg8L3RleHQ+PC9zdmc+'
                           }}
                         />
@@ -457,23 +456,43 @@ export function Products() {
                           </div>
                         )}
 
+                        {/* Price Display */}
+                        {product.status === 'current' && (
+                          <div className="mb-3 pb-3 border-b border-gray-200">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-2xl font-bold text-blue-600">
+                                {formatPrice(getPriceForProduct(product.category))}
+                              </span>
+                              <span className="text-xs text-gray-500">est.</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              *Estimated price. Request quote for final pricing
+                            </p>
+                          </div>
+                        )}
+
                         {getReplacementInfo(product)}
 
-                        <div className="mt-4 flex gap-2">
+                        <div className="mt-4 flex flex-col gap-2">
                           <button 
                             onClick={() => handleViewDetails(product)}
-                            className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center gap-1 py-2 border border-blue-600 rounded hover:bg-blue-50 transition-all"
                           >
                             <ExternalLink size={14} />
                             View Details
                           </button>
+                          
                           {product.status === 'current' && (
-                            <button 
-                              onClick={handleGetQuote}
-                              className="text-green-600 hover:text-green-800 text-sm font-medium"
-                            >
-                              Get Quote
-                            </button>
+                            <AddToCartButton
+                              product={{
+                                id: product.id,
+                                name: product.name,
+                                category: product.category,
+                                image: product.image
+                              }}
+                              price={getPriceForProduct(product.category)}
+                              disabled={!isProductAvailable(product.status)}
+                            />
                           )}
                         </div>
                       </div>
@@ -492,7 +511,7 @@ export function Products() {
 
           {/* Product Information Footer */}
           <div className="mt-12 bg-blue-50 p-6 rounded-lg">
-            <h3 className="text-lg font-semibold mb-3">Product Information</h3>
+            <h3 className="text-lg font-semibold mb-3">Product Information & Pricing</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <h4 className="font-medium mb-2">Current Products</h4>
@@ -502,10 +521,11 @@ export function Products() {
                 </p>
               </div>
               <div>
-                <h4 className="font-medium mb-2">Discontinued Products</h4>
+                <h4 className="font-medium mb-2">Pricing Policy</h4>
                 <p className="text-gray-600">
-                  Discontinued products are shown for reference only. Beamex provides 
-                  recommended replacements for these products. Contact us for migration advice.
+                  Prices shown are estimated base prices. Final pricing depends on configuration, 
+                  accessories, quantity, and current promotions. Add items to cart and request a 
+                  quote for accurate pricing tailored to your needs.
                 </p>
               </div>
             </div>
