@@ -31,28 +31,28 @@ const initDB = async () => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS middleware - Allow multiple origins
-const allowedOrigins = [
-  'https://accuro-vercel-sfom.vercel.app',
-  'http://localhost:3000',
-  process.env.CORS_ORIGIN
-].filter(Boolean);
-
+// CORS middleware - Simplified for Vercel
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.indexOf(origin) === -1 && process.env.CORS_ORIGIN !== '*') {
-        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-        return callback(new Error(msg), false);
-      }
-      return callback(null, true);
-    },
+    origin: true, // Allow all origins in development, or use specific origins
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+
+// Additional CORS headers for Vercel
+app.use((req: Request, res: Response, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // Initialize DB before handling requests
 app.use(async (req: Request, res: Response, next) => {
@@ -87,4 +87,8 @@ app.get('/', (req: Request, res: Response) => {
 // Error handler middleware (must be last)
 app.use(errorHandler);
 
+// Export for Vercel serverless
 export default app;
+
+// Also export as handler for Vercel
+module.exports = app;
