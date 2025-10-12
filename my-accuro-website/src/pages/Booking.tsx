@@ -1,26 +1,74 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
-  Calendar,
   Clock,
-  MapPin,
-  Building,
   FileText,
-  Package,
   CheckCircle,
-  AlertCircle,
   Info,
+  AlertCircle,
+  Calendar,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { BookingForm } from '../components/BookingForm'
+import bookingService from '../services/bookingService'
+
+interface Booking {
+  _id: string
+  date: string
+  time: string
+  status: string
+}
 
 export function Booking() {
   const [bookingSubmitted, setBookingSubmitted] = useState(false)
+  const [error, setError] = useState('')
+  const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([])
+  const [loadingBookings, setLoadingBookings] = useState(true)
 
-  const handleBookingSubmit = () => {
-    // In a real application, this would submit the form data to a backend
-    setBookingSubmitted(true)
-    // Reset form state after 5 seconds
-    setTimeout(() => setBookingSubmitted(false), 5000)
+  // Fetch upcoming bookings to display in calendar
+  const fetchUpcomingBookings = async () => {
+    setLoadingBookings(true)
+    try {
+      const response = await bookingService.getUpcoming()
+
+      // Filter for confirmed bookings in the future
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      const upcoming = response.data
+        .filter((booking: Booking) => {
+          const bookingDate = new Date(booking.date)
+          return bookingDate >= today && booking.status === 'confirmed'
+        })
+        .sort((a: Booking, b: Booking) => {
+          return new Date(a.date).getTime() - new Date(b.date).getTime()
+        })
+        .slice(0, 10) // Show only next 10 appointments
+
+      setUpcomingBookings(upcoming)
+    } catch (err: any) {
+      // Silently fail - calendar is optional feature
+      setUpcomingBookings([])
+    } finally {
+      setLoadingBookings(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchUpcomingBookings()
+  }, [])
+
+  const handleBookingSubmit = (success: boolean, errorMessage?: string) => {
+    if (success) {
+      setBookingSubmitted(true)
+      setError('')
+      // Refresh the calendar
+      fetchUpcomingBookings()
+      // Reset success message after 5 seconds
+      setTimeout(() => setBookingSubmitted(false), 5000)
+    } else {
+      setError(errorMessage || 'Failed to submit booking')
+      setBookingSubmitted(false)
+    }
   }
 
   return (
@@ -46,7 +94,7 @@ export function Booking() {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold">Meeting Request Form</h2>
                 </div>
-                {bookingSubmitted ? (
+                {bookingSubmitted && (
                   <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
                     <div className="flex">
                       <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
@@ -61,7 +109,19 @@ export function Booking() {
                       </div>
                     </div>
                   </div>
-                ) : null}
+                )}
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+                    <div className="flex">
+                      <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
+                      <div>
+                        <h3 className="text-red-800 font-medium">Error submitting booking</h3>
+                        <p className="text-red-700 mt-1 text-sm">{error}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <BookingForm onSubmit={handleBookingSubmit} />
               </div>
             </div>
@@ -94,7 +154,7 @@ export function Booking() {
                   </li>
                 </ul>
               </div>
-              <div className="bg-blue-50 rounded-lg shadow-md border border-blue-100 p-6">
+              <div className="bg-blue-50 rounded-lg shadow-md border border-blue-100 p-6 mb-6">
                 <h3 className="text-xl font-bold mb-4">
                   Need Immediate Assistance?
                 </h3>
@@ -116,6 +176,62 @@ export function Booking() {
                     </span>
                   </li>
                 </ul>
+              </div>
+
+              {/* Upcoming Appointments Calendar */}
+              <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+                <div className="flex items-center mb-4">
+                  <Calendar className="h-5 w-5 text-blue-600 mr-2" />
+                  <h3 className="text-xl font-bold">Scheduled Appointments</h3>
+                </div>
+                {loadingBookings ? (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500 text-sm">Loading appointments...</p>
+                  </div>
+                ) : upcomingBookings.length > 0 ? (
+                  <div className="space-y-3">
+                    {upcomingBookings.map((booking) => (
+                      <div
+                        key={booking._id}
+                        className="border-l-4 border-blue-500 bg-gray-50 p-3 rounded-r"
+                      >
+                        <div className="flex items-center text-sm">
+                          <Calendar className="h-4 w-4 text-gray-600 mr-2" />
+                          <span className="font-medium text-gray-800">
+                            {new Date(booking.date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-sm mt-1">
+                          <Clock className="h-4 w-4 text-gray-600 mr-2" />
+                          <span className="text-gray-600">{booking.time}</span>
+                          <span
+                            className={`ml-auto text-xs px-2 py-1 rounded ${
+                              booking.status === 'confirmed'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}
+                          >
+                            {booking.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    <p className="text-xs text-gray-500 mt-3 text-center">
+                      Please select a time that doesn't conflict with existing appointments
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">
+                      No upcoming appointments scheduled
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

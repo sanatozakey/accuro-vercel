@@ -1,8 +1,18 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MenuIcon, XIcon } from 'lucide-react'
+import { MenuIcon, XIcon, User, LogOut, Settings, ShieldCheck } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
+
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const { user, isAuthenticated, isAdmin, logout } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+    setIsUserMenuOpen(false)
+  }
+
   return (
     <header className="bg-white shadow-sm">
       <div className="container mx-auto px-4 py-3">
@@ -15,37 +25,100 @@ export function Navbar() {
             />
           </Link>
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden md:flex space-x-6 items-center">
             <Link
               to="/"
-              className="text-gray-800 hover:text-blue-600 font-medium"
+              className="text-gray-700 hover:text-blue-600 text-sm font-medium transition"
             >
               Home
             </Link>
             <Link
               to="/products"
-              className="text-gray-800 hover:text-blue-600 font-medium"
+              className="text-gray-700 hover:text-blue-600 text-sm font-medium transition"
             >
               Products
             </Link>
             <Link
               to="/about"
-              className="text-gray-800 hover:text-blue-600 font-medium"
+              className="text-gray-700 hover:text-blue-600 text-sm font-medium transition"
             >
-              About Us
+              About
             </Link>
             <Link
               to="/contact"
-              className="text-gray-800 hover:text-blue-600 font-medium"
+              className="text-gray-700 hover:text-blue-600 text-sm font-medium transition"
             >
-              Contact Us
+              Contact
             </Link>
             <Link
               to="/booking"
-              className="text-gray-800 hover:text-blue-600 font-medium"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition"
             >
               Book Meeting
             </Link>
+
+            {/* Auth Links */}
+            {isAuthenticated ? (
+              <div className="relative ml-2">
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-md transition"
+                >
+                  <User size={18} />
+                  <span className="text-sm font-medium text-gray-700">{user?.name}</span>
+                </button>
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                    <div className="px-4 py-2 border-b border-gray-200">
+                      <p className="text-sm text-gray-700 font-medium">{user?.name}</p>
+                      <p className="text-xs text-gray-500">{user?.email}</p>
+                      {isAdmin && (
+                        <span className="inline-flex items-center mt-1 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          <ShieldCheck size={12} className="mr-1" />
+                          Admin
+                        </span>
+                      )}
+                    </div>
+                    {isAdmin && (
+                      <Link
+                        to="/admin/bookings"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <div className="flex items-center">
+                          <Settings size={16} className="mr-2" />
+                          Admin Dashboard
+                        </div>
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    >
+                      <div className="flex items-center">
+                        <LogOut size={16} className="mr-2" />
+                        Logout
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex space-x-3 ml-2">
+                <Link
+                  to="/login"
+                  className="text-gray-700 hover:text-blue-600 text-sm font-medium px-3 py-2 transition"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-4 py-2 rounded-md transition"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </nav>
           {/* Mobile menu button */}
           <button
@@ -93,6 +166,51 @@ export function Navbar() {
             >
               Book Meeting
             </Link>
+
+            {/* Mobile Auth Links */}
+            {isAuthenticated ? (
+              <>
+                <div className="border-t border-gray-200 pt-3">
+                  <p className="text-sm text-gray-700 font-medium px-3">{user?.name}</p>
+                  <p className="text-xs text-gray-500 px-3 mb-2">{user?.email}</p>
+                </div>
+                {isAdmin && (
+                  <Link
+                    to="/admin/bookings"
+                    className="block text-gray-800 hover:text-blue-600 font-medium"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Admin Dashboard
+                  </Link>
+                )}
+                <button
+                  onClick={() => {
+                    handleLogout()
+                    setIsMenuOpen(false)
+                  }}
+                  className="block w-full text-left text-red-600 hover:text-red-800 font-medium"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="block text-gray-800 hover:text-blue-600 font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="block bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md transition text-center"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </nav>
         )}
       </div>

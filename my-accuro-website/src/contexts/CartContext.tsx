@@ -26,7 +26,16 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 
 // Cart Provider Component
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [cart, setCart] = useState<CartItem[]>([])
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    // Load cart from localStorage on mount
+    const savedCart = localStorage.getItem('cart')
+    return savedCart ? JSON.parse(savedCart) : []
+  })
+
+  // Save cart to localStorage whenever it changes
+  React.useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart))
+  }, [cart])
 
   const addToCart = useCallback((item: Omit<CartItem, 'quantity'>) => {
     setCart((prevCart) => {

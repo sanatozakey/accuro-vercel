@@ -1,5 +1,4 @@
 import React, { useEffect, useState, cloneElement } from 'react'
-import { useNavigate } from 'react-router-dom'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -20,9 +19,7 @@ import {
   Search,
   Filter,
   RefreshCw,
-  Download,
   Edit,
-  Trash2,
   Plus,
   Save,
   CalendarDays,
@@ -31,9 +28,11 @@ import {
   CheckSquare,
   ClipboardList,
 } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
+import bookingService from '../services/bookingService'
 // Define types for our booking data
 interface Booking {
-  id: string
+  _id: string
   date: string
   time: string
   company: string
@@ -86,130 +85,6 @@ interface CalendarEvent {
     booking: Booking
   }
 }
-// Mock data for bookings
-const MOCK_BOOKINGS: Booking[] = [
-  {
-    id: 'BK-001',
-    date: '2023-11-15',
-    time: '10:00',
-    company: 'Petrotech Industries',
-    contactName: 'Maria Santos',
-    contactEmail: 'maria@petrotech.com',
-    contactPhone: '+63 917 123 4567',
-    purpose: 'Product Demonstration',
-    location: 'Accuro Office',
-    product: 'Beamex Calibrators',
-    additionalInfo: 'Interested in MC6 models for their new plant.',
-    status: 'confirmed',
-    createdAt: '2023-11-10T08:23:15Z',
-    isCompleted: true,
-    conclusion:
-      'Client is interested in purchasing 5 MC6 units. Follow-up with quotation.',
-  },
-  {
-    id: 'BK-002',
-    date: '2023-11-16',
-    time: '14:30',
-    company: 'Manila Power Corp',
-    contactName: 'Juan Reyes',
-    contactEmail: 'jreyes@mpc.com',
-    contactPhone: '+63 918 765 4321',
-    purpose: 'Technical Consultation',
-    location: 'Client Site',
-    product: 'Beamex Calibration Software',
-    additionalInfo: 'Need help integrating with their existing systems.',
-    status: 'pending',
-    createdAt: '2023-11-11T14:05:22Z',
-    isCompleted: false,
-  },
-  {
-    id: 'BK-003',
-    date: '2023-11-17',
-    time: '09:00',
-    company: 'Visayas Manufacturing',
-    contactName: 'Ana Lim',
-    contactEmail: 'alim@visayasmfg.com',
-    contactPhone: '+63 919 222 3333',
-    purpose: 'Calibration Services',
-    location: 'Virtual Meeting',
-    product: 'Beamex Integrated Solutions',
-    additionalInfo: 'Looking for a complete solution for their new factory.',
-    status: 'cancelled',
-    createdAt: '2023-11-09T10:15:45Z',
-    isCompleted: false,
-  },
-  {
-    id: 'BK-004',
-    date: '2023-11-18',
-    time: '11:00',
-    company: 'Mindanao Energy',
-    contactName: 'Roberto Cruz',
-    contactEmail: 'rcruz@mindanaoE.com',
-    contactPhone: '+63 920 111 2222',
-    purpose: 'Product Demonstration',
-    location: 'Accuro Office',
-    product: 'Beamex Temperature Measurement',
-    additionalInfo:
-      'Need precise temperature calibration for their power plant.',
-    status: 'confirmed',
-    createdAt: '2023-11-12T09:30:10Z',
-    isCompleted: false,
-  },
-  {
-    id: 'BK-005',
-    date: '2023-11-20',
-    time: '15:00',
-    company: 'Cebu Electronics',
-    contactName: 'Patricia Tan',
-    contactEmail: 'ptan@cebuelectronics.com',
-    contactPhone: '+63 921 333 4444',
-    purpose: 'Software Training',
-    location: 'Virtual Meeting',
-    product: 'Beamex Calibration Software',
-    additionalInfo: 'Need training for 5 staff members on CMX software.',
-    status: 'pending',
-    createdAt: '2023-11-13T16:45:30Z',
-    isCompleted: false,
-  },
-  {
-    id: 'BK-006',
-    date: '2023-11-25',
-    time: '13:00',
-    company: 'Davao Industrial',
-    contactName: 'Miguel Lopez',
-    contactEmail: 'mlopez@davaoindustrial.com',
-    contactPhone: '+63 922 444 5555',
-    purpose: 'Technical Consultation',
-    location: 'Virtual Meeting',
-    product: 'Beamex Pressure Measurement',
-    additionalInfo: 'Experiencing issues with current pressure calibrators.',
-    status: 'rescheduled',
-    createdAt: '2023-11-14T11:20:15Z',
-    originalDate: '2023-11-22',
-    originalTime: '10:00',
-    rescheduleReason:
-      'Client requested postponement due to conflicting schedule.',
-    isCompleted: false,
-  },
-  {
-    id: 'BK-007',
-    date: '2023-11-10',
-    time: '09:30',
-    company: 'Batangas Refinery',
-    contactName: 'Elena Reyes',
-    contactEmail: 'ereyes@batangasref.com',
-    contactPhone: '+63 923 555 6666',
-    purpose: 'Product Demonstration',
-    location: 'Accuro Office',
-    product: 'Beamex Calibrators',
-    additionalInfo: 'Interested in upgrading their calibration equipment.',
-    status: 'confirmed',
-    createdAt: '2023-11-05T09:15:30Z',
-    isCompleted: true,
-    conclusion:
-      'Client will submit purchase request for approval. Expect order within 2 weeks.',
-  },
-]
 // Meeting options for dropdowns
 const meetingPurposes: string[] = [
   'Product Demonstration',
@@ -244,14 +119,12 @@ const statusOptions: string[] = [
   'cancelled',
 ]
 export function BookingDashboard(): React.ReactElement {
-  const navigate = useNavigate()
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
-  const [username, setUsername] = useState<string>('')
-  const [password, setPassword] = useState<string>('')
-  const [loginError, setLoginError] = useState<string>('')
-  const [bookings, setBookings] = useState<Booking[]>(MOCK_BOOKINGS)
+  const { isAdmin, logout } = useAuth()
+  const [bookings, setBookings] = useState<Booking[]>([])
   const [filteredBookings, setFilteredBookings] =
-    useState<Booking[]>(MOCK_BOOKINGS)
+    useState<Booking[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [completionFilter, setCompletionFilter] = useState<string>('all')
@@ -285,61 +158,88 @@ export function BookingDashboard(): React.ReactElement {
     isCompleted: false,
   })
   const [formErrors, setFormErrors] = useState<FormErrors>({})
-  // Simple mock authentication
-  const handleLogin = (e: React.FormEvent): void => {
-    e.preventDefault()
-    // In a real app, this would validate against a backend
-    if (username === 'admin' && password === 'accuro123') {
-      setIsAuthenticated(true)
-      setLoginError('')
-      localStorage.setItem('accuro_dashboard_auth', 'true')
-    } else {
-      setLoginError('Invalid credentials. Please try again.')
+
+  // Fetch all bookings from backend
+  const fetchBookings = async (): Promise<void> => {
+    setLoading(true)
+    setError('')
+    try {
+      const response = await bookingService.getAll()
+      setBookings(response.data)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load bookings')
+    } finally {
+      setLoading(false)
     }
   }
-  // Check if user is already logged in
+
+  // Load bookings on component mount
   useEffect(() => {
-    const authStatus = localStorage.getItem('accuro_dashboard_auth')
-    if (authStatus === 'true') {
-      setIsAuthenticated(true)
-    }
+    fetchBookings()
   }, [])
-  // Handle logout
-  const handleLogout = (): void => {
-    setIsAuthenticated(false)
-    localStorage.removeItem('accuro_dashboard_auth')
-  }
-  // Create calendar events from bookings
+  // Create calendar events from filteredBookings (so filters work in calendar view)
   useEffect(() => {
-    const events = bookings.map((booking): CalendarEvent => {
-      // Parse date and time to create start time
-      const [year, month, day] = booking.date.split('-').map(Number)
-      const [hours, minutes] = booking.time.split(':').map(Number)
-      // Create date object for start time
-      const startDate = new Date(year, month - 1, day, hours, minutes)
-      // Create date object for end time (assuming 1 hour meetings)
-      const endDate = new Date(startDate)
-      endDate.setHours(endDate.getHours() + 1)
-      // Determine color based on status
-      let backgroundColor = '#3788d8' // default blue
-      if (booking.status === 'confirmed') backgroundColor = '#10b981' // green
-      if (booking.status === 'cancelled') backgroundColor = '#ef4444' // red
-      if (booking.status === 'pending') backgroundColor = '#f59e0b' // amber
-      if (booking.status === 'rescheduled') backgroundColor = '#8b5cf6' // purple
-      return {
-        id: booking.id,
-        title: `${booking.company} - ${booking.purpose}`,
-        start: startDate.toISOString(),
-        end: endDate.toISOString(),
-        backgroundColor,
-        borderColor: backgroundColor,
-        extendedProps: {
-          booking,
-        },
+    const events: CalendarEvent[] = []
+
+    filteredBookings.forEach((booking) => {
+      if (!booking.date || !booking.time) return
+
+      try {
+        // Handle different date formats from MongoDB
+        let dateStr = booking.date
+        if (booking.date instanceof Date) {
+          dateStr = booking.date.toISOString()
+        }
+
+        // Extract just the date part (YYYY-MM-DD) from ISO string if needed
+        const datePart = dateStr.split('T')[0]
+
+        // Parse the clean date string
+        const [year, month, day] = datePart.split('-').map(Number)
+        const [hours, minutes] = booking.time.split(':').map(Number)
+
+        // Validate parsed values
+        if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hours) || isNaN(minutes)) {
+          return
+        }
+
+        // Create date in local timezone (month is 0-indexed in JavaScript)
+        const startDate = new Date(year, month - 1, day, hours, minutes, 0)
+
+        if (isNaN(startDate.getTime())) return
+
+        // Create end time (1 hour later)
+        const endDate = new Date(startDate)
+        endDate.setHours(endDate.getHours() + 1)
+
+        // Determine color based on status
+        let backgroundColor = '#3788d8'
+        if (booking.status === 'confirmed') backgroundColor = '#10b981'
+        if (booking.status === 'cancelled') backgroundColor = '#ef4444'
+        if (booking.status === 'pending') backgroundColor = '#f59e0b'
+        if (booking.status === 'rescheduled') backgroundColor = '#8b5cf6'
+
+        const event: CalendarEvent = {
+          id: booking._id,
+          title: `${booking.company} - ${booking.purpose}`,
+          start: startDate.toISOString(),
+          end: endDate.toISOString(),
+          backgroundColor,
+          borderColor: backgroundColor,
+          textColor: '#ffffff',
+          extendedProps: {
+            booking,
+          },
+        }
+
+        events.push(event)
+      } catch (error) {
+        // Silently skip invalid bookings
       }
     })
+
     setCalendarEvents(events)
-  }, [bookings])
+  }, [filteredBookings])
   // Handle search and filtering
   useEffect(() => {
     let result = bookings
@@ -351,7 +251,7 @@ export function BookingDashboard(): React.ReactElement {
           booking.contactName
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          booking.id.toLowerCase().includes(searchTerm.toLowerCase()),
+          booking._id.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
     // Apply status filter
@@ -369,76 +269,62 @@ export function BookingDashboard(): React.ReactElement {
     setFilteredBookings(result)
   }, [searchTerm, statusFilter, completionFilter, bookings])
   // Handle status change
-  const updateBookingStatus = (id: string, newStatus: string): void => {
-    const updatedBookings = bookings.map((booking) => {
-      if (booking.id === id) {
-        return {
-          ...booking,
-          status: newStatus,
+  const updateBookingStatus = async (id: string, newStatus: string): Promise<void> => {
+    try {
+      await bookingService.update(id, { status: newStatus })
+      // Update local state
+      const updatedBookings = bookings.map((booking) => {
+        if (booking._id === id) {
+          return {
+            ...booking,
+            status: newStatus,
+          }
         }
-      }
-      return booking
-    })
-    setBookings(updatedBookings)
-    // Close detail modal if open
-    if (isDetailModalOpen && selectedBooking && selectedBooking.id === id) {
-      setSelectedBooking({
-        ...selectedBooking,
-        status: newStatus,
+        return booking
       })
+      setBookings(updatedBookings)
+      // Close detail modal if open
+      if (isDetailModalOpen && selectedBooking && selectedBooking._id === id) {
+        setSelectedBooking({
+          ...selectedBooking,
+          status: newStatus,
+        })
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update booking status')
     }
   }
   // Handle completion status change
-  const markBookingAsCompleted = (id: string, conclusion: string): void => {
-    const updatedBookings = bookings.map((booking) => {
-      if (booking.id === id) {
-        return {
-          ...booking,
-          isCompleted: true,
-          conclusion,
-        }
-      }
-      return booking
-    })
-    setBookings(updatedBookings)
-    setIsCompletionModalOpen(false)
-    // Update selected booking if open
-    if (isDetailModalOpen && selectedBooking && selectedBooking.id === id) {
-      setSelectedBooking({
-        ...selectedBooking,
-        isCompleted: true,
-        conclusion,
-      })
+  const markBookingAsCompleted = async (id: string, conclusion: string): Promise<void> => {
+    try {
+      await bookingService.update(id, { isCompleted: true, conclusion })
+      // Refresh bookings from server
+      await fetchBookings()
+      setIsCompletionModalOpen(false)
+      setIsDetailModalOpen(false)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to mark booking as completed')
     }
   }
   // Handle reschedule
-  const rescheduleBooking = (): void => {
+  const rescheduleBooking = async (): Promise<void> => {
     if (!editedBooking) return
-    const updatedBookings = bookings.map((booking) => {
-      if (booking.id === editedBooking.id) {
-        return {
-          ...editedBooking,
-          status: 'rescheduled',
-          originalDate:
-            selectedBooking?.originalDate || selectedBooking?.date || '',
-          originalTime:
-            selectedBooking?.originalTime || selectedBooking?.time || '',
-          rescheduleReason,
-        }
-      }
-      return booking
-    })
-    setBookings(updatedBookings)
-    if (selectedBooking) {
-      setSelectedBooking({
-        ...editedBooking,
+    try {
+      await bookingService.update(editedBooking._id, {
+        date: editedBooking.date,
+        time: editedBooking.time,
         status: 'rescheduled',
-        originalDate: selectedBooking.originalDate || selectedBooking.date,
-        originalTime: selectedBooking.originalTime || selectedBooking.time,
+        originalDate: selectedBooking?.originalDate || selectedBooking?.date || '',
+        originalTime: selectedBooking?.originalTime || selectedBooking?.time || '',
         rescheduleReason,
       })
+      // Refresh bookings from server
+      await fetchBookings()
+      setIsRescheduleModalOpen(false)
+      setIsDetailModalOpen(false)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to reschedule booking')
     }
-    setIsRescheduleModalOpen(false)
   }
   // View booking details
   const viewBookingDetails = (booking: Booking): void => {
@@ -488,7 +374,7 @@ export function BookingDashboard(): React.ReactElement {
     }
   }
   // Save edited booking
-  const saveEditedBooking = (): void => {
+  const saveEditedBooking = async (): Promise<void> => {
     if (!editedBooking) return
     // Validate form
     const errors = validateBookingForm(editedBooking)
@@ -498,23 +384,28 @@ export function BookingDashboard(): React.ReactElement {
     }
     // Clear any previous errors
     setFormErrors({})
-    const updatedBookings = bookings.map((booking) => {
-      if (booking.id === editedBooking.id) {
-        return editedBooking
-      }
-      return booking
-    })
-    setBookings(updatedBookings)
-    setSelectedBooking(editedBooking)
-    setIsEditMode(false)
+    try {
+      await bookingService.update(editedBooking._id, editedBooking)
+      // Refresh bookings from server
+      await fetchBookings()
+      setIsEditMode(false)
+      setIsDetailModalOpen(false)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update booking')
+    }
   }
   // Delete booking
-  const deleteBooking = (id: string): void => {
+  const deleteBooking = async (id: string): Promise<void> => {
     if (window.confirm('Are you sure you want to delete this booking?')) {
-      const updatedBookings = bookings.filter((booking) => booking.id !== id)
-      setBookings(updatedBookings)
-      if (isDetailModalOpen) {
-        setIsDetailModalOpen(false)
+      try {
+        await bookingService.delete(id)
+        // Refresh bookings from server
+        await fetchBookings()
+        if (isDetailModalOpen) {
+          setIsDetailModalOpen(false)
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Failed to delete booking')
       }
     }
   }
@@ -550,7 +441,7 @@ export function BookingDashboard(): React.ReactElement {
     })
   }
   // Create new booking
-  const createNewBooking = (): void => {
+  const createNewBooking = async (): Promise<void> => {
     // Validate form
     const errors = validateBookingForm(newBooking)
     if (Object.keys(errors).length > 0) {
@@ -559,15 +450,14 @@ export function BookingDashboard(): React.ReactElement {
     }
     // Clear any previous errors
     setFormErrors({})
-    // Generate a new booking ID
-    const newId = `BK-${String(bookings.length + 1).padStart(3, '0')}`
-    const bookingToAdd: Booking = {
-      ...newBooking,
-      id: newId,
-      createdAt: new Date().toISOString(),
+    try {
+      await bookingService.create(newBooking)
+      // Refresh bookings from server
+      await fetchBookings()
+      setIsCreateModalOpen(false)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to create booking')
     }
-    setBookings([bookingToAdd, ...bookings])
-    setIsCreateModalOpen(false)
   }
   // Handle calendar event click
   const handleEventClick = (info: any): void => {
@@ -650,15 +540,15 @@ export function BookingDashboard(): React.ReactElement {
       </span>
     )
   }
-  // Format date for display
-  const formatDate = (dateString: string): string => {
-    const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }
-    return new Date(dateString).toLocaleDateString(undefined, options)
-  }
+  // Format date for display (currently unused but available for future use)
+  // const formatDate = (dateString: string): string => {
+  //   const options: Intl.DateTimeFormatOptions = {
+  //     year: 'numeric',
+  //     month: 'long',
+  //     day: 'numeric',
+  //   }
+  //   return new Date(dateString).toLocaleDateString(undefined, options)
+  // }
   // Render form field with error message
   const renderFormField = (
     label: string,
@@ -725,95 +615,6 @@ export function BookingDashboard(): React.ReactElement {
       </div>
     )
   }
-  // If not authenticated, show login screen
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <img
-            src="https://uploadthingy.s3.us-west-1.amazonaws.com/hm7mtaNdbWyZ81qScpSM5S/accuro_logo.png"
-            alt="Accuro Logo"
-            className="mx-auto h-16"
-          />
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Booking Dashboard
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Authorized personnel only
-          </p>
-        </div>
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            <form className="space-y-6" onSubmit={handleLogin}>
-              {loginError && (
-                <div
-                  className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative"
-                  role="alert"
-                >
-                  <span className="block sm:inline">{loginError}</span>
-                </div>
-              )}
-              <div>
-                <label
-                  htmlFor="username"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Username
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="username"
-                    name="username"
-                    type="text"
-                    required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-              </div>
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Password
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-              </div>
-              <div>
-                <button
-                  type="submit"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Sign in
-                </button>
-              </div>
-            </form>
-            <div className="mt-6">
-              <div className="relative">
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">
-                    For demo purposes, use: admin / accuro123
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Dashboard Header */}
@@ -831,7 +632,7 @@ export function BookingDashboard(): React.ReactElement {
               </h1>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={logout}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
             >
               Logout
@@ -841,6 +642,32 @@ export function BookingDashboard(): React.ReactElement {
       </div>
       {/* Dashboard Content */}
       <div className="container mx-auto px-4 py-8">
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              <span>{error}</span>
+            </div>
+            <button
+              onClick={() => setError('')}
+              className="text-red-700 hover:text-red-900"
+            >
+              <XCircle className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+        {/* Loading State */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+              <p className="text-gray-600">Loading bookings...</p>
+            </div>
+          </div>
+        )}
+        {!loading && (
+          <>
         {/* View Toggles */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
           <div className="flex space-x-2">
@@ -869,10 +696,10 @@ export function BookingDashboard(): React.ReactElement {
         </div>
         {/* Filters and Actions */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="relative">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+            <div className="md:col-span-4 relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4.5 w-4.5 text-gray-400" />
+                <Search className="h-5 w-5 text-gray-400" />
               </div>
               <input
                 type="text"
@@ -882,40 +709,36 @@ export function BookingDashboard(): React.ReactElement {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex-1">
-                <Filter className="h-5 w-5 text-gray-400 inline mr-2" />
+            <div className="md:col-span-3">
+              <select
+                className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="rescheduled">Rescheduled</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+            {viewMode === 'logs' && (
+              <div className="md:col-span-3">
                 <select
-                  className="w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                  value={completionFilter}
+                  onChange={(e) => setCompletionFilter(e.target.value)}
                 >
-                  <option value="all">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="rescheduled">Rescheduled</option>
-                  <option value="cancelled">Cancelled</option>
+                  <option value="all">All Meetings</option>
+                  <option value="completed">Completed</option>
+                  <option value="pending">Pending Completion</option>
                 </select>
               </div>
-              {viewMode === 'logs' && (
-                <div className="flex-1">
-                  <CheckSquare className="h-5 w-5 text-gray-400 inline mr-2" />
-                  <select
-                    className="w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                    value={completionFilter}
-                    onChange={(e) => setCompletionFilter(e.target.value)}
-                  >
-                    <option value="all">All Meetings</option>
-                    <option value="completed">Completed</option>
-                    <option value="pending">Pending Completion</option>
-                  </select>
-                </div>
-              )}
-            </div>
-            <div className="flex space-x-2 justify-end">
+            )}
+            <div className={`${viewMode === 'logs' ? 'md:col-span-2' : 'md:col-span-5'} flex space-x-2 justify-end`}>
               <button
                 className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                onClick={() => setBookings(MOCK_BOOKINGS)}
+                onClick={fetchBookings}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Reset
@@ -983,9 +806,9 @@ export function BookingDashboard(): React.ReactElement {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredBookings.length > 0 ? (
                     filteredBookings.map((booking) => (
-                      <tr key={booking.id} className="hover:bg-gray-50">
+                      <tr key={booking._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {booking.id}
+                          {booking._id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <div className="flex items-center">
@@ -1048,7 +871,7 @@ export function BookingDashboard(): React.ReactElement {
                               Edit
                             </button>
                             <button
-                              onClick={() => deleteBooking(booking.id)}
+                              onClick={() => deleteBooking(booking._id)}
                               className="text-red-600 hover:text-red-900"
                             >
                               Delete
@@ -1085,7 +908,29 @@ export function BookingDashboard(): React.ReactElement {
               events={calendarEvents}
               eventClick={handleEventClick}
               height="auto"
-              aspectRatio={1.5}
+              contentHeight={600}
+              dayMaxEventRows={3}
+              moreLinkClick="popover"
+              eventDisplay="block"
+              displayEventTime={true}
+              displayEventEnd={false}
+              eventTimeFormat={{
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              }}
+              eventContent={(arg) => {
+                return (
+                  <div className="p-1 overflow-hidden text-ellipsis whitespace-nowrap">
+                    <div className="font-medium text-xs">
+                      {arg.timeText && <span className="mr-1">{arg.timeText}</span>}
+                    </div>
+                    <div className="text-xs truncate">
+                      {arg.event.title}
+                    </div>
+                  </div>
+                )
+              }}
             />
           </div>
         )}
@@ -1142,9 +987,9 @@ export function BookingDashboard(): React.ReactElement {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredBookings.length > 0 ? (
                     filteredBookings.map((booking) => (
-                      <tr key={booking.id} className="hover:bg-gray-50">
+                      <tr key={booking._id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {booking.id}
+                          {booking._id}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <div className="flex items-center">
@@ -1220,6 +1065,8 @@ export function BookingDashboard(): React.ReactElement {
             </div>
           </div>
         )}
+          </>
+        )}
       </div>
       {/* Booking Detail/Edit Modal */}
       {isDetailModalOpen && selectedBooking && (
@@ -1244,7 +1091,7 @@ export function BookingDashboard(): React.ReactElement {
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg leading-6 font-medium text-gray-900">
                         {isEditMode ? 'Edit Booking' : 'Booking Details'}{' '}
-                        {selectedBooking.id}
+                        {selectedBooking._id}
                       </h3>
                       <div className="flex space-x-2">
                         {!isEditMode && (
@@ -1265,7 +1112,7 @@ export function BookingDashboard(): React.ReactElement {
                           <div className="flex items-center">
                             <Building className="h-5 w-5 text-gray-400 mr-2" />
                             <div className="text-sm font-medium text-gray-500">
-                              ID: {editedBooking.id}
+                              ID: {editedBooking._id}
                             </div>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1585,7 +1432,7 @@ export function BookingDashboard(): React.ReactElement {
                             className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:w-auto sm:text-sm"
                             onClick={() => {
                               updateBookingStatus(
-                                selectedBooking.id,
+                                selectedBooking._id,
                                 'confirmed',
                               )
                               setIsDetailModalOpen(false)
@@ -1607,7 +1454,7 @@ export function BookingDashboard(): React.ReactElement {
                             className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
                             onClick={() => {
                               updateBookingStatus(
-                                selectedBooking.id,
+                                selectedBooking._id,
                                 'cancelled',
                               )
                               setIsDetailModalOpen(false)
@@ -1977,7 +1824,7 @@ export function BookingDashboard(): React.ReactElement {
                   type="button"
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={() =>
-                    markBookingAsCompleted(selectedBooking.id, conclusion)
+                    markBookingAsCompleted(selectedBooking._id, conclusion)
                   }
                 >
                   Mark as Complete

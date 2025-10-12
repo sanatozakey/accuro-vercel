@@ -1,0 +1,522 @@
+===============================================================================
+ACCURO WEBSITE - COMPLETE SYSTEM CHANGES DOCUMENTATION
+===============================================================================
+Date: October 12, 2025
+Developer: Claude (Anthropic AI Assistant)
+Project: Full-stack Accuro Calibration Website with Authentication & Backend
+
+===============================================================================
+SUMMARY OF CHANGES
+===============================================================================
+
+This document tracks all changes made to the Accuro website project, including
+bug fixes, security improvements, new features, and backend implementation.
+
+===============================================================================
+1. FRONTEND FIXES & IMPROVEMENTS
+===============================================================================
+
+1.1 LINTING & CODE QUALITY
+----------------------------
+✅ Fixed unused import warnings in the following files:
+   - src/pages/Booking.tsx
+     • Removed: Calendar, MapPin, Building, Package, AlertCircle
+     • Kept: Clock, FileText, CheckCircle, Info
+
+   - src/pages/Contact.tsx
+     • Removed: lazy import (unused)
+
+   - src/pages/BookingDashboard.tsx
+     • Removed: Download, Trash2, useNavigate
+     • Commented out: formatDate function (preserved for future use)
+
+1.2 SECURITY
+-----------
+✅ Ran npm audit fix for security vulnerabilities
+   - Result: Remaining vulnerabilities require breaking changes (react-scripts)
+   - Note: Full fix requires react-scripts upgrade (not performed to avoid breaking changes)
+
+1.3 UI/UX IMPROVEMENTS
+---------------------
+✅ Removed admin dashboard link from public footer
+   - File: src/components/Footer.tsx
+   - Removed: Link to /admin/bookings from footer navigation
+   - Reason: Admin access should not be publicly visible
+
+===============================================================================
+2. BACKEND IMPLEMENTATION (NEW)
+===============================================================================
+
+2.1 PROJECT STRUCTURE
+---------------------
+Created complete Node.js/Express/TypeScript backend with the following structure:
+
+backend/
+├── src/
+│   ├── config/
+│   │   └── database.ts              # MongoDB connection configuration
+│   ├── controllers/
+│   │   ├── authController.ts        # Authentication logic
+│   │   ├── bookingController.ts     # Booking CRUD operations
+│   │   ├── contactController.ts     # Contact form handling
+│   │   └── quoteController.ts       # Quote request management
+│   ├── middleware/
+│   │   ├── auth.ts                  # JWT authentication & authorization
+│   │   └── errorHandler.ts          # Global error handling
+│   ├── models/
+│   │   ├── User.ts                  # User schema (with roles)
+│   │   ├── Booking.ts               # Booking schema
+│   │   ├── Contact.ts               # Contact message schema
+│   │   └── Quote.ts                 # Quote request schema
+│   ├── routes/
+│   │   ├── authRoutes.ts            # Auth endpoints
+│   │   ├── bookingRoutes.ts         # Booking endpoints
+│   │   ├── contactRoutes.ts         # Contact endpoints
+│   │   └── quoteRoutes.ts           # Quote endpoints
+│   ├── utils/
+│   │   ├── generateToken.ts         # JWT token generation
+│   │   └── seedAdmin.ts             # Auto-create admin user
+│   └── server.ts                    # Main server entry point
+├── .env                             # Environment variables
+├── .env.example                     # Environment template
+├── package.json                     # Dependencies & scripts
+├── tsconfig.json                    # TypeScript configuration
+└── README.md                        # Backend documentation
+
+2.2 DEPENDENCIES INSTALLED
+-------------------------
+Production Dependencies:
+  - express@5.1.0              # Web framework
+  - mongoose@8.19.1            # MongoDB ODM
+  - bcryptjs@3.0.2             # Password hashing
+  - jsonwebtoken@9.0.2         # JWT authentication
+  - cors@2.8.5                 # Cross-origin resource sharing
+  - dotenv@17.2.3              # Environment variables
+  - express-validator@7.2.1    # Input validation
+  - nodemailer@7.0.9           # Email sending
+
+Development Dependencies:
+  - typescript@5.9.3           # TypeScript
+  - ts-node@10.9.2             # TypeScript execution
+  - nodemon@3.1.10             # Auto-restart on changes
+  - @types/*                   # TypeScript type definitions
+
+2.3 DATABASE MODELS
+------------------
+✅ User Model (models/User.ts)
+   Fields:
+   - name: String (required)
+   - email: String (unique, required)
+   - password: String (hashed, required)
+   - role: 'user' | 'admin' (default: user)
+   - phone: String (optional)
+   - company: String (optional)
+   - timestamps: createdAt, updatedAt
+
+   Features:
+   - Automatic password hashing before save
+   - comparePassword method for authentication
+   - Password not returned in queries (select: false)
+
+✅ Booking Model (models/Booking.ts)
+   Fields:
+   - userId: Reference to User (optional)
+   - date: Date (required)
+   - time: String (required)
+   - company: String (required)
+   - contactName: String (required)
+   - contactEmail: String (required)
+   - contactPhone: String (required)
+   - purpose: String (required)
+   - location: String (required)
+   - product: String (required)
+   - additionalInfo: String (optional)
+   - status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled'
+   - conclusion: String (optional)
+   - rescheduleReason: String (optional)
+   - originalDate: Date (optional)
+   - originalTime: String (optional)
+   - timestamps: createdAt, updatedAt
+
+   Indexes:
+   - date + status (for efficient querying)
+   - userId
+   - contactEmail
+
+✅ Quote Model (models/Quote.ts)
+   Fields:
+   - userId: Reference to User (optional)
+   - customerName: String (required)
+   - customerEmail: String (required)
+   - customerPhone: String (required)
+   - company: String (required)
+   - items: Array of products with quantity and price
+   - totalEstimatedPrice: Number (required)
+   - message: String (optional)
+   - status: 'pending' | 'sent' | 'accepted' | 'rejected'
+   - adminNotes: String (optional)
+   - timestamps: createdAt, updatedAt
+
+✅ Contact Model (models/Contact.ts)
+   Fields:
+   - firstName: String (required)
+   - lastName: String (required)
+   - email: String (required)
+   - phone: String (required)
+   - subject: String (required)
+   - message: String (required)
+   - status: 'new' | 'read' | 'responded'
+   - adminNotes: String (optional)
+   - timestamps: createdAt, updatedAt
+
+2.4 API ENDPOINTS
+----------------
+All endpoints are prefixed with /api
+
+AUTHENTICATION ENDPOINTS (/api/auth):
+  POST   /register              - Register new user (Public)
+  POST   /login                 - Login user (Public)
+  GET    /me                    - Get current user (Protected)
+  PUT    /updatedetails         - Update user details (Protected)
+  PUT    /updatepassword        - Update password (Protected)
+
+BOOKING ENDPOINTS (/api/bookings):
+  GET    /                      - Get all bookings (Admin only)
+  POST   /                      - Create booking (Public)
+  GET    /my                    - Get my bookings (Protected)
+  GET    /:id                   - Get single booking (Protected)
+  PUT    /:id                   - Update booking (Admin only)
+  DELETE /:id                   - Delete booking (Admin only)
+
+QUOTE ENDPOINTS (/api/quotes):
+  GET    /                      - Get all quotes (Admin only)
+  POST   /                      - Create quote request (Public)
+  GET    /:id                   - Get single quote (Protected)
+  PUT    /:id                   - Update quote (Admin only)
+  DELETE /:id                   - Delete quote (Admin only)
+
+CONTACT ENDPOINTS (/api/contacts):
+  GET    /                      - Get all contacts (Admin only)
+  POST   /                      - Create contact message (Public)
+  GET    /:id                   - Get single contact (Admin only)
+  PUT    /:id                   - Update contact (Admin only)
+  DELETE /:id                   - Delete contact (Admin only)
+
+HEALTH CHECK:
+  GET    /api/health            - Server health check (Public)
+
+2.5 AUTHENTICATION & AUTHORIZATION
+---------------------------------
+✅ JWT-based authentication implemented
+✅ Role-based authorization (user/admin)
+✅ Protected routes middleware
+✅ Token expiration: 7 days (configurable)
+✅ Secure password hashing with bcrypt
+✅ Admin user auto-seeded on first run
+
+Default Admin Credentials:
+  Email: admin@accuro.com.ph
+  Password: AdminPassword123!
+
+  ⚠️  IMPORTANT: Change these in production via .env file!
+
+2.6 ENVIRONMENT CONFIGURATION
+----------------------------
+Created .env file with the following variables:
+  - PORT=5000
+  - NODE_ENV=development
+  - MONGODB_URI=mongodb://localhost:27017/accuro-db
+  - JWT_SECRET=<secure_random_string>
+  - JWT_EXPIRE=7d
+  - CORS_ORIGIN=http://localhost:3000
+  - ADMIN_EMAIL=admin@accuro.com.ph
+  - ADMIN_PASSWORD=AdminPassword123!
+  - ADMIN_NAME=Admin User
+  - EMAIL_HOST=smtp.gmail.com (for future email functionality)
+  - EMAIL_PORT=587
+  - EMAIL_USER=<your-email>
+  - EMAIL_PASS=<your-password>
+
+2.7 SCRIPTS ADDED
+----------------
+In backend/package.json:
+  - npm run dev      : Start development server with hot reload
+  - npm run build    : Compile TypeScript to JavaScript
+  - npm start        : Start production server
+  - npm test         : Run tests (placeholder)
+
+===============================================================================
+3. REMAINING TASKS (TODO)
+===============================================================================
+
+The following features are planned but NOT YET IMPLEMENTED:
+
+3.1 FRONTEND - AUTHENTICATION UI
+--------------------------------
+☐ Create Login page component (src/pages/Login.tsx)
+☐ Create Signup page component (src/pages/Signup.tsx)
+☐ Create authentication context (src/contexts/AuthContext.tsx)
+☐ Add protected routes component
+☐ Update AppRouter with auth routes
+☐ Add user menu in Navbar (logout, profile)
+☐ Create user profile page
+
+3.2 FRONTEND - BACKEND INTEGRATION
+----------------------------------
+☐ Create API service layer (src/services/api.ts)
+☐ Create authentication service (src/services/authService.ts)
+☐ Create booking service with backend integration
+☐ Update BookingForm to submit to backend API
+☐ Update BookingDashboard to fetch from backend
+☐ Display booking calendar with real appointments
+☐ Implement real-time booking updates
+
+3.3 FRONTEND - CART & QUOTES
+---------------------------
+☐ Add localStorage persistence for cart
+☐ Create quote request form
+☐ Connect cart to quote request system
+☐ Send quote requests to backend
+
+3.4 FRONTEND - CONTACT FORM
+--------------------------
+☐ Add form validation to Contact page
+☐ Connect contact form to backend API
+☐ Add success/error notifications
+☐ Email notification integration
+
+3.5 FRONTEND - SEO & PERFORMANCE
+-------------------------------
+☐ Add meta tags to all pages
+☐ Create dynamic page titles
+☐ Add Open Graph tags
+☐ Implement lazy loading for images
+☐ Add loading states for async operations
+☐ Create error boundaries
+
+3.6 BACKEND - ADDITIONAL FEATURES
+---------------------------------
+☐ Email notifications for bookings
+☐ Email notifications for contact form
+☐ Password reset functionality
+☐ Email verification
+☐ Rate limiting
+☐ API documentation (Swagger)
+☐ Unit tests
+☐ Integration tests
+
+3.7 DEPLOYMENT
+-------------
+☐ Set up MongoDB Atlas
+☐ Configure production environment
+☐ Deploy backend to Heroku/Railway/DigitalOcean
+☐ Deploy frontend to Vercel/Netlify
+☐ Set up CI/CD pipeline
+☐ Configure domain and SSL
+
+===============================================================================
+4. HOW TO RUN THE PROJECT
+===============================================================================
+
+4.1 PREREQUISITES
+----------------
+- Node.js v14+ installed
+- MongoDB installed and running locally, OR MongoDB Atlas account
+- Git installed
+
+4.2 SETUP BACKEND
+----------------
+1. Navigate to backend directory:
+   cd calibrex-accuro/backend
+
+2. Install dependencies (already done):
+   npm install
+
+3. Configure environment:
+   - Edit .env file with your MongoDB connection string
+   - Update JWT_SECRET to a secure random string
+   - Update admin credentials
+
+4. Start MongoDB (if using local):
+   # On Windows with MongoDB installed:
+   mongod
+
+   # OR use MongoDB Atlas cloud database
+
+5. Start backend server:
+   npm run dev
+
+6. Verify server is running:
+   - Open browser: http://localhost:5000/api/health
+   - Should see: {"success": true, "message": "Accuro Backend API is running"}
+
+4.3 SETUP FRONTEND
+-----------------
+1. Navigate to frontend directory:
+   cd calibrex-accuro/my-accuro-website
+
+2. Dependencies already installed
+
+3. Start frontend (already running):
+   npm start
+
+4. Access website:
+   - Open browser: http://localhost:3000
+
+===============================================================================
+5. TESTING THE BACKEND API
+===============================================================================
+
+5.1 USING POSTMAN/INSOMNIA
+-------------------------
+Test the API endpoints using Postman or Insomnia REST client
+
+Example: Register a new user
+  POST http://localhost:5000/api/auth/register
+  Headers:
+    Content-Type: application/json
+  Body:
+    {
+      "name": "John Doe",
+      "email": "john@example.com",
+      "password": "password123",
+      "phone": "+63 912 345 6789",
+      "company": "Test Company"
+    }
+
+Example: Login
+  POST http://localhost:5000/api/auth/login
+  Headers:
+    Content-Type: application/json
+  Body:
+    {
+      "email": "admin@accuro.com.ph",
+      "password": "AdminPassword123!"
+    }
+
+  Response will include:
+    {
+      "success": true,
+      "data": {
+        "_id": "...",
+        "name": "Admin User",
+        "email": "admin@accuro.com.ph",
+        "role": "admin",
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      }
+    }
+
+Example: Create booking (authenticated)
+  POST http://localhost:5000/api/bookings
+  Headers:
+    Content-Type: application/json
+    Authorization: Bearer <token_from_login>
+  Body:
+    {
+      "date": "2025-10-20",
+      "time": "10:00",
+      "company": "Test Corp",
+      "contactName": "Jane Smith",
+      "contactEmail": "jane@testcorp.com",
+      "contactPhone": "+63 917 123 4567",
+      "purpose": "Product Demo",
+      "location": "Accuro Office",
+      "product": "Beamex MC6"
+    }
+
+===============================================================================
+6. SECURITY CONSIDERATIONS
+===============================================================================
+
+✅ IMPLEMENTED:
+  - Password hashing with bcrypt
+  - JWT token authentication
+  - Role-based authorization
+  - CORS configuration
+  - Input validation ready (express-validator installed)
+  - Environment variables for secrets
+
+⚠️  PRODUCTION REQUIREMENTS:
+  - Change default admin password immediately
+  - Use strong JWT_SECRET (minimum 256-bit random string)
+  - Use MongoDB Atlas with authentication
+  - Enable HTTPS/SSL
+  - Implement rate limiting
+  - Add request size limits
+  - Enable helmet.js for security headers
+  - Implement CSRF protection
+  - Add input sanitization
+  - Set up monitoring and logging
+
+===============================================================================
+7. DATABASE SCHEMA OVERVIEW
+===============================================================================
+
+Collections in MongoDB:
+  - users: User accounts (customers and admins)
+  - bookings: Meeting/appointment bookings
+  - quotes: Product quote requests
+  - contacts: Contact form submissions
+
+Relationships:
+  - User → Bookings (one-to-many, optional)
+  - User → Quotes (one-to-many, optional)
+
+===============================================================================
+8. NEXT IMMEDIATE STEPS
+===============================================================================
+
+To make the system fully functional, implement in this order:
+
+1. Create frontend authentication components
+2. Create API service layer in frontend
+3. Connect booking form to backend
+4. Connect admin dashboard to backend
+5. Add localStorage for cart persistence
+6. Implement quote request system
+7. Connect contact form to backend
+8. Add meta tags for SEO
+9. Test complete user flow
+10. Deploy to production
+
+===============================================================================
+9. TROUBLESHOOTING
+===============================================================================
+
+Problem: Backend won't start
+Solution:
+  - Check MongoDB is running
+  - Verify .env file exists and has correct values
+  - Check port 5000 is not in use
+
+Problem: Cannot connect to MongoDB
+Solution:
+  - Verify MongoDB service is running
+  - Check MONGODB_URI in .env
+  - Try connection string: mongodb://127.0.0.1:27017/accuro-db
+
+Problem: JWT authentication fails
+Solution:
+  - Ensure JWT_SECRET is set in .env
+  - Check token is sent in Authorization header
+  - Verify token format: "Bearer <token>"
+
+Problem: CORS errors
+Solution:
+  - Verify CORS_ORIGIN in backend .env matches frontend URL
+  - Check frontend is running on http://localhost:3000
+
+===============================================================================
+10. FILE LOCATIONS
+===============================================================================
+
+All backend files: C:\Accuro Deployed\calibrex-accuro\backend\
+All frontend files: C:\Accuro Deployed\calibrex-accuro\my-accuro-website\
+This documentation: C:\Accuro Deployed\calibrex-accuro\CHANGES.txt
+
+===============================================================================
+END OF DOCUMENTATION
+===============================================================================
+Generated: October 12, 2025
+Last Updated: October 12, 2025
+Version: 1.0.0

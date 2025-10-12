@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Calendar,
   Clock,
@@ -7,10 +7,16 @@ import {
   FileText,
   Package,
 } from 'lucide-react'
+import bookingService from '../services/bookingService'
+import { TimeSlotPicker } from './TimeSlotPicker'
+import { useLocation } from 'react-router-dom'
+import { CartItem } from '../contexts/CartContext'
+
 interface BookingFormProps {
-  onSubmit: () => void
+  onSubmit: (success: boolean, error?: string) => void
 }
 export function BookingForm({ onSubmit }: BookingFormProps) {
+  const location = useLocation()
   const [formData, setFormData] = useState({
     date: '',
     time: '',
@@ -23,6 +29,59 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
     product: '',
     additionalInfo: '',
   })
+  const [loading, setLoading] = useState(false)
+
+  // Check if coming from cart quote request
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('type') === 'quote') {
+      const quoteCart = localStorage.getItem('quoteCart')
+      const cartTotal = localStorage.getItem('cartTotal')
+
+      if (quoteCart) {
+        try {
+          const cart: CartItem[] = JSON.parse(quoteCart)
+          const total = cartTotal ? parseFloat(cartTotal) : 0
+
+          // Format cart items into a readable summary
+          let cartSummary = '--- QUOTE REQUEST FROM CART ---\n\n'
+          cartSummary += 'Products requested:\n\n'
+
+          cart.forEach((item, index) => {
+            cartSummary += `${index + 1}. ${item.name}\n`
+            cartSummary += `   Category: ${item.category}\n`
+            cartSummary += `   Quantity: ${item.quantity}\n`
+            cartSummary += `   Est. Price: ${new Intl.NumberFormat('en-PH', {
+              style: 'currency',
+              currency: 'PHP',
+              minimumFractionDigits: 0,
+            }).format(item.price * item.quantity)}\n\n`
+          })
+
+          cartSummary += `Total Estimated Price: ${new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: 'PHP',
+            minimumFractionDigits: 0,
+          }).format(total)}\n\n`
+          cartSummary += '--- END OF CART SUMMARY ---\n\n'
+          cartSummary += 'Additional notes:\n'
+
+          setFormData(prev => ({
+            ...prev,
+            purpose: 'Product Demonstration',
+            additionalInfo: cartSummary,
+          }))
+
+          // Clear cart data from localStorage after loading
+          localStorage.removeItem('quoteCart')
+          localStorage.removeItem('cartTotal')
+        } catch (error) {
+          console.error('Error parsing cart data:', error)
+        }
+      }
+    }
+  }, [location])
+
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -34,11 +93,32 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
       [name]: value,
     })
   }
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would typically send the data to your backend
-    console.log('Form submitted:', formData)
-    onSubmit()
+    setLoading(true)
+
+    try {
+      await bookingService.create(formData)
+      // Reset form on success
+      setFormData({
+        date: '',
+        time: '',
+        company: '',
+        contactName: '',
+        contactEmail: '',
+        contactPhone: '',
+        purpose: '',
+        location: '',
+        product: '',
+        additionalInfo: '',
+      })
+      onSubmit(true)
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Failed to submit booking. Please try again.'
+      onSubmit(false, errorMessage)
+    } finally {
+      setLoading(false)
+    }
   }
   const meetingPurposes = [
     'Product Demonstration',
@@ -68,46 +148,38 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
   ]
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Date Selection */}
-        <div>
-          <label
-            htmlFor="date"
-            className="flex items-center text-gray-700 font-medium mb-2"
-          >
-            <Calendar className="h-4 w-4 mr-2 text-blue-600" />
-            Preferred Date
-          </label>
-          <input
-            type="date"
-            id="date"
-            name="date"
-            required
-            value={formData.date}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            min={new Date().toISOString().split('T')[0]}
-          />
-        </div>
-        {/* Time Selection */}
-        <div>
-          <label
-            htmlFor="time"
-            className="flex items-center text-gray-700 font-medium mb-2"
-          >
-            <Clock className="h-4 w-4 mr-2 text-blue-600" />
-            Preferred Time
-          </label>
-          <input
-            type="time"
-            id="time"
-            name="time"
-            required
-            value={formData.time}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+      {/* Date Selection */}
+      <div>
+        <label
+          htmlFor="date"
+          className="flex items-center text-gray-700 font-medium mb-2"
+        >
+          <Calendar className="h-4 w-4 mr-2 text-blue-600" />
+          Preferred Date
+        </label>
+        <input
+          type="date"
+          id="date"
+          name="date"
+          required
+          value={formData.date}
+          onChange={handleChange}
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          min={new Date().toISOString().split('T')[0]}
+        />
+      </div>
+
+      {/* Time Slot Picker */}
+      <div>
+        <label className="flex items-center text-gray-700 font-medium mb-2">
+          <Clock className="h-4 w-4 mr-2 text-blue-600" />
+          Select Time Slot
+        </label>
+        <TimeSlotPicker
+          selectedDate={formData.date}
+          selectedTime={formData.time}
+          onTimeSelect={(time) => setFormData({ ...formData, time })}
+        />
       </div>
       {/* Company Information */}
       <div>
@@ -297,9 +369,10 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
       <div>
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition"
+          disabled={loading}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Submit Meeting Request
+          {loading ? 'Submitting...' : 'Submit Meeting Request'}
         </button>
       </div>
     </form>

@@ -40,14 +40,6 @@ export function Footer() {
                   Contact Us
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/admin/bookings"
-                  className="text-gray-300 hover:text-white"
-                >
-                  Admin Dashboard
-                </Link>
-              </li>
             </ul>
           </div>
           <div>

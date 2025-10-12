@@ -1,0 +1,75 @@
+import express, { Application, Request, Response } from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { connectDB } from '../src/config/database';
+import { errorHandler } from '../src/middleware/errorHandler';
+import { seedAdminUser } from '../src/utils/seedAdmin';
+
+// Load env vars
+dotenv.config();
+
+// Import routes
+import authRoutes from '../src/routes/authRoutes';
+import bookingRoutes from '../src/routes/bookingRoutes';
+import quoteRoutes from '../src/routes/quoteRoutes';
+import contactRoutes from '../src/routes/contactRoutes';
+
+// Initialize app
+const app: Application = express();
+
+// Connect to database (with connection pooling for serverless)
+let isConnected = false;
+const initDB = async () => {
+  if (!isConnected) {
+    await connectDB();
+    await seedAdminUser();
+    isConnected = true;
+  }
+};
+
+// Body parser middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// CORS middleware
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || '*',
+    credentials: true,
+  })
+);
+
+// Initialize DB before handling requests
+app.use(async (req: Request, res: Response, next) => {
+  await initDB();
+  next();
+});
+
+// Mount routes
+app.use('/api/auth', authRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/quotes', quoteRoutes);
+app.use('/api/contacts', contactRoutes);
+
+// Health check route
+app.get('/api/health', (req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: 'Accuro Backend API is running',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Root route
+app.get('/', (req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: 'Accuro Backend API',
+    version: '1.0.0',
+  });
+});
+
+// Error handler middleware (must be last)
+app.use(errorHandler);
+
+export default app;
