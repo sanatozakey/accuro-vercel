@@ -78,6 +78,55 @@ class EmailService {
     });
   }
 
+  // Send email verification
+  async sendVerificationEmail(email: string, token: string, name: string): Promise<void> {
+    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1e3a8a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
+          Verify Your Email Address
+        </h2>
+
+        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 5px; margin: 20px 0;">
+          <p style="margin: 10px 0;">Hello ${name},</p>
+          <p style="margin: 10px 0;">Thank you for registering with Accuro! Please verify your email address to complete your registration.</p>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verificationUrl}" style="background-color: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+            Verify Email Address
+          </a>
+        </div>
+
+        <div style="background-color: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; border-radius: 3px; margin: 20px 0;">
+          <p style="margin: 0; color: #92400e;">
+            <strong>Note:</strong> This verification link will expire in 24 hours.
+          </p>
+        </div>
+
+        <div style="margin: 20px 0;">
+          <p style="color: #6b7280; font-size: 14px;">
+            If the button doesn't work, copy and paste this link into your browser:
+          </p>
+          <p style="background-color: #f9fafb; padding: 10px; border: 1px solid #e5e7eb; border-radius: 3px; word-break: break-all; font-size: 12px;">
+            ${verificationUrl}
+          </p>
+        </div>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+          <p>If you didn't create an account with Accuro, please ignore this email.</p>
+        </div>
+      </div>
+    `;
+
+    await this.sendEmail({
+      to: email,
+      subject: 'Verify Your Email Address - Accuro',
+      html,
+    });
+  }
+
   // Send booking notification
   async sendBookingNotification(bookingData: {
     contactName: string;

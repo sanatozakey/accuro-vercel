@@ -57,7 +57,7 @@ export function Booking() {
     fetchUpcomingBookings()
   }, [])
 
-  const handleBookingSubmit = (success: boolean, errorMessage?: string) => {
+  const handleBookingSubmit = (success: boolean, errorMessage?: string, bookingData?: any) => {
     if (success) {
       setBookingSubmitted(true)
       setError('')
@@ -105,6 +105,9 @@ export function Booking() {
                         <p className="text-green-700 mt-1">
                           We'll review your request and get back to you within
                           24 hours to confirm your appointment.
+                        </p>
+                        <p className="text-green-700 mt-2 text-sm">
+                          Your receipt has been downloaded automatically. Please keep it for your records.
                         </p>
                       </div>
                     </div>

@@ -1359,10 +1359,10 @@ export function BookingDashboard(): React.ReactElement {
                             </div>
                           </div>
                           <div>
-                            <div className="text-sm font-medium text-gray-500 mb-1">
+                            <div className="text-sm font-medium text-gray-500 mb-2">
                               Additional Information
                             </div>
-                            <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
+                            <div className="text-sm text-gray-900 bg-gray-50 p-4 rounded-md whitespace-pre-wrap break-words leading-relaxed max-h-96 overflow-y-auto">
                               {selectedBooking.additionalInfo ||
                                 'No additional information provided.'}
                             </div>
@@ -1389,10 +1389,10 @@ export function BookingDashboard(): React.ReactElement {
                           )}
                           {selectedBooking.conclusion && (
                             <div>
-                              <div className="text-sm font-medium text-gray-500 mb-1">
+                              <div className="text-sm font-medium text-gray-500 mb-2">
                                 Meeting Conclusion
                               </div>
-                              <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
+                              <div className="text-sm text-gray-900 bg-gray-50 p-4 rounded-md whitespace-pre-wrap break-words leading-relaxed max-h-96 overflow-y-auto">
                                 {selectedBooking.conclusion}
                               </div>
                             </div>

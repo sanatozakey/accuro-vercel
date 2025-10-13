@@ -17,6 +17,7 @@ export function Signup() {
   });
 
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -175,6 +176,7 @@ export function Signup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     if (!validateForm()) {
       return;
@@ -184,8 +186,19 @@ export function Signup() {
 
     try {
       const { confirmPassword, ...registerData } = formData;
-      await register(registerData);
-      navigate('/');
+      const response = await register(registerData);
+
+      // Show success message about email verification
+      if (response?.message) {
+        setSuccess(response.message);
+      } else {
+        setSuccess('Account created successfully! Please check your email to verify your account.');
+      }
+
+      // Don't navigate immediately - let user see the verification message
+      setTimeout(() => {
+        navigate('/login');
+      }, 5000);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create account. Please try again.');
     } finally {
@@ -221,6 +234,18 @@ export function Signup() {
                   <div className="flex">
                     <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
                     <p className="text-red-700 text-sm">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              {success && (
+                <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+                  <div className="flex">
+                    <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+                    <div>
+                      <p className="text-green-700 text-sm font-medium">{success}</p>
+                      <p className="text-green-600 text-xs mt-1">Redirecting to login page in 5 seconds...</p>
+                    </div>
                   </div>
                 </div>
               )}

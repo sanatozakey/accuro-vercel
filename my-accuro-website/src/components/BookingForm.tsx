@@ -6,14 +6,16 @@ import {
   Building,
   FileText,
   Package,
+  Download,
 } from 'lucide-react'
 import bookingService from '../services/bookingService'
 import { TimeSlotPicker } from './TimeSlotPicker'
 import { useLocation } from 'react-router-dom'
 import { CartItem } from '../contexts/CartContext'
+import { generateBookingReceipt } from '../utils/pdfGenerator'
 
 interface BookingFormProps {
-  onSubmit: (success: boolean, error?: string) => void
+  onSubmit: (success: boolean, error?: string, bookingData?: any) => void
 }
 export function BookingForm({ onSubmit }: BookingFormProps) {
   const location = useLocation()
@@ -98,7 +100,30 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
     setLoading(true)
 
     try {
-      await bookingService.create(formData)
+      const response = await bookingService.create(formData)
+      const bookingData = response.data
+
+      // Generate and download PDF receipt
+      try {
+        generateBookingReceipt({
+          bookingId: bookingData._id,
+          date: formData.date,
+          time: formData.time,
+          company: formData.company,
+          contactName: formData.contactName,
+          contactEmail: formData.contactEmail,
+          contactPhone: formData.contactPhone,
+          purpose: formData.purpose,
+          location: formData.location,
+          product: formData.product,
+          additionalInfo: formData.additionalInfo,
+          createdAt: bookingData.createdAt || new Date().toISOString(),
+        })
+      } catch (pdfError) {
+        console.error('Failed to generate PDF:', pdfError)
+        // Continue even if PDF generation fails
+      }
+
       // Reset form on success
       setFormData({
         date: '',
@@ -112,7 +137,7 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
         product: '',
         additionalInfo: '',
       })
-      onSubmit(true)
+      onSubmit(true, undefined, bookingData)
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to submit booking. Please try again.'
       onSubmit(false, errorMessage)

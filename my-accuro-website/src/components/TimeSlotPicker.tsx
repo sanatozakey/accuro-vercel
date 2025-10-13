@@ -139,7 +139,9 @@ export function TimeSlotPicker({ selectedDate, selectedTime, onTimeSelect }: Tim
             }
           >
             <div className="flex items-center justify-center">
-              {slot.available ? (
+              {selectedTime === slot.time ? (
+                <CheckCircle className="h-3 w-3 mr-1 text-white" />
+              ) : slot.available ? (
                 <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
               ) : (
                 <XCircle className="h-3 w-3 mr-1 text-red-500" />

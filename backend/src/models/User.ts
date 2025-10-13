@@ -8,6 +8,9 @@ export interface IUser extends Document {
   role: 'user' | 'admin';
   phone?: string;
   company?: string;
+  isEmailVerified: boolean;
+  emailVerificationToken?: string;
+  emailVerificationExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -45,6 +48,18 @@ const UserSchema: Schema = new Schema(
     company: {
       type: String,
       trim: true,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationToken: {
+      type: String,
+      select: false,
+    },
+    emailVerificationExpires: {
+      type: Date,
+      select: false,
     },
   },
   {
