@@ -31,12 +31,16 @@ import {
   BarChart3,
   Trash2,
   Shield,
+  Award,
+  Star,
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import bookingService from '../services/bookingService'
 import userService, { User as UserType } from '../services/userService'
 import analyticsService from '../services/analyticsService'
+import reviewService, { Review } from '../services/reviewService'
+import activityLogService, { ActivityLog } from '../services/activityLogService'
 // Define types for our booking data
 interface Booking {
   _id: string
@@ -146,7 +150,7 @@ export function BookingDashboard(): React.ReactElement {
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [conclusion, setConclusion] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
-  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'logs' | 'users' | 'analytics'>(
+  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'logs' | 'users' | 'analytics' | 'activityLogs' | 'reviews'>(
     'table',
   )
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
@@ -164,6 +168,22 @@ export function BookingDashboard(): React.ReactElement {
   const [locationAnalytics, setLocationAnalytics] = useState<any[]>([])
   const [analyticsLoading, setAnalyticsLoading] = useState<boolean>(false)
   const [isSampleData, setIsSampleData] = useState<boolean>(false)
+
+  // Activity Logs state
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
+  const [activityLogsLoading, setActivityLogsLoading] = useState<boolean>(false)
+  const [activityLogsFilter, setActivityLogsFilter] = useState<{
+    action?: string
+    resourceType?: string
+  }>({})
+
+  // Reviews state
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [reviewsLoading, setReviewsLoading] = useState<boolean>(false)
+  const [reviewsFilter, setReviewsFilter] = useState<{
+    isApproved?: boolean
+    rating?: number
+  }>({})
 
   const [newBooking, setNewBooking] = useState<NewBooking>({
     date: new Date().toISOString().split('T')[0],
@@ -242,6 +262,52 @@ export function BookingDashboard(): React.ReactElement {
       fetchAnalytics()
     }
   }, [viewMode])
+
+  // Fetch activity logs
+  const fetchActivityLogs = async (): Promise<void> => {
+    setActivityLogsLoading(true)
+    try {
+      const response = await activityLogService.getAllActivityLogs({
+        limit: 100,
+        ...activityLogsFilter,
+      })
+      setActivityLogs(response.data || [])
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load activity logs')
+    } finally {
+      setActivityLogsLoading(false)
+    }
+  }
+
+  // Fetch reviews
+  const fetchReviews = async (): Promise<void> => {
+    setReviewsLoading(true)
+    try {
+      const response = await reviewService.getAllReviews(
+        reviewsFilter.isApproved,
+        reviewsFilter.rating
+      )
+      setReviews(response.reviews || [])
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load reviews')
+    } finally {
+      setReviewsLoading(false)
+    }
+  }
+
+  // Load activity logs when tab is selected
+  useEffect(() => {
+    if (viewMode === 'activityLogs') {
+      fetchActivityLogs()
+    }
+  }, [viewMode, activityLogsFilter])
+
+  // Load reviews when tab is selected
+  useEffect(() => {
+    if (viewMode === 'reviews') {
+      fetchReviews()
+    }
+  }, [viewMode, reviewsFilter])
 
   // Filter users based on search
   useEffect(() => {
@@ -658,6 +724,29 @@ export function BookingDashboard(): React.ReactElement {
     setIsUserModalOpen(true)
   }
 
+  // Review management handlers
+  const handleApproveReview = async (id: string, isApproved: boolean): Promise<void> => {
+    try {
+      await reviewService.approveReview(id, isApproved)
+      await fetchReviews()
+      setError('')
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update review')
+    }
+  }
+
+  const handleDeleteReview = async (id: string, userName: string): Promise<void> => {
+    if (window.confirm(`Are you sure you want to delete the review from "${userName}"?`)) {
+      try {
+        await reviewService.deleteReview(id)
+        await fetchReviews()
+        setError('')
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Failed to delete review')
+      }
+    }
+  }
+
   // Render form field with error message
   const renderFormField = (
     label: string,
@@ -800,6 +889,20 @@ export function BookingDashboard(): React.ReactElement {
             >
               <ClipboardList className="h-4 w-4 mr-2" />
               Transaction Logs
+            </button>
+            <button
+              onClick={() => setViewMode('activityLogs')}
+              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'activityLogs' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Activity Logs
+            </button>
+            <button
+              onClick={() => setViewMode('reviews')}
+              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'reviews' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
+            >
+              <Award className="h-4 w-4 mr-2" />
+              Reviews
             </button>
             <button
               onClick={() => setViewMode('users')}
@@ -1405,6 +1508,287 @@ export function BookingDashboard(): React.ReactElement {
                     </ResponsiveContainer>
                   ) : (
                     <p className="text-gray-500 text-center py-8">No location data available</p>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Activity Logs View */}
+        {viewMode === 'activityLogs' && (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            {activityLogsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+                  <p className="text-gray-600">Loading activity logs...</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Filter Section */}
+                <div className="p-4 border-b bg-gray-50">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Resource Type
+                      </label>
+                      <select
+                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"
+                        value={activityLogsFilter.resourceType || ''}
+                        onChange={(e) => setActivityLogsFilter({
+                          ...activityLogsFilter,
+                          resourceType: e.target.value || undefined
+                        })}
+                      >
+                        <option value="">All Types</option>
+                        <option value="user">User</option>
+                        <option value="booking">Booking</option>
+                        <option value="review">Review</option>
+                        <option value="auth">Authentication</option>
+                        <option value="system">System</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Action
+                      </label>
+                      <input
+                        type="text"
+                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"
+                        placeholder="Filter by action (e.g. LOGIN, USER_CREATED)"
+                        value={activityLogsFilter.action || ''}
+                        onChange={(e) => setActivityLogsFilter({
+                          ...activityLogsFilter,
+                          action: e.target.value || undefined
+                        })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Timestamp
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          User
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Action
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Resource
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Details
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          IP Address
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {activityLogs.length > 0 ? (
+                        activityLogs.map((log) => (
+                          <tr key={log._id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(log.createdAt).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              <div>{log.userName}</div>
+                              <div className="text-xs text-gray-500">{log.userEmail}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {log.action}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {log.resourceType}
+                              </span>
+                              {log.resourceId && (
+                                <div className="text-xs text-gray-400 mt-1">
+                                  ID: {log.resourceId.substring(0, 8)}...
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500 max-w-md">
+                              {log.details || <span className="text-gray-400 italic">No details</span>}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {log.ipAddress || '-'}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
+                            No activity logs found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Reviews Management View */}
+        {viewMode === 'reviews' && (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            {reviewsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+                  <p className="text-gray-600">Loading reviews...</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Filter Section */}
+                <div className="p-4 border-b bg-gray-50">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Approval Status
+                      </label>
+                      <select
+                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"
+                        value={reviewsFilter.isApproved === undefined ? '' : reviewsFilter.isApproved.toString()}
+                        onChange={(e) => setReviewsFilter({
+                          ...reviewsFilter,
+                          isApproved: e.target.value === '' ? undefined : e.target.value === 'true'
+                        })}
+                      >
+                        <option value="">All Reviews</option>
+                        <option value="true">Approved</option>
+                        <option value="false">Pending Approval</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Rating
+                      </label>
+                      <select
+                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"
+                        value={reviewsFilter.rating || ''}
+                        onChange={(e) => setReviewsFilter({
+                          ...reviewsFilter,
+                          rating: e.target.value ? parseInt(e.target.value) : undefined
+                        })}
+                      >
+                        <option value="">All Ratings</option>
+                        <option value="5">5 Stars</option>
+                        <option value="4">4 Stars</option>
+                        <option value="3">3 Stars</option>
+                        <option value="2">2 Stars</option>
+                        <option value="1">1 Star</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reviews Grid */}
+                <div className="p-6">
+                  {reviews.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-6">
+                      {reviews.map((review) => (
+                        <div key={review._id} className="border rounded-lg p-6 hover:shadow-md transition">
+                          {/* Header */}
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`h-5 w-5 ${
+                                      star <= review.rating
+                                        ? 'text-yellow-400 fill-yellow-400'
+                                        : 'text-gray-300'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <h3 className="font-semibold text-gray-900">{review.userName}</h3>
+                              {review.company && (
+                                <p className="text-sm text-gray-600">{review.company}</p>
+                              )}
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(review.createdAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                })}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-2">
+                              {review.isApproved ? (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Approved
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                  <AlertCircle className="h-3 w-3 mr-1" />
+                                  Pending
+                                </span>
+                              )}
+                              {review.isPublic ? (
+                                <span className="text-xs text-gray-500">Public</span>
+                              ) : (
+                                <span className="text-xs text-gray-500">Private</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Comment */}
+                          <p className="text-gray-700 mb-4 leading-relaxed">
+                            "{review.comment}"
+                          </p>
+
+                          {/* Actions */}
+                          <div className="flex items-center gap-2 pt-4 border-t">
+                            {!review.isApproved && (
+                              <button
+                                onClick={() => handleApproveReview(review._id, true)}
+                                className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Approve
+                              </button>
+                            )}
+                            {review.isApproved && (
+                              <button
+                                onClick={() => handleApproveReview(review._id, false)}
+                                className="inline-flex items-center px-3 py-1.5 bg-yellow-600 text-white text-sm font-medium rounded-md hover:bg-yellow-700 transition"
+                              >
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Unapprove
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteReview(review._id, review.userName)}
+                              className="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">No reviews found matching your criteria</p>
+                    </div>
                   )}
                 </div>
               </>

@@ -17,6 +17,7 @@ const VerifyEmail = lazy(() => import('./pages/VerifyEmail').then(module => ({ d
 const Profile = lazy(() => import('./pages/Profile').then(module => ({ default: module.Profile })))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(module => ({ default: module.ForgotPassword })))
 const ResetPassword = lazy(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword })))
+const Testimonials = lazy(() => import('./pages/Testimonials').then(module => ({ default: module.Testimonials })))
 
 export function AppRouter() {
   return (
@@ -52,6 +53,14 @@ export function AppRouter() {
             element={
               <Layout>
                 <Contact />
+              </Layout>
+            }
+          />
+          <Route
+            path="/testimonials"
+            element={
+              <Layout>
+                <Testimonials />
               </Layout>
             }
           />
