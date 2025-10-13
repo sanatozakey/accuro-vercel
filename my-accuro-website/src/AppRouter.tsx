@@ -19,6 +19,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(module =
 const ResetPassword = lazy(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword })))
 const Testimonials = lazy(() => import('./pages/Testimonials').then(module => ({ default: module.Testimonials })))
 const UserDashboard = lazy(() => import('./pages/UserDashboard').then(module => ({ default: module.UserDashboard })))
+const RecommendationsMonitor = lazy(() => import('./pages/RecommendationsMonitor').then(module => ({ default: module.RecommendationsMonitor })))
 
 export function AppRouter() {
   return (
@@ -130,6 +131,14 @@ export function AppRouter() {
             element={
               <ProtectedRoute adminOnly={true}>
                 <BookingDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/recommendations"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <RecommendationsMonitor />
               </ProtectedRoute>
             }
           />
