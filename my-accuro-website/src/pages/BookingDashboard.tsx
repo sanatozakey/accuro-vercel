@@ -163,6 +163,7 @@ export function BookingDashboard(): React.ReactElement {
   const [productAnalytics, setProductAnalytics] = useState<any[]>([])
   const [locationAnalytics, setLocationAnalytics] = useState<any[]>([])
   const [analyticsLoading, setAnalyticsLoading] = useState<boolean>(false)
+  const [isSampleData, setIsSampleData] = useState<boolean>(false)
 
   const [newBooking, setNewBooking] = useState<NewBooking>({
     date: new Date().toISOString().split('T')[0],
@@ -214,6 +215,8 @@ export function BookingDashboard(): React.ReactElement {
       ])
       setProductAnalytics(productsRes.data)
       setLocationAnalytics(locationsRes.data)
+      // Set isSampleData flag if either endpoint returns sample data
+      setIsSampleData(productsRes.isSampleData || locationsRes.isSampleData || false)
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load analytics')
     } finally {
@@ -1334,6 +1337,22 @@ export function BookingDashboard(): React.ReactElement {
               </div>
             ) : (
               <>
+                {/* Sample Data Indicator */}
+                {isSampleData && (
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <AlertCircle className="h-5 w-5 text-yellow-400" />
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-yellow-700">
+                          <strong>Sample Data:</strong> The charts below display sample data for demonstration purposes. Once you create real bookings, this data will be replaced with actual analytics.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Product Analytics */}
                 <div className="bg-white rounded-lg shadow-md p-6">
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">Product Analytics</h2>
