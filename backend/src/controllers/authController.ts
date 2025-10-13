@@ -60,6 +60,7 @@ export const register = async (req: Request, res: Response) => {
         role: user.role,
         phone: user.phone,
         company: user.company,
+        profilePicture: user.profilePicture,
         isEmailVerified: user.isEmailVerified,
         token,
       },
@@ -119,6 +120,8 @@ export const login = async (req: Request, res: Response) => {
         role: user.role,
         phone: user.phone,
         company: user.company,
+        profilePicture: user.profilePicture,
+        isEmailVerified: user.isEmailVerified,
         token,
       },
     });
@@ -159,6 +162,7 @@ export const updateDetails = async (req: AuthRequest, res: Response) => {
       email: req.body.email,
       phone: req.body.phone,
       company: req.body.company,
+      profilePicture: req.body.profilePicture,
     };
 
     const user = await User.findByIdAndUpdate(req.user!._id, fieldsToUpdate, {
@@ -297,6 +301,46 @@ export const resendVerification = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       message: 'Verification email resent successfully! Please check your inbox.',
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Upload profile picture
+// @route   PUT /api/auth/upload-profile-picture
+// @access  Private
+export const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
+  try {
+    const { profilePicture } = req.body;
+
+    if (!profilePicture) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a profile picture',
+      });
+    }
+
+    // Basic validation for base64 image
+    if (!profilePicture.startsWith('data:image/')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid image format',
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user!._id,
+      { profilePicture },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      data: user,
     });
   } catch (error: any) {
     res.status(500).json({

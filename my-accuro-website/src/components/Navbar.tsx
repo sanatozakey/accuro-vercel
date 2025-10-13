@@ -64,7 +64,19 @@ export function Navbar() {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-md transition"
                 >
-                  <User size={18} />
+                  {user?.profilePicture ? (
+                    <img
+                      src={user.profilePicture}
+                      alt={user.name}
+                      className="w-8 h-8 rounded-full object-cover border-2 border-white"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center border-2 border-white">
+                      <span className="text-xs font-bold text-white">
+                        {user?.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+                      </span>
+                    </div>
+                  )}
                   <span className="text-sm font-medium text-gray-700">{user?.name}</span>
                 </button>
                 {isUserMenuOpen && (
@@ -79,6 +91,16 @@ export function Navbar() {
                         </span>
                       )}
                     </div>
+                    <Link
+                      to="/profile"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <div className="flex items-center">
+                        <User size={16} className="mr-2" />
+                        Edit Profile
+                      </div>
+                    </Link>
                     {isAdmin && (
                       <Link
                         to="/admin/bookings"

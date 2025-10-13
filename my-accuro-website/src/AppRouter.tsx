@@ -14,6 +14,7 @@ const BookingDashboard = lazy(() => import('./pages/BookingDashboard').then(modu
 const Login = lazy(() => import('./pages/Login').then(module => ({ default: module.Login })))
 const Signup = lazy(() => import('./pages/Signup').then(module => ({ default: module.Signup })))
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail').then(module => ({ default: module.VerifyEmail })))
+const Profile = lazy(() => import('./pages/Profile').then(module => ({ default: module.Profile })))
 
 export function AppRouter() {
   return (
@@ -82,6 +83,16 @@ export function AppRouter() {
               <Layout>
                 <VerifyEmail />
               </Layout>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Profile />
+                </Layout>
+              </ProtectedRoute>
             }
           />
           <Route

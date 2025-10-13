@@ -27,9 +27,16 @@ import {
   RotateCcw,
   CheckSquare,
   ClipboardList,
+  Users,
+  BarChart3,
+  Trash2,
+  Shield,
 } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import bookingService from '../services/bookingService'
+import userService, { User as UserType } from '../services/userService'
+import analyticsService from '../services/analyticsService'
 // Define types for our booking data
 interface Booking {
   _id: string
@@ -139,10 +146,24 @@ export function BookingDashboard(): React.ReactElement {
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [conclusion, setConclusion] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
-  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'logs'>(
+  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'logs' | 'users' | 'analytics'>(
     'table',
   )
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
+
+  // User management state
+  const [users, setUsers] = useState<UserType[]>([])
+  const [filteredUsers, setFilteredUsers] = useState<UserType[]>([])
+  const [userSearchTerm, setUserSearchTerm] = useState<string>('')
+  const [selectedUser, setSelectedUser] = useState<UserType | null>(null)
+  const [isUserModalOpen, setIsUserModalOpen] = useState<boolean>(false)
+  const [editedUser, setEditedUser] = useState<UserType | null>(null)
+
+  // Analytics state
+  const [productAnalytics, setProductAnalytics] = useState<any[]>([])
+  const [locationAnalytics, setLocationAnalytics] = useState<any[]>([])
+  const [analyticsLoading, setAnalyticsLoading] = useState<boolean>(false)
+
   const [newBooking, setNewBooking] = useState<NewBooking>({
     date: new Date().toISOString().split('T')[0],
     time: '10:00',
@@ -173,10 +194,65 @@ export function BookingDashboard(): React.ReactElement {
     }
   }
 
+  // Fetch users from backend
+  const fetchUsers = async (): Promise<void> => {
+    try {
+      const response = await userService.getAll()
+      setUsers(response.data)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load users')
+    }
+  }
+
+  // Fetch analytics from backend
+  const fetchAnalytics = async (): Promise<void> => {
+    setAnalyticsLoading(true)
+    try {
+      const [productsRes, locationsRes] = await Promise.all([
+        analyticsService.getProductAnalytics(),
+        analyticsService.getLocationAnalytics(),
+      ])
+      setProductAnalytics(productsRes.data)
+      setLocationAnalytics(locationsRes.data)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load analytics')
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }
+
   // Load bookings on component mount
   useEffect(() => {
     fetchBookings()
   }, [])
+
+  // Load users when users tab is selected
+  useEffect(() => {
+    if (viewMode === 'users') {
+      fetchUsers()
+    }
+  }, [viewMode])
+
+  // Load analytics when analytics tab is selected
+  useEffect(() => {
+    if (viewMode === 'analytics') {
+      fetchAnalytics()
+    }
+  }, [viewMode])
+
+  // Filter users based on search
+  useEffect(() => {
+    let result = users
+    if (userSearchTerm) {
+      result = result.filter(
+        (user) =>
+          user.name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+          (user.company && user.company.toLowerCase().includes(userSearchTerm.toLowerCase()))
+      )
+    }
+    setFilteredUsers(result)
+  }, [userSearchTerm, users])
   // Create calendar events from filteredBookings (so filters work in calendar view)
   useEffect(() => {
     const events: CalendarEvent[] = []
@@ -549,6 +625,36 @@ export function BookingDashboard(): React.ReactElement {
   //   }
   //   return new Date(dateString).toLocaleDateString(undefined, options)
   // }
+  // User management functions
+  const deleteUserHandler = async (id: string, userName: string): Promise<void> => {
+    if (window.confirm(`Are you sure you want to delete user "${userName}"?`)) {
+      try {
+        await userService.delete(id)
+        await fetchUsers()
+        setError('')
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Failed to delete user')
+      }
+    }
+  }
+
+  const updateUserRole = async (userId: string, newRole: 'user' | 'admin'): Promise<void> => {
+    try {
+      await userService.update(userId, { role: newRole })
+      await fetchUsers()
+      setError('')
+      setIsUserModalOpen(false)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update user role')
+    }
+  }
+
+  const openUserModal = (user: UserType): void => {
+    setSelectedUser(user)
+    setEditedUser({ ...user })
+    setIsUserModalOpen(true)
+  }
+
   // Render form field with error message
   const renderFormField = (
     label: string,
@@ -670,7 +776,7 @@ export function BookingDashboard(): React.ReactElement {
           <>
         {/* View Toggles */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setViewMode('table')}
               className={`inline-flex items-center px-4 py-2 border ${viewMode === 'table' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
@@ -691,6 +797,20 @@ export function BookingDashboard(): React.ReactElement {
             >
               <ClipboardList className="h-4 w-4 mr-2" />
               Transaction Logs
+            </button>
+            <button
+              onClick={() => setViewMode('users')}
+              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'users' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Users
+            </button>
+            <button
+              onClick={() => setViewMode('analytics')}
+              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'analytics' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Analytics
             </button>
           </div>
         </div>
@@ -1063,6 +1183,213 @@ export function BookingDashboard(): React.ReactElement {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+        {viewMode === 'users' && (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">User Management</h2>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Search users by name, email, or company"
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Company
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Phone
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.map((user) => (
+                      <tr key={user._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            {user.profilePicture ? (
+                              <img
+                                src={user.profilePicture}
+                                alt={user.name}
+                                className="h-10 w-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                                <span className="text-sm font-bold text-white">
+                                  {user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+                                </span>
+                              </div>
+                            )}
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{user.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{user.company || 'N/A'}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">{user.phone || 'N/A'}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {user.role === 'admin' ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              <Shield className="w-3 h-3 mr-1" />
+                              Admin
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              User
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {user.isEmailVerified ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Verified
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              Unverified
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => openUserModal(user)}
+                              className="text-indigo-600 hover:text-indigo-900"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => deleteUserHandler(user._id, user.name)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                        No users found matching your criteria
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        {viewMode === 'analytics' && (
+          <div className="space-y-6">
+            {analyticsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+                  <p className="text-gray-600">Loading analytics...</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Product Analytics */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Product Analytics</h2>
+                  <p className="text-sm text-gray-600 mb-6">Most requested products in bookings</p>
+                  {productAnalytics.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={400}>
+                      <BarChart data={productAnalytics}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="_id"
+                          angle={-45}
+                          textAnchor="end"
+                          height={150}
+                          interval={0}
+                          tick={{ fontSize: 12 }}
+                        />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="count" fill="#3b82f6" name="Number of Bookings">
+                          {productAnalytics.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={`hsl(${(index * 30) % 360}, 70%, 50%)`} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-gray-500 text-center py-8">No product data available</p>
+                  )}
+                </div>
+
+                {/* Location Analytics */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Location Analytics</h2>
+                  <p className="text-sm text-gray-600 mb-6">Most selected meeting locations</p>
+                  {locationAnalytics.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={locationAnalytics}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="_id" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="count" fill="#10b981" name="Number of Bookings">
+                          {locationAnalytics.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={`hsl(${120 + (index * 30) % 240}, 70%, 50%)`} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-gray-500 text-center py-8">No location data available</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
           </>
@@ -1833,6 +2160,88 @@ export function BookingDashboard(): React.ReactElement {
                   type="button"
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={() => setIsCompletionModalOpen(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* User Edit Modal */}
+      {isUserModalOpen && selectedUser && editedUser && (
+        <div className="fixed inset-0 overflow-y-auto z-50">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+              &#8203;
+            </span>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                      Edit User: {selectedUser.name}
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          User Information
+                        </label>
+                        <div className="bg-gray-50 p-4 rounded-md space-y-2">
+                          <p className="text-sm"><span className="font-medium">Email:</span> {selectedUser.email}</p>
+                          <p className="text-sm"><span className="font-medium">Company:</span> {selectedUser.company || 'N/A'}</p>
+                          <p className="text-sm"><span className="font-medium">Phone:</span> {selectedUser.phone || 'N/A'}</p>
+                          <p className="text-sm"><span className="font-medium">Created:</span> {new Date(selectedUser.createdAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          User Role
+                        </label>
+                        <div className="space-y-2">
+                          <label className="inline-flex items-center p-3 border rounded-md border-gray-300 cursor-pointer hover:bg-gray-50 w-full">
+                            <input
+                              type="radio"
+                              name="role"
+                              value="user"
+                              checked={editedUser.role === 'user'}
+                              onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value as 'user' | 'admin' })}
+                              className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
+                            />
+                            <span className="ml-3 text-sm text-gray-700">User - Standard access</span>
+                          </label>
+                          <label className="inline-flex items-center p-3 border rounded-md border-gray-300 cursor-pointer hover:bg-gray-50 w-full">
+                            <input
+                              type="radio"
+                              name="role"
+                              value="admin"
+                              checked={editedUser.role === 'admin'}
+                              onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value as 'user' | 'admin' })}
+                              className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
+                            />
+                            <span className="ml-3 text-sm text-gray-700">Admin - Full access to dashboard</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => updateUserRole(selectedUser._id, editedUser.role)}
+                >
+                  Save Changes
+                </button>
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setIsUserModalOpen(false)}
                 >
                   Cancel
                 </button>
