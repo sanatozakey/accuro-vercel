@@ -7,7 +7,7 @@ import recommendationService from '../services/recommendationService';
 
 // Booking limits configuration
 const BOOKING_LIMITS = {
-  MAX_BOOKINGS_PER_TIME_SLOT: 3, // Maximum bookings allowed for the same date/time slot
+  MAX_BOOKINGS_PER_TIME_SLOT: 1, // Maximum bookings allowed for the same date/time slot
   MAX_BOOKINGS_PER_DAY: 20, // Maximum total bookings allowed per day
 };
 
