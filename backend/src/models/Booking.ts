@@ -14,9 +14,11 @@ export interface IBooking extends Document {
   additionalInfo?: string;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled';
   conclusion?: string;
+  cancellationReason?: string;
   rescheduleReason?: string;
   originalDate?: Date;
   originalTime?: string;
+  canReview: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -81,6 +83,10 @@ const BookingSchema: Schema = new Schema(
       type: String,
       trim: true,
     },
+    cancellationReason: {
+      type: String,
+      trim: true,
+    },
     rescheduleReason: {
       type: String,
       trim: true,
@@ -90,6 +96,11 @@ const BookingSchema: Schema = new Schema(
     },
     originalTime: {
       type: String,
+    },
+    canReview: {
+      type: Boolean,
+      default: false,
+      // Set to true when booking is completed
     },
   },
   {

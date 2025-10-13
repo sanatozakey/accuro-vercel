@@ -98,14 +98,43 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    // Check if account is locked
+    if (user.isLocked()) {
+      const lockTimeRemaining = Math.ceil((user.lockUntil!.getTime() - Date.now()) / 60000);
+      return res.status(423).json({
+        success: false,
+        message: `Account is locked due to too many failed login attempts. Please try again in ${lockTimeRemaining} minute${lockTimeRemaining > 1 ? 's' : ''}.`,
+        lockUntil: user.lockUntil,
+      });
+    }
+
     // Check if password matches
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
+      // Increment login attempts on failed login
+      await user.incrementLoginAttempts();
+
+      // Refetch user to get updated loginAttempts count
+      const updatedUser = await User.findById(user._id);
+      const attemptsRemaining = 5 - (updatedUser?.loginAttempts || 0);
+
+      if (attemptsRemaining > 0 && attemptsRemaining <= 2) {
+        return res.status(401).json({
+          success: false,
+          message: `Invalid credentials. ${attemptsRemaining} attempt${attemptsRemaining > 1 ? 's' : ''} remaining before account lockout.`,
+        });
+      }
+
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials',
       });
+    }
+
+    // Reset login attempts on successful login
+    if (user.loginAttempts > 0) {
+      await user.resetLoginAttempts();
     }
 
     // @ts-ignore
@@ -341,6 +370,110 @@ export const uploadProfilePicture = async (req: AuthRequest, res: Response) => {
     res.status(200).json({
       success: true,
       data: user,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Forgot password - Request password reset
+// @route   POST /api/auth/forgot-password
+// @access  Public
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with that email address',
+      });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Save hashed token to database
+    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    user.resetPasswordExpires = resetExpires;
+    await user.save();
+
+    // Send email with reset link
+    try {
+      await emailService.sendPasswordResetEmail(email, resetToken, user.name);
+
+      res.status(200).json({
+        success: true,
+        message: 'Password reset email sent! Please check your inbox.',
+      });
+    } catch (emailError) {
+      // If email fails, remove reset token from database
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save();
+
+      return res.status(500).json({
+        success: false,
+        message: 'Email could not be sent. Please try again later.',
+      });
+    }
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Reset password using token
+// @route   POST /api/auth/reset-password/:token
+// @access  Public
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters',
+      });
+    }
+
+    // Hash the token from URL to match against database
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find user with this reset token that hasn't expired
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    }).select('+resetPasswordToken +resetPasswordExpires');
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired password reset token',
+      });
+    }
+
+    // Set new password
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    // Reset login attempts on password reset
+    user.loginAttempts = 0;
+    user.lockUntil = undefined;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password reset successful! You can now log in with your new password.',
     });
   } catch (error: any) {
     res.status(500).json({

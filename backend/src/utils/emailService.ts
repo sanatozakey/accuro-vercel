@@ -251,6 +251,63 @@ class EmailService {
       html,
     });
   }
+
+  // Send password reset email
+  async sendPasswordResetEmail(email: string, token: string, name: string): Promise<void> {
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #1e3a8a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
+          Password Reset Request
+        </h2>
+
+        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 5px; margin: 20px 0;">
+          <p style="margin: 10px 0;">Hello ${name},</p>
+          <p style="margin: 10px 0;">You recently requested to reset your password for your Accuro account. Click the button below to reset it.</p>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetUrl}" style="background-color: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+            Reset Password
+          </a>
+        </div>
+
+        <div style="background-color: #fee2e2; padding: 15px; border-left: 4px solid #ef4444; border-radius: 3px; margin: 20px 0;">
+          <p style="margin: 0; color: #991b1b;">
+            <strong>Security Notice:</strong> This password reset link will expire in 1 hour for security reasons.
+          </p>
+        </div>
+
+        <div style="margin: 20px 0;">
+          <p style="color: #6b7280; font-size: 14px;">
+            If the button doesn't work, copy and paste this link into your browser:
+          </p>
+          <p style="background-color: #f9fafb; padding: 10px; border: 1px solid #e5e7eb; border-radius: 3px; word-break: break-all; font-size: 12px;">
+            ${resetUrl}
+          </p>
+        </div>
+
+        <div style="background-color: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; border-radius: 3px; margin: 20px 0;">
+          <p style="margin: 0; color: #92400e;">
+            <strong>Did not request this?</strong><br>
+            If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
+          </p>
+        </div>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+          <p>For security reasons, this link will expire after one use or in 1 hour.</p>
+          <p>If you need assistance, please contact us at info@accuro.com.ph</p>
+        </div>
+      </div>
+    `;
+
+    await this.sendEmail({
+      to: email,
+      subject: 'Password Reset Request - Accuro',
+      html,
+    });
+  }
 }
 
 export default new EmailService();

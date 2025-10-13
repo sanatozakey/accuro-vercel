@@ -8,6 +8,8 @@ import {
   verifyEmail,
   resendVerification,
   uploadProfilePicture,
+  forgotPassword,
+  resetPassword,
 } from '../controllers/authController';
 import { protect } from '../middleware/auth';
 
@@ -21,5 +23,7 @@ router.put('/updatepassword', protect, updatePassword);
 router.put('/upload-profile-picture', protect, uploadProfilePicture);
 router.get('/verify-email/:token', verifyEmail);
 router.post('/resend-verification', resendVerification);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password/:token', resetPassword);
 
 export default router;
