@@ -66,3 +66,42 @@ export const recordInteraction = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+// @desc    Get all user interactions (Admin only)
+// @route   GET /api/recommendations/interactions
+// @access  Private/Admin
+export const getAllInteractions = async (req: AuthRequest, res: Response) => {
+  try {
+    const interactions = await recommendationService.getAllInteractions();
+
+    res.status(200).json({
+      success: true,
+      count: interactions.length,
+      data: interactions,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Get recommendations stats (Admin only)
+// @route   GET /api/recommendations/stats
+// @access  Private/Admin
+export const getRecommendationStats = async (req: AuthRequest, res: Response) => {
+  try {
+    const stats = await recommendationService.getStats();
+
+    res.status(200).json({
+      success: true,
+      data: stats,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};

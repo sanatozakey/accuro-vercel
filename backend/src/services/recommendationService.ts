@@ -502,6 +502,112 @@ class RecommendationService {
       console.error('Error recording interaction:', error);
     }
   }
+
+  /**
+   * Get all user interactions (Admin only)
+   */
+  async getAllInteractions(): Promise<any[]> {
+    try {
+      const interactions = await UserInteraction.find()
+        .sort({ createdAt: -1 })
+        .limit(500)
+        .populate('userId', 'name email')
+        .lean();
+
+      return interactions;
+    } catch (error) {
+      console.error('Error getting all interactions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get recommendation statistics (Admin only)
+   */
+  async getStats(): Promise<any> {
+    try {
+      const totalInteractions = await UserInteraction.countDocuments();
+
+      const interactionsByType = await UserInteraction.aggregate([
+        {
+          $group: {
+            _id: '$interactionType',
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      const interactionsByCategory = await UserInteraction.aggregate([
+        {
+          $group: {
+            _id: '$productCategory',
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { count: -1 } },
+      ]);
+
+      const topProducts = await UserInteraction.aggregate([
+        {
+          $group: {
+            _id: '$productId',
+            totalWeight: { $sum: '$weight' },
+            interactionCount: { $sum: 1 },
+          },
+        },
+        { $sort: { totalWeight: -1 } },
+        { $limit: 10 },
+      ]);
+
+      const activeUsers = await UserInteraction.aggregate([
+        {
+          $group: {
+            _id: '$userId',
+            interactionCount: { $sum: 1 },
+          },
+        },
+        {
+          $match: {
+            interactionCount: { $gte: 2 },
+          },
+        },
+      ]);
+
+      // Recent interactions
+      const recentInteractions = await UserInteraction.find()
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .populate('userId', 'name email')
+        .lean();
+
+      return {
+        totalInteractions,
+        totalUsers: activeUsers.length,
+        interactionsByType,
+        interactionsByCategory,
+        topProducts: topProducts.map((item) => {
+          const product = PRODUCTS.find((p) => p.id === item._id);
+          return {
+            productId: item._id,
+            productName: product?.name || item._id,
+            totalWeight: item.totalWeight,
+            interactionCount: item.interactionCount,
+          };
+        }),
+        recentInteractions,
+      };
+    } catch (error) {
+      console.error('Error getting recommendation stats:', error);
+      return {
+        totalInteractions: 0,
+        totalUsers: 0,
+        interactionsByType: [],
+        interactionsByCategory: [],
+        topProducts: [],
+        recentInteractions: [],
+      };
+    }
+  }
 }
 
 export default new RecommendationService();
