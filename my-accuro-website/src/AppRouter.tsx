@@ -18,6 +18,7 @@ const Profile = lazy(() => import('./pages/Profile').then(module => ({ default: 
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(module => ({ default: module.ForgotPassword })))
 const ResetPassword = lazy(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword })))
 const Testimonials = lazy(() => import('./pages/Testimonials').then(module => ({ default: module.Testimonials })))
+const UserDashboard = lazy(() => import('./pages/UserDashboard').then(module => ({ default: module.UserDashboard })))
 
 export function AppRouter() {
   return (
@@ -110,6 +111,16 @@ export function AppRouter() {
               <ProtectedRoute>
                 <Layout>
                   <Profile />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <UserDashboard />
                 </Layout>
               </ProtectedRoute>
             }

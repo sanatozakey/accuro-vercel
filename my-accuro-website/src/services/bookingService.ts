@@ -71,6 +71,27 @@ class BookingService {
     const response = await api.delete<{ success: boolean }>(`/bookings/${id}`);
     return response.data;
   }
+
+  async cancel(id: string, cancellationReason: string): Promise<BookingResponse> {
+    const response = await api.put<BookingResponse>(`/bookings/${id}/cancel`, {
+      cancellationReason,
+    });
+    return response.data;
+  }
+
+  async reschedule(
+    id: string,
+    newDate: string,
+    newTime: string,
+    rescheduleReason: string
+  ): Promise<BookingResponse> {
+    const response = await api.put<BookingResponse>(`/bookings/${id}/reschedule`, {
+      newDate,
+      newTime,
+      rescheduleReason,
+    });
+    return response.data;
+  }
 }
 
 export default new BookingService();
