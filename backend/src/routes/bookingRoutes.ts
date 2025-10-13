@@ -18,7 +18,7 @@ const router = express.Router();
 router
   .route('/')
   .get(protect, authorize('admin'), getBookings)
-  .post(createBooking);
+  .post(protect, createBooking); // Require authentication to track user bookings
 
 router.get('/upcoming', getBookings); // Public endpoint for calendar view
 router.get('/check-availability', checkAvailability); // Public endpoint to check slot availability

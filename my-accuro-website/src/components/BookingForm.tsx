@@ -7,17 +7,21 @@ import {
   FileText,
   Package,
   Download,
+  LogIn,
 } from 'lucide-react'
 import bookingService from '../services/bookingService'
 import { TimeSlotPicker } from './TimeSlotPicker'
 import { useLocation } from 'react-router-dom'
 import { CartItem } from '../contexts/CartContext'
 import { generateBookingReceipt } from '../utils/pdfGenerator'
+import { useAuth } from '../contexts/AuthContext'
+import { Link } from 'react-router-dom'
 
 interface BookingFormProps {
   onSubmit: (success: boolean, error?: string, bookingData?: any) => void
 }
 export function BookingForm({ onSubmit }: BookingFormProps) {
+  const { isAuthenticated } = useAuth()
   const location = useLocation()
   const [formData, setFormData] = useState({
     date: '',
@@ -150,6 +154,33 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
     'Beamex Integrated Solutions',
     'Not sure / Need recommendation',
   ]
+  // Show login prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
+        <LogIn className="h-16 w-16 text-yellow-600 mx-auto mb-4" />
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Login Required</h3>
+        <p className="text-gray-700 mb-6">
+          You need to be logged in to schedule a meeting. This allows you to view and manage your bookings from your dashboard.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link
+            to="/login?redirect=/booking"
+            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition font-medium"
+          >
+            Login to Continue
+          </Link>
+          <Link
+            to="/register?redirect=/booking"
+            className="inline-block bg-white text-blue-600 border-2 border-blue-600 px-6 py-3 rounded-md hover:bg-blue-50 transition font-medium"
+          >
+            Create Account
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Date Selection */}
