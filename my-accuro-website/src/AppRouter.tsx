@@ -15,6 +15,8 @@ const Login = lazy(() => import('./pages/Login').then(module => ({ default: modu
 const Signup = lazy(() => import('./pages/Signup').then(module => ({ default: module.Signup })))
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail').then(module => ({ default: module.VerifyEmail })))
 const Profile = lazy(() => import('./pages/Profile').then(module => ({ default: module.Profile })))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(module => ({ default: module.ForgotPassword })))
+const ResetPassword = lazy(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword })))
 
 export function AppRouter() {
   return (
@@ -84,6 +86,14 @@ export function AppRouter() {
                 <VerifyEmail />
               </Layout>
             }
+          />
+          <Route
+            path="/forgot-password"
+            element={<ForgotPassword />}
+          />
+          <Route
+            path="/reset-password"
+            element={<ResetPassword />}
           />
           <Route
             path="/profile"

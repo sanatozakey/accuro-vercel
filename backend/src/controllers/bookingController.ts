@@ -204,3 +204,187 @@ export const getMyBookings = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+// @desc    Cancel booking
+// @route   PUT /api/bookings/:id/cancel
+// @access  Private
+export const cancelBooking = async (req: AuthRequest, res: Response) => {
+  try {
+    const { cancellationReason } = req.body;
+
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    // Check if user owns this booking or is admin
+    const isOwner = booking.userId?.toString() === req.user!._id.toString();
+    const isAdmin = req.user!.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to cancel this booking',
+      });
+    }
+
+    // Check if booking can be cancelled
+    if (booking.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking is already cancelled',
+      });
+    }
+
+    if (booking.status === 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot cancel a completed booking',
+      });
+    }
+
+    // Update booking
+    booking.status = 'cancelled';
+    booking.cancellationReason = cancellationReason || 'No reason provided';
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Booking cancelled successfully',
+      data: booking,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Reschedule booking
+// @route   PUT /api/bookings/:id/reschedule
+// @access  Private
+export const rescheduleBooking = async (req: AuthRequest, res: Response) => {
+  try {
+    const { newDate, newTime, rescheduleReason } = req.body;
+
+    if (!newDate || !newTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide new date and time',
+      });
+    }
+
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    // Check if user owns this booking or is admin
+    const isOwner = booking.userId?.toString() === req.user!._id.toString();
+    const isAdmin = req.user!.role === 'admin';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to reschedule this booking',
+      });
+    }
+
+    // Check if booking can be rescheduled
+    if (booking.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot reschedule a cancelled booking',
+      });
+    }
+
+    if (booking.status === 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot reschedule a completed booking',
+      });
+    }
+
+    // Check if new slot is available
+    const conflictingBooking = await Booking.findOne({
+      date: new Date(newDate),
+      time: newTime,
+      status: { $in: ['pending', 'confirmed'] },
+      _id: { $ne: booking._id },
+    });
+
+    if (conflictingBooking) {
+      return res.status(400).json({
+        success: false,
+        message: 'The selected time slot is already booked',
+      });
+    }
+
+    // Save original date and time if not already set
+    if (!booking.originalDate) {
+      booking.originalDate = booking.date;
+      booking.originalTime = booking.time;
+    }
+
+    // Update booking
+    booking.date = new Date(newDate);
+    booking.time = newTime;
+    booking.status = 'rescheduled';
+    booking.rescheduleReason = rescheduleReason || 'No reason provided';
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Booking rescheduled successfully',
+      data: booking,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Mark booking as completed and enable reviews
+// @route   PUT /api/bookings/:id/complete
+// @access  Private/Admin
+export const completeBooking = async (req: Request, res: Response) => {
+  try {
+    const { conclusion } = req.body;
+
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    booking.status = 'completed';
+    booking.conclusion = conclusion;
+    booking.canReview = true; // Enable reviews for this booking
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Booking marked as completed',
+      data: booking,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};

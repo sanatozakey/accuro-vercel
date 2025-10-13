@@ -15,6 +15,8 @@ import quoteRoutes from '../src/routes/quoteRoutes';
 import contactRoutes from '../src/routes/contactRoutes';
 import userRoutes from '../src/routes/userRoutes';
 import analyticsRoutes from '../src/routes/analyticsRoutes';
+import reviewRoutes from '../src/routes/reviewRoutes';
+import activityLogRoutes from '../src/routes/activityLogRoutes';
 
 // Initialize app
 const app: Application = express();
@@ -69,6 +71,8 @@ app.use('/api/quotes', quoteRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/activity-logs', activityLogRoutes);
 
 // Health check route
 app.get('/api/health', (req: Request, res: Response) => {
