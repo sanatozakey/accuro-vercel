@@ -3,6 +3,7 @@ import Booking from '../models/Booking';
 import { AuthRequest } from '../middleware/auth';
 import emailService from '../utils/emailService';
 import ActivityLog from '../models/ActivityLog';
+import recommendationService from '../services/recommendationService';
 
 // Booking limits configuration
 const BOOKING_LIMITS = {
@@ -171,6 +172,17 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
           ipAddress: req.ip,
           userAgent: req.headers['user-agent'],
         });
+
+        // Record product interaction for recommendations
+        await recommendationService.recordInteraction(
+          req.user._id.toString(),
+          booking.product,
+          'booking',
+          {
+            bookingId: booking._id.toString(),
+            context: `Booking for ${booking.purpose}`,
+          }
+        );
       } catch (logError) {
         console.error('Failed to log activity:', logError);
       }

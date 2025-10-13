@@ -17,6 +17,7 @@ import userRoutes from './routes/userRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import reviewRoutes from './routes/reviewRoutes';
 import activityLogRoutes from './routes/activityLogRoutes';
+import recommendationRoutes from './routes/recommendationRoutes';
 
 // Initialize app
 const app: Application = express();
@@ -48,6 +49,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

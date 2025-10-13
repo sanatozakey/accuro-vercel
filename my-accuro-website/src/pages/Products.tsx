@@ -4,6 +4,7 @@ import { products, productCategories, getProductsByCategory, Product } from '../
 import { LazyImage } from '../components/LazyImage'
 import { AddToCartButton } from '../components/cart/AddToCartButton'
 import { MiniCart } from '../components/cart/MiniCart'
+import { ProductRecommendations } from '../components/ProductRecommendations'
 
 export function Products() {
   const [selectedCategory, setSelectedCategory] = useState('All Products')
@@ -105,6 +106,13 @@ export function Products() {
       {/* Products Grid */}
       <section className="py-8">
         <div className="container mx-auto px-4">
+          {/* Product Recommendations */}
+          <ProductRecommendations
+            limit={5}
+            title="Recommended Products"
+            subtitle="Personalized suggestions based on your interests"
+          />
+
           {filteredProducts.length === 0 ? (
             <div className="text-center py-12">
               <Search className="h-12 w-12 text-gray-300 mx-auto mb-3" />

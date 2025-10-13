@@ -20,6 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import bookingService, { Booking } from '../services/bookingService';
 import reviewService from '../services/reviewService';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { ProductRecommendations } from '../components/ProductRecommendations';
 
 export function UserDashboard() {
   const { user } = useAuth();
@@ -253,6 +254,9 @@ export function UserDashboard() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
+        {/* Product Recommendations */}
+        <ProductRecommendations limit={5} />
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-lg shadow-md p-6">
