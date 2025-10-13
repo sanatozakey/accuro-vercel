@@ -3,6 +3,59 @@ import Booking from '../models/Booking';
 import { AuthRequest } from '../middleware/auth';
 import emailService from '../utils/emailService';
 
+// Booking limits configuration
+const BOOKING_LIMITS = {
+  MAX_BOOKINGS_PER_TIME_SLOT: 3, // Maximum bookings allowed for the same date/time slot
+  MAX_BOOKINGS_PER_DAY: 20, // Maximum total bookings allowed per day
+};
+
+/**
+ * Helper function to check if a time slot is available
+ * @param date - The date to check
+ * @param time - The time slot to check
+ * @param excludeBookingId - Optional booking ID to exclude (for reschedule)
+ * @returns Object with availability info
+ */
+const checkSlotAvailability = async (
+  date: Date,
+  time: string,
+  excludeBookingId?: string
+) => {
+  const query: any = {
+    date: new Date(date),
+    time: time,
+    status: { $in: ['pending', 'confirmed', 'rescheduled'] },
+  };
+
+  if (excludeBookingId) {
+    query._id = { $ne: excludeBookingId };
+  }
+
+  // Check bookings for specific time slot
+  const timeSlotBookings = await Booking.countDocuments(query);
+
+  // Check total bookings for the day
+  const dayStartQuery: any = {
+    date: new Date(date),
+    status: { $in: ['pending', 'confirmed', 'rescheduled'] },
+  };
+
+  if (excludeBookingId) {
+    dayStartQuery._id = { $ne: excludeBookingId };
+  }
+
+  const dayBookings = await Booking.countDocuments(dayStartQuery);
+
+  return {
+    isSlotAvailable: timeSlotBookings < BOOKING_LIMITS.MAX_BOOKINGS_PER_TIME_SLOT,
+    isDayAvailable: dayBookings < BOOKING_LIMITS.MAX_BOOKINGS_PER_DAY,
+    timeSlotCount: timeSlotBookings,
+    dayCount: dayBookings,
+    maxPerSlot: BOOKING_LIMITS.MAX_BOOKINGS_PER_TIME_SLOT,
+    maxPerDay: BOOKING_LIMITS.MAX_BOOKINGS_PER_DAY,
+  };
+};
+
 // @desc    Get all bookings
 // @route   GET /api/bookings
 // @access  Private/Admin
@@ -69,6 +122,33 @@ export const getBooking = async (req: Request, res: Response) => {
 // @access  Public
 export const createBooking = async (req: AuthRequest, res: Response) => {
   try {
+    const { date, time } = req.body;
+
+    // Validate required fields
+    if (!date || !time) {
+      return res.status(400).json({
+        success: false,
+        message: 'Date and time are required',
+      });
+    }
+
+    // Check slot availability
+    const availability = await checkSlotAvailability(date, time);
+
+    if (!availability.isDayAvailable) {
+      return res.status(400).json({
+        success: false,
+        message: `Maximum bookings reached for this day (${availability.dayCount}/${availability.maxPerDay}). Please select a different date.`,
+      });
+    }
+
+    if (!availability.isSlotAvailable) {
+      return res.status(400).json({
+        success: false,
+        message: `This time slot is fully booked (${availability.timeSlotCount}/${availability.maxPerSlot}). Please select a different time.`,
+      });
+    }
+
     // Add user to req.body if authenticated
     if (req.user) {
       req.body.userId = req.user._id;
@@ -315,17 +395,23 @@ export const rescheduleBooking = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if new slot is available
-    const conflictingBooking = await Booking.findOne({
-      date: new Date(newDate),
-      time: newTime,
-      status: { $in: ['pending', 'confirmed'] },
-      _id: { $ne: booking._id },
-    });
+    const availability = await checkSlotAvailability(
+      newDate,
+      newTime,
+      booking._id.toString()
+    );
 
-    if (conflictingBooking) {
+    if (!availability.isDayAvailable) {
       return res.status(400).json({
         success: false,
-        message: 'The selected time slot is already booked',
+        message: `Maximum bookings reached for this day (${availability.dayCount}/${availability.maxPerDay}). Please select a different date.`,
+      });
+    }
+
+    if (!availability.isSlotAvailable) {
+      return res.status(400).json({
+        success: false,
+        message: `This time slot is fully booked (${availability.timeSlotCount}/${availability.maxPerSlot}). Please select a different time.`,
       });
     }
 
@@ -380,6 +466,47 @@ export const completeBooking = async (req: Request, res: Response) => {
       success: true,
       message: 'Booking marked as completed',
       data: booking,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Check slot availability
+// @route   GET /api/bookings/check-availability
+// @access  Public
+export const checkAvailability = async (req: Request, res: Response) => {
+  try {
+    const { date, time } = req.query;
+
+    if (!date || !time) {
+      return res.status(400).json({
+        success: false,
+        message: 'Date and time are required',
+      });
+    }
+
+    const availability = await checkSlotAvailability(
+      new Date(date as string),
+      time as string
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        isAvailable: availability.isSlotAvailable && availability.isDayAvailable,
+        isSlotAvailable: availability.isSlotAvailable,
+        isDayAvailable: availability.isDayAvailable,
+        timeSlotCount: availability.timeSlotCount,
+        dayCount: availability.dayCount,
+        maxPerSlot: availability.maxPerSlot,
+        maxPerDay: availability.maxPerDay,
+        slotsRemaining: availability.maxPerSlot - availability.timeSlotCount,
+        dayBookingsRemaining: availability.maxPerDay - availability.dayCount,
+      },
     });
   } catch (error: any) {
     res.status(500).json({

@@ -9,6 +9,7 @@ import {
   cancelBooking,
   rescheduleBooking,
   completeBooking,
+  checkAvailability,
 } from '../controllers/bookingController';
 import { protect, authorize } from '../middleware/auth';
 
@@ -20,6 +21,7 @@ router
   .post(createBooking);
 
 router.get('/upcoming', getBookings); // Public endpoint for calendar view
+router.get('/check-availability', checkAvailability); // Public endpoint to check slot availability
 router.get('/my', protect, getMyBookings);
 
 router
