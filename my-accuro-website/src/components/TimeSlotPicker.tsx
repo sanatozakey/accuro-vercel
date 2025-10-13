@@ -39,22 +39,41 @@ export function TimeSlotPicker({ selectedDate, selectedTime, onTimeSelect }: Tim
     const checkAvailability = async () => {
       setLoading(true)
       try {
-        // Format date to ensure consistency
+        // Format date to ensure consistency - convert to UTC to avoid timezone issues
         const dateObj = new Date(selectedDate)
-        dateObj.setHours(0, 0, 0, 0)
-        const formattedDate = dateObj.toISOString().split('T')[0]
+        const year = dateObj.getFullYear()
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+        const day = String(dateObj.getDate()).padStart(2, '0')
+        const formattedDate = `${year}-${month}-${day}`
 
-        const response = await bookingService.getAll({
-          startDate: formattedDate,
-          endDate: formattedDate,
-        })
+        // Get ALL bookings (don't filter by date in query)
+        const response = await bookingService.getAll({})
+
+        console.log('Selected date:', formattedDate)
+        console.log('All bookings:', response.data)
 
         // Filter bookings for the exact selected date and confirmed/pending status
         const bookedSlots = response.data
           .filter((booking) => {
-            const bookingDate = new Date(booking.date).toISOString().split('T')[0]
-            return bookingDate === formattedDate &&
-                   (booking.status === 'confirmed' || booking.status === 'pending')
+            // Parse the booking date carefully
+            const bookingDateObj = new Date(booking.date)
+            const bookingYear = bookingDateObj.getFullYear()
+            const bookingMonth = String(bookingDateObj.getMonth() + 1).padStart(2, '0')
+            const bookingDay = String(bookingDateObj.getDate()).padStart(2, '0')
+            const bookingFormattedDate = `${bookingYear}-${bookingMonth}-${bookingDay}`
+
+            const isMatchingDate = bookingFormattedDate === formattedDate
+            const isActiveStatus = booking.status === 'confirmed' || booking.status === 'pending'
+
+            console.log('Checking booking:', {
+              bookingDate: bookingFormattedDate,
+              selectedDate: formattedDate,
+              time: booking.time,
+              status: booking.status,
+              matches: isMatchingDate && isActiveStatus
+            })
+
+            return isMatchingDate && isActiveStatus
           })
           .map((booking) => ({
             time: booking.time,
@@ -63,8 +82,7 @@ export function TimeSlotPicker({ selectedDate, selectedTime, onTimeSelect }: Tim
             status: booking.status,
           }))
 
-        console.log('Selected date:', formattedDate)
-        console.log('Booked slots:', bookedSlots)
+        console.log('Booked slots for this date:', bookedSlots)
 
         const slots = generateTimeSlots().map((time) => {
           const booking = bookedSlots.find((b) => b.time === time)

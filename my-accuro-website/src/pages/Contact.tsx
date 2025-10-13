@@ -1,13 +1,17 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Mail, Phone, MapPin, Send, CheckCircle, AlertCircle } from 'lucide-react'
 import contactService from '../services/contactService'
+import { useAuth } from '../contexts/AuthContext'
 
 export function Contact() {
+  const { user } = useAuth()
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
+    company: '',
     subject: '',
     message: '',
   })
@@ -15,6 +19,18 @@ export function Contact() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+
+  // Auto-fill form for logged-in users
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+        company: user.company || prev.company,
+      }))
+    }
+  }, [user])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -35,8 +51,9 @@ export function Contact() {
       setFormData({
         firstName: '',
         lastName: '',
-        email: '',
-        phone: '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        company: user?.company || '',
         subject: '',
         message: '',
       })
@@ -166,6 +183,23 @@ export function Contact() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Your phone number"
                     required
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="company"
+                    className="block text-gray-700 font-medium mb-2"
+                  >
+                    Company
+                  </label>
+                  <input
+                    type="text"
+                    id="company"
+                    name="company"
+                    value={formData.company}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Your company name (optional)"
                   />
                 </div>
                 <div>
