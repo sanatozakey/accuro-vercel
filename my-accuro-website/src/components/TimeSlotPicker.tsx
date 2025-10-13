@@ -39,18 +39,32 @@ export function TimeSlotPicker({ selectedDate, selectedTime, onTimeSelect }: Tim
     const checkAvailability = async () => {
       setLoading(true)
       try {
+        // Format date to ensure consistency
+        const dateObj = new Date(selectedDate)
+        dateObj.setHours(0, 0, 0, 0)
+        const formattedDate = dateObj.toISOString().split('T')[0]
+
         const response = await bookingService.getAll({
-          startDate: selectedDate,
-          endDate: selectedDate,
+          startDate: formattedDate,
+          endDate: formattedDate,
         })
 
+        // Filter bookings for the exact selected date and confirmed/pending status
         const bookedSlots = response.data
-          .filter((booking) => booking.status === 'confirmed' || booking.status === 'pending')
+          .filter((booking) => {
+            const bookingDate = new Date(booking.date).toISOString().split('T')[0]
+            return bookingDate === formattedDate &&
+                   (booking.status === 'confirmed' || booking.status === 'pending')
+          })
           .map((booking) => ({
             time: booking.time,
             company: booking.company,
             purpose: booking.purpose,
+            status: booking.status,
           }))
+
+        console.log('Selected date:', formattedDate)
+        console.log('Booked slots:', bookedSlots)
 
         const slots = generateTimeSlots().map((time) => {
           const booking = bookedSlots.find((b) => b.time === time)

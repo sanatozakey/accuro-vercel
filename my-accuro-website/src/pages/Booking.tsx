@@ -6,10 +6,12 @@ import {
   Info,
   AlertCircle,
   Calendar,
+  Download,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { BookingForm } from '../components/BookingForm'
 import bookingService from '../services/bookingService'
+import { generateBookingReceipt } from '../utils/pdfGenerator'
 
 interface Booking {
   _id: string
@@ -18,11 +20,27 @@ interface Booking {
   status: string
 }
 
+interface BookingData {
+  _id: string
+  date: string
+  time: string
+  company: string
+  contactName: string
+  contactEmail: string
+  contactPhone: string
+  purpose: string
+  location: string
+  product: string
+  additionalInfo: string
+  createdAt: string
+}
+
 export function Booking() {
   const [bookingSubmitted, setBookingSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([])
   const [loadingBookings, setLoadingBookings] = useState(true)
+  const [lastBookingData, setLastBookingData] = useState<BookingData | null>(null)
 
   // Fetch upcoming bookings to display in calendar
   const fetchUpcomingBookings = async () => {
@@ -61,13 +79,41 @@ export function Booking() {
     if (success) {
       setBookingSubmitted(true)
       setError('')
+      setLastBookingData(bookingData)
       // Refresh the calendar
       fetchUpcomingBookings()
-      // Reset success message after 5 seconds
-      setTimeout(() => setBookingSubmitted(false), 5000)
+      // Reset success message after 10 seconds
+      setTimeout(() => {
+        setBookingSubmitted(false)
+        setLastBookingData(null)
+      }, 10000)
     } else {
       setError(errorMessage || 'Failed to submit booking')
       setBookingSubmitted(false)
+    }
+  }
+
+  const handleDownloadReceipt = () => {
+    if (lastBookingData) {
+      try {
+        generateBookingReceipt({
+          bookingId: lastBookingData._id,
+          date: lastBookingData.date,
+          time: lastBookingData.time,
+          company: lastBookingData.company,
+          contactName: lastBookingData.contactName,
+          contactEmail: lastBookingData.contactEmail,
+          contactPhone: lastBookingData.contactPhone,
+          purpose: lastBookingData.purpose,
+          location: lastBookingData.location,
+          product: lastBookingData.product,
+          additionalInfo: lastBookingData.additionalInfo,
+          createdAt: lastBookingData.createdAt,
+        })
+      } catch (pdfError) {
+        console.error('Failed to generate PDF:', pdfError)
+        alert('Failed to download receipt. Please try again.')
+      }
     }
   }
 
@@ -97,8 +143,8 @@ export function Booking() {
                 {bookingSubmitted && (
                   <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
                     <div className="flex">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                      <div>
+                      <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
                         <h3 className="text-green-800 font-medium">
                           Meeting request submitted successfully!
                         </h3>
@@ -106,9 +152,15 @@ export function Booking() {
                           We'll review your request and get back to you within
                           24 hours to confirm your appointment.
                         </p>
-                        <p className="text-green-700 mt-2 text-sm">
-                          Your receipt has been downloaded automatically. Please keep it for your records.
-                        </p>
+                        {lastBookingData && (
+                          <button
+                            onClick={handleDownloadReceipt}
+                            className="mt-3 inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download Receipt (PDF)
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

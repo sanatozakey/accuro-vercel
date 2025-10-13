@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Contact from '../models/Contact';
+import emailService from '../utils/emailService';
 
 // @desc    Get all contact messages
 // @route   GET /api/contacts
@@ -60,9 +61,24 @@ export const createContact = async (req: Request, res: Response) => {
   try {
     const contact = await Contact.create(req.body);
 
+    // Send email notification
+    try {
+      await emailService.sendContactNotification({
+        name: `${req.body.firstName} ${req.body.lastName}`,
+        email: req.body.email,
+        phone: req.body.phone,
+        company: req.body.company || 'Not provided',
+        message: `Subject: ${req.body.subject}\n\n${req.body.message}`,
+      });
+    } catch (emailError) {
+      console.error('Failed to send contact notification email:', emailError);
+      // Continue even if email fails
+    }
+
     res.status(201).json({
       success: true,
       data: contact,
+      message: 'Your message has been sent successfully! We will get back to you soon.',
     });
   } catch (error: any) {
     res.status(500).json({

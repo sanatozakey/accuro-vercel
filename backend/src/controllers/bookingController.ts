@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import Booking from '../models/Booking';
 import { AuthRequest } from '../middleware/auth';
+import emailService from '../utils/emailService';
 
 // @desc    Get all bookings
 // @route   GET /api/bookings
@@ -75,9 +76,45 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
 
     const booking = await Booking.create(req.body);
 
+    // Send emails
+    try {
+      // Send confirmation email to customer
+      await emailService.sendBookingConfirmation({
+        contactName: booking.contactName,
+        contactEmail: booking.contactEmail,
+        contactPhone: booking.contactPhone,
+        company: booking.company,
+        date: booking.date.toString(),
+        time: booking.time,
+        purpose: booking.purpose,
+        location: booking.location,
+        product: booking.product,
+        additionalInfo: booking.additionalInfo,
+        bookingId: booking._id.toString(),
+      });
+
+      // Send notification to admin
+      await emailService.sendBookingNotification({
+        contactName: booking.contactName,
+        contactEmail: booking.contactEmail,
+        contactPhone: booking.contactPhone,
+        company: booking.company,
+        date: booking.date.toString(),
+        time: booking.time,
+        purpose: booking.purpose,
+        location: booking.location,
+        product: booking.product,
+        additionalInfo: booking.additionalInfo,
+      });
+    } catch (emailError) {
+      console.error('Failed to send booking emails:', emailError);
+      // Continue even if email fails
+    }
+
     res.status(201).json({
       success: true,
       data: booking,
+      message: 'Booking created successfully! A confirmation email has been sent to your email address.',
     });
   } catch (error: any) {
     res.status(500).json({

@@ -103,27 +103,6 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
       const response = await bookingService.create(formData)
       const bookingData = response.data
 
-      // Generate and download PDF receipt
-      try {
-        generateBookingReceipt({
-          bookingId: bookingData._id,
-          date: formData.date,
-          time: formData.time,
-          company: formData.company,
-          contactName: formData.contactName,
-          contactEmail: formData.contactEmail,
-          contactPhone: formData.contactPhone,
-          purpose: formData.purpose,
-          location: formData.location,
-          product: formData.product,
-          additionalInfo: formData.additionalInfo,
-          createdAt: bookingData.createdAt || new Date().toISOString(),
-        })
-      } catch (pdfError) {
-        console.error('Failed to generate PDF:', pdfError)
-        // Continue even if PDF generation fails
-      }
-
       // Reset form on success
       setFormData({
         date: '',
