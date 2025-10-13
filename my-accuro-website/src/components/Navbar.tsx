@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MenuIcon, XIcon, User, LogOut, Settings, ShieldCheck } from 'lucide-react'
+import { MenuIcon, XIcon, User, LogOut, Settings, ShieldCheck, LayoutDashboard } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 export function Navbar() {
@@ -101,6 +101,16 @@ export function Navbar() {
                         Edit Profile
                       </div>
                     </Link>
+                    <Link
+                      to="/dashboard"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <div className="flex items-center">
+                        <LayoutDashboard size={16} className="mr-2" />
+                        My Dashboard
+                      </div>
+                    </Link>
                     {isAdmin && (
                       <Link
                         to="/admin/bookings"
@@ -196,6 +206,13 @@ export function Navbar() {
                   <p className="text-sm text-gray-700 font-medium px-3">{user?.name}</p>
                   <p className="text-xs text-gray-500 px-3 mb-2">{user?.email}</p>
                 </div>
+                <Link
+                  to="/dashboard"
+                  className="block text-gray-800 hover:text-blue-600 font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  My Dashboard
+                </Link>
                 {isAdmin && (
                   <Link
                     to="/admin/bookings"

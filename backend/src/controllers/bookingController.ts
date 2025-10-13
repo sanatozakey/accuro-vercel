@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Booking from '../models/Booking';
 import { AuthRequest } from '../middleware/auth';
 import emailService from '../utils/emailService';
+import ActivityLog from '../models/ActivityLog';
 
 // Booking limits configuration
 const BOOKING_LIMITS = {
@@ -156,6 +157,25 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
 
     const booking = await Booking.create(req.body);
 
+    // Log activity
+    if (req.user) {
+      try {
+        await ActivityLog.create({
+          user: req.user._id,
+          userName: req.user.name,
+          userEmail: req.user.email,
+          action: 'BOOKING_CREATED',
+          resourceType: 'booking',
+          resourceId: booking._id.toString(),
+          details: `Booking created for ${booking.company} on ${booking.date.toLocaleDateString()} at ${booking.time}`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
+
     // Send emails
     try {
       // Send confirmation email to customer
@@ -218,10 +238,31 @@ export const updateBooking = async (req: Request, res: Response) => {
       });
     }
 
+    const originalStatus = booking.status;
     booking = await Booking.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
+
+    // Log activity (assume admin is making the update)
+    const req_with_user = req as AuthRequest;
+    if (req_with_user.user) {
+      try {
+        await ActivityLog.create({
+          user: req_with_user.user._id,
+          userName: req_with_user.user.name,
+          userEmail: req_with_user.user.email,
+          action: 'BOOKING_UPDATED',
+          resourceType: 'booking',
+          resourceId: booking!._id.toString(),
+          details: `Booking updated for ${booking!.company}. Status: ${originalStatus} → ${booking!.status}`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -250,6 +291,26 @@ export const deleteBooking = async (req: Request, res: Response) => {
     }
 
     await booking.deleteOne();
+
+    // Log activity (assume admin is deleting)
+    const req_with_user = req as AuthRequest;
+    if (req_with_user.user) {
+      try {
+        await ActivityLog.create({
+          user: req_with_user.user._id,
+          userName: req_with_user.user.name,
+          userEmail: req_with_user.user.email,
+          action: 'BOOKING_DELETED',
+          resourceType: 'booking',
+          resourceId: booking._id.toString(),
+          details: `Booking deleted for ${booking.company} (${booking.date.toLocaleDateString()} at ${booking.time})`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -331,6 +392,23 @@ export const cancelBooking = async (req: AuthRequest, res: Response) => {
     booking.status = 'cancelled';
     booking.cancellationReason = cancellationReason || 'No reason provided';
     await booking.save();
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: req.user!._id,
+        userName: req.user!.name,
+        userEmail: req.user!.email,
+        action: 'BOOKING_CANCELLED',
+        resourceType: 'booking',
+        resourceId: booking._id.toString(),
+        details: `Booking cancelled for ${booking.company} (${booking.date.toLocaleDateString()} at ${booking.time}). Reason: ${cancellationReason || 'Not provided'}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
 
     res.status(200).json({
       success: true,
@@ -422,11 +500,30 @@ export const rescheduleBooking = async (req: AuthRequest, res: Response) => {
     }
 
     // Update booking
+    const oldDate = booking.date;
+    const oldTime = booking.time;
     booking.date = new Date(newDate);
     booking.time = newTime;
     booking.status = 'rescheduled';
     booking.rescheduleReason = rescheduleReason || 'No reason provided';
     await booking.save();
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: req.user!._id,
+        userName: req.user!.name,
+        userEmail: req.user!.email,
+        action: 'BOOKING_RESCHEDULED',
+        resourceType: 'booking',
+        resourceId: booking._id.toString(),
+        details: `Booking rescheduled for ${booking.company}. From: ${oldDate.toLocaleDateString()} ${oldTime} → To: ${booking.date.toLocaleDateString()} ${booking.time}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
 
     res.status(200).json({
       success: true,
@@ -461,6 +558,26 @@ export const completeBooking = async (req: Request, res: Response) => {
     booking.conclusion = conclusion;
     booking.canReview = true; // Enable reviews for this booking
     await booking.save();
+
+    // Log activity
+    const req_with_user = req as AuthRequest;
+    if (req_with_user.user) {
+      try {
+        await ActivityLog.create({
+          user: req_with_user.user._id,
+          userName: req_with_user.user.name,
+          userEmail: req_with_user.user.email,
+          action: 'BOOKING_COMPLETED',
+          resourceType: 'booking',
+          resourceId: booking._id.toString(),
+          details: `Booking marked as completed for ${booking.company} (${booking.date.toLocaleDateString()} at ${booking.time}). Review enabled.`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
 
     res.status(200).json({
       success: true,

@@ -4,6 +4,7 @@ import { generateToken } from '../utils/generateToken';
 import { AuthRequest } from '../middleware/auth';
 import crypto from 'crypto';
 import emailService from '../utils/emailService';
+import ActivityLog from '../models/ActivityLog';
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -49,6 +50,23 @@ export const register = async (req: Request, res: Response) => {
 
     // @ts-ignore
     const token = generateToken(user._id.toString());
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: user._id,
+        userName: user.name,
+        userEmail: user.email,
+        action: 'USER_REGISTERED',
+        resourceType: 'auth',
+        resourceId: user._id.toString(),
+        details: `User registered: ${user.email}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
 
     res.status(201).json({
       success: true,
@@ -139,6 +157,23 @@ export const login = async (req: Request, res: Response) => {
 
     // @ts-ignore
     const token = generateToken(user._id.toString());
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: user._id,
+        userName: user.name,
+        userEmail: user.email,
+        action: 'LOGIN',
+        resourceType: 'auth',
+        resourceId: user._id.toString(),
+        details: `User logged in: ${user.email}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
 
     res.status(200).json({
       success: true,
@@ -241,6 +276,23 @@ export const updatePassword = async (req: AuthRequest, res: Response) => {
     // @ts-ignore
     const token = generateToken(user._id.toString());
 
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: user._id,
+        userName: user.name,
+        userEmail: user.email,
+        action: 'PASSWORD_CHANGED',
+        resourceType: 'auth',
+        resourceId: user._id.toString(),
+        details: `Password changed by user: ${user.email}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
+
     res.status(200).json({
       success: true,
       data: {
@@ -280,6 +332,23 @@ export const verifyEmail = async (req: Request, res: Response) => {
     user.emailVerificationToken = undefined;
     user.emailVerificationExpires = undefined;
     await user.save();
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: user._id,
+        userName: user.name,
+        userEmail: user.email,
+        action: 'EMAIL_VERIFIED',
+        resourceType: 'auth',
+        resourceId: user._id.toString(),
+        details: `Email verified for user: ${user.email}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
 
     res.status(200).json({
       success: true,
@@ -470,6 +539,23 @@ export const resetPassword = async (req: Request, res: Response) => {
     user.loginAttempts = 0;
     user.lockUntil = undefined;
     await user.save();
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: user._id,
+        userName: user.name,
+        userEmail: user.email,
+        action: 'PASSWORD_RESET',
+        resourceType: 'auth',
+        resourceId: user._id.toString(),
+        details: `Password reset for user: ${user.email}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
 
     res.status(200).json({
       success: true,

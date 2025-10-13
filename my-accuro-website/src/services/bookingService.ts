@@ -92,6 +92,13 @@ class BookingService {
     });
     return response.data;
   }
+
+  async checkAvailability(date: string, time: string): Promise<{ success: boolean; data: any }> {
+    const response = await api.get(`/bookings/check-availability`, {
+      params: { date, time },
+    });
+    return response.data;
+  }
 }
 
 export default new BookingService();

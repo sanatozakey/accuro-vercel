@@ -11,10 +11,9 @@ interface TimeSlotPickerProps {
 interface TimeSlot {
   time: string
   available: boolean
-  booking?: {
-    company: string
-    purpose: string
-  }
+  slotsRemaining?: number
+  maxPerSlot?: number
+  timeSlotCount?: number
 }
 
 export function TimeSlotPicker({ selectedDate, selectedTime, onTimeSelect }: TimeSlotPickerProps) {
@@ -39,67 +38,43 @@ export function TimeSlotPicker({ selectedDate, selectedTime, onTimeSelect }: Tim
     const checkAvailability = async () => {
       setLoading(true)
       try {
-        // Format date to ensure consistency - convert to UTC to avoid timezone issues
-        const dateObj = new Date(selectedDate)
-        const year = dateObj.getFullYear()
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0')
-        const day = String(dateObj.getDate()).padStart(2, '0')
-        const formattedDate = `${year}-${month}-${day}`
+        // Check availability for each time slot using the backend API
+        const allSlots = generateTimeSlots()
+        const slotPromises = allSlots.map(async (time) => {
+          try {
+            const response = await bookingService.checkAvailability(selectedDate, time)
+            const data = response.data
 
-        // Get ALL bookings (don't filter by date in query)
-        const response = await bookingService.getAll({})
-
-        console.log('Selected date:', formattedDate)
-        console.log('All bookings:', response.data)
-
-        // Filter bookings for the exact selected date and confirmed/pending status
-        const bookedSlots = response.data
-          .filter((booking) => {
-            // Parse the booking date carefully
-            const bookingDateObj = new Date(booking.date)
-            const bookingYear = bookingDateObj.getFullYear()
-            const bookingMonth = String(bookingDateObj.getMonth() + 1).padStart(2, '0')
-            const bookingDay = String(bookingDateObj.getDate()).padStart(2, '0')
-            const bookingFormattedDate = `${bookingYear}-${bookingMonth}-${bookingDay}`
-
-            const isMatchingDate = bookingFormattedDate === formattedDate
-            const isActiveStatus = booking.status === 'confirmed' || booking.status === 'pending'
-
-            console.log('Checking booking:', {
-              bookingDate: bookingFormattedDate,
-              selectedDate: formattedDate,
-              time: booking.time,
-              status: booking.status,
-              matches: isMatchingDate && isActiveStatus
-            })
-
-            return isMatchingDate && isActiveStatus
-          })
-          .map((booking) => ({
-            time: booking.time,
-            company: booking.company,
-            purpose: booking.purpose,
-            status: booking.status,
-          }))
-
-        console.log('Booked slots for this date:', bookedSlots)
-
-        const slots = generateTimeSlots().map((time) => {
-          const booking = bookedSlots.find((b) => b.time === time)
-          return {
-            time,
-            available: !booking,
-            booking: booking ? { company: booking.company, purpose: booking.purpose } : undefined,
+            return {
+              time,
+              available: data.isAvailable && data.slotsRemaining > 0,
+              slotsRemaining: data.slotsRemaining,
+              maxPerSlot: data.maxPerSlot,
+              timeSlotCount: data.timeSlotCount,
+            }
+          } catch (err) {
+            // If check fails, assume available
+            return {
+              time,
+              available: true,
+              slotsRemaining: 3,
+              maxPerSlot: 3,
+              timeSlotCount: 0,
+            }
           }
         })
 
-        setTimeSlots(slots)
+        const results = await Promise.all(slotPromises)
+        setTimeSlots(results)
       } catch (err) {
         console.error('Error checking availability:', err)
         // If error, show all slots as available
         const slots = generateTimeSlots().map((time) => ({
           time,
           available: true,
+          slotsRemaining: 3,
+          maxPerSlot: 3,
+          timeSlotCount: 0,
         }))
         setTimeSlots(slots)
       } finally {
@@ -165,20 +140,27 @@ export function TimeSlotPicker({ selectedDate, selectedTime, onTimeSelect }: Tim
               }
             `}
             title={
-              slot.booking
-                ? `Booked by ${slot.booking.company} for ${slot.booking.purpose}`
-                : 'Available'
+              slot.available
+                ? `${slot.slotsRemaining || 3} of ${slot.maxPerSlot || 3} slots available`
+                : 'Fully booked'
             }
           >
-            <div className="flex items-center justify-center">
-              {selectedTime === slot.time ? (
-                <CheckCircle className="h-3 w-3 mr-1 text-white" />
-              ) : slot.available ? (
-                <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-              ) : (
-                <XCircle className="h-3 w-3 mr-1 text-red-500" />
+            <div className="flex flex-col items-center justify-center">
+              <div className="flex items-center">
+                {selectedTime === slot.time ? (
+                  <CheckCircle className="h-3 w-3 mr-1 text-white" />
+                ) : slot.available ? (
+                  <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+                ) : (
+                  <XCircle className="h-3 w-3 mr-1 text-red-500" />
+                )}
+                {slot.time}
+              </div>
+              {slot.available && slot.slotsRemaining !== undefined && (
+                <span className="text-xs mt-1 text-gray-500">
+                  {slot.slotsRemaining} left
+                </span>
               )}
-              {slot.time}
             </div>
           </button>
         ))}

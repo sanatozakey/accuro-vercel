@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
+import ActivityLog from '../models/ActivityLog';
 
 // @desc    Get all users (Admin only)
 // @route   GET /api/users
@@ -63,15 +64,55 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Track changes for activity log
+    const changes: string[] = [];
+    const originalRole = user.role;
+
     // Update fields if provided
-    if (name) user.name = name;
-    if (email) user.email = email;
-    if (phone !== undefined) user.phone = phone;
-    if (company !== undefined) user.company = company;
-    if (role) user.role = role;
-    if (profilePicture !== undefined) user.profilePicture = profilePicture;
+    if (name && name !== user.name) {
+      changes.push(`name: "${user.name}" → "${name}"`);
+      user.name = name;
+    }
+    if (email && email !== user.email) {
+      changes.push(`email: "${user.email}" → "${email}"`);
+      user.email = email;
+    }
+    if (phone !== undefined && phone !== user.phone) {
+      changes.push(`phone: "${user.phone}" → "${phone}"`);
+      user.phone = phone;
+    }
+    if (company !== undefined && company !== user.company) {
+      changes.push(`company: "${user.company}" → "${company}"`);
+      user.company = company;
+    }
+    if (role && role !== user.role) {
+      changes.push(`role: "${user.role}" → "${role}"`);
+      user.role = role;
+    }
+    if (profilePicture !== undefined) {
+      user.profilePicture = profilePicture;
+    }
 
     await user.save();
+
+    // Log activity
+    if (changes.length > 0) {
+      try {
+        await ActivityLog.create({
+          user: req.user!._id,
+          userName: req.user!.name,
+          userEmail: req.user!.email,
+          action: originalRole !== user.role ? 'USER_ROLE_CHANGED' : 'USER_UPDATED',
+          resourceType: 'user',
+          resourceId: user._id.toString(),
+          details: `User ${user.email} updated. Changes: ${changes.join(', ')}`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -108,6 +149,23 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
     }
 
     await User.findByIdAndDelete(req.params.id);
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: req.user!._id,
+        userName: req.user!.name,
+        userEmail: req.user!.email,
+        action: 'USER_DELETED',
+        resourceType: 'user',
+        resourceId: user._id.toString(),
+        details: `User ${user.name} (${user.email}) deleted by admin`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
 
     res.status(200).json({
       success: true,
