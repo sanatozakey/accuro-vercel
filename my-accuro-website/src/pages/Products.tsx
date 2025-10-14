@@ -193,7 +193,7 @@ function ProductCard({ product, currency }: { product: Product; currency: 'PHP' 
             // Record view interaction
             recommendationService
               .recordInteraction({
-                productId: product.id,
+                productId: String(product.id),
                 interactionType: 'view',
                 productCategory: product.category,
               })

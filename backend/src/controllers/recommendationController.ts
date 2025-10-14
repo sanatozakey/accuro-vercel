@@ -32,7 +32,7 @@ export const getRecommendations = async (req: AuthRequest, res: Response) => {
 // @access  Private
 export const recordInteraction = async (req: AuthRequest, res: Response) => {
   try {
-    const { productId, interactionType, metadata } = req.body;
+    const { productId, interactionType, productCategory, metadata } = req.body;
 
     if (!productId || !interactionType) {
       return res.status(400).json({

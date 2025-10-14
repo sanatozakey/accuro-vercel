@@ -45,6 +45,12 @@ export function Navbar() {
               About
             </Link>
             <Link
+              to="/testimonials"
+              className="text-gray-700 hover:text-blue-600 text-sm font-medium transition"
+            >
+              Testimonials
+            </Link>
+            <Link
               to="/contact"
               className="text-gray-700 hover:text-blue-600 text-sm font-medium transition"
             >
@@ -183,6 +189,13 @@ export function Navbar() {
               onClick={() => setIsMenuOpen(false)}
             >
               About Us
+            </Link>
+            <Link
+              to="/testimonials"
+              className="block text-gray-800 hover:text-blue-600 font-medium"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Testimonials
             </Link>
             <Link
               to="/contact"

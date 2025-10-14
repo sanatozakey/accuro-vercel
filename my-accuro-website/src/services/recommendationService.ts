@@ -20,16 +20,13 @@ class RecommendationService {
     return response.data;
   }
 
-  async recordInteraction(
-    productId: string,
-    interactionType: 'view' | 'booking' | 'inquiry' | 'purchase',
-    metadata?: any
-  ): Promise<{ success: boolean }> {
-    const response = await api.post<{ success: boolean }>('/recommendations/interaction', {
-      productId,
-      interactionType,
-      metadata,
-    });
+  async recordInteraction(data: {
+    productId: string;
+    interactionType: 'view' | 'booking' | 'inquiry' | 'purchase';
+    productCategory: string;
+    metadata?: any;
+  }): Promise<{ success: boolean }> {
+    const response = await api.post<{ success: boolean }>('/recommendations/interaction', data);
     return response.data;
   }
 }
