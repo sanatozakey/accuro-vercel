@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Filter, TrendingUp, Users, Award } from 'lucide-react';
+import { Star, Filter, TrendingUp, Users, Award, Send, X } from 'lucide-react';
 import reviewService, { Review } from '../services/reviewService';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 export function Testimonials() {
+  const { isAuthenticated, user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedRating, setSelectedRating] = useState<number | undefined>();
   const [averageRating, setAverageRating] = useState(0);
   const [totalReviews, setTotalReviews] = useState(0);
+
+  // Form state
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [formData, setFormData] = useState({
+    rating: 5,
+    comment: '',
+  });
 
   useEffect(() => {
     fetchReviews();
@@ -29,6 +42,39 @@ export function Testimonials() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.comment.trim()) {
+      setSubmitError('Please enter your review');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setSubmitError('');
+      await reviewService.createReview({
+        rating: formData.rating,
+        comment: formData.comment,
+        reviewType: 'general',
+      });
+      setSubmitSuccess(true);
+      setFormData({ rating: 5, comment: '' });
+      setShowForm(false);
+      setTimeout(() => {
+        setSubmitSuccess(false);
+        fetchReviews(); // Refresh reviews
+      }, 3000);
+    } catch (err: any) {
+      setSubmitError(err.response?.data?.message || 'Failed to submit review');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRatingClick = (rating: number) => {
+    setFormData({ ...formData, rating });
   };
 
   const renderStars = (rating: number, size: 'sm' | 'lg' = 'sm') => {
@@ -73,6 +119,151 @@ export function Testimonials() {
           </div>
         </div>
       </section>
+
+      {/* Write Review Section */}
+      {isAuthenticated && (
+        <section className="py-8 bg-gradient-to-br from-blue-50 to-indigo-50 border-b">
+          <div className="container mx-auto px-4">
+            <div className="max-w-2xl mx-auto">
+              {submitSuccess && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 flex items-center">
+                  <Award className="h-5 w-5 text-green-600 mr-3" />
+                  <div>
+                    <p className="text-green-800 font-medium">
+                      Thank you for your testimonial!
+                    </p>
+                    <p className="text-green-700 text-sm">
+                      It will be visible after admin approval.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {!showForm ? (
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-4 px-6 rounded-lg transition flex items-center justify-center gap-3 shadow-md"
+                >
+                  <Award className="h-5 w-5" />
+                  Write a Review
+                </button>
+              ) : (
+                <div className="bg-white rounded-lg shadow-lg p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-gray-900">Share Your Experience</h3>
+                    <button
+                      onClick={() => {
+                        setShowForm(false);
+                        setSubmitError('');
+                      }}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSubmitReview} className="space-y-6">
+                    {/* Rating Selection */}
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-3">
+                        Your Rating *
+                      </label>
+                      <div className="flex gap-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => handleRatingClick(star)}
+                            className="focus:outline-none"
+                          >
+                            <Star
+                              className={`h-10 w-10 transition cursor-pointer ${
+                                star <= formData.rating
+                                  ? 'text-yellow-400 fill-yellow-400'
+                                  : 'text-gray-300 hover:text-yellow-200'
+                              }`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Comment */}
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Your Review *
+                      </label>
+                      <textarea
+                        value={formData.comment}
+                        onChange={(e) =>
+                          setFormData({ ...formData, comment: e.target.value })
+                        }
+                        rows={5}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Tell us about your experience with Accuro..."
+                        required
+                        maxLength={1000}
+                      />
+                      <p className="text-sm text-gray-500 mt-1">
+                        {formData.comment.length}/1000 characters
+                      </p>
+                    </div>
+
+                    {/* Error Message */}
+                    {submitError && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-700 text-sm">
+                        {submitError}
+                      </div>
+                    )}
+
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {submitting ? (
+                        <>
+                          <LoadingSpinner size="sm" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-5 w-5" />
+                          Submit Review
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Login Prompt for Non-Authenticated Users */}
+      {!isAuthenticated && (
+        <section className="py-8 bg-gradient-to-br from-blue-50 to-indigo-50 border-b">
+          <div className="container mx-auto px-4">
+            <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 text-center">
+              <Award className="h-12 w-12 text-blue-600 mx-auto mb-3" />
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Share Your Experience
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Please log in to write a review and share your experience with Accuro.
+              </p>
+              <Link
+                to="/login?redirect=/testimonials"
+                className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition"
+              >
+                Log In to Write a Review
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Statistics Section */}
       <section className="py-8 bg-white border-b">

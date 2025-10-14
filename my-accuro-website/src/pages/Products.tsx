@@ -1,10 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { ExternalLink, Search, Filter, ShoppingCart } from 'lucide-react'
 import { products, productCategories, getProductsByCategory, Product } from '../data/products'
 import { LazyImage } from '../components/LazyImage'
 import { AddToCartButton } from '../components/cart/AddToCartButton'
 import { MiniCart } from '../components/cart/MiniCart'
 import { ProductRecommendations } from '../components/ProductRecommendations'
+import { useAuth } from '../contexts/AuthContext'
+import recommendationService from '../services/recommendationService'
 
 export function Products() {
   const [selectedCategory, setSelectedCategory] = useState('All Products')
@@ -167,6 +169,10 @@ export function Products() {
 
 // Product Card Component
 function ProductCard({ product, currency }: { product: Product; currency: 'PHP' | 'USD' }) {
+  const { isAuthenticated } = useAuth();
+  const [hasRecordedView, setHasRecordedView] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
   const formatPrice = (price: number, curr: 'PHP' | 'USD') => {
     return new Intl.NumberFormat(curr === 'PHP' ? 'en-PH' : 'en-US', {
       style: 'currency',
@@ -176,8 +182,51 @@ function ProductCard({ product, currency }: { product: Product; currency: 'PHP' 
     }).format(price)
   }
 
+  // Record view interaction when product card comes into view
+  useEffect(() => {
+    if (!isAuthenticated || hasRecordedView) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !hasRecordedView) {
+            // Record view interaction
+            recommendationService
+              .recordInteraction({
+                productId: product.id,
+                interactionType: 'view',
+                productCategory: product.category,
+              })
+              .then(() => {
+                setHasRecordedView(true);
+              })
+              .catch((error) => {
+                console.error('Failed to record view interaction:', error);
+              });
+          }
+        });
+      },
+      {
+        threshold: 0.5, // Trigger when 50% of the card is visible
+        rootMargin: '0px',
+      }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => {
+      if (cardRef.current) {
+        observer.unobserve(cardRef.current);
+      }
+    };
+  }, [isAuthenticated, hasRecordedView, product.id, product.category]);
+
   return (
-    <div className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 flex flex-col">
+    <div
+      ref={cardRef}
+      className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 flex flex-col">
       {/* Product Image */}
       <div className="relative h-44 bg-gray-50 flex items-center justify-center p-3">
         <LazyImage

@@ -3,12 +3,13 @@ import api from './api';
 export interface Review {
   _id: string;
   user: string;
-  booking: string;
+  booking?: string; // Optional for general reviews
   userName: string;
   userEmail: string;
   company?: string;
   rating: number;
   comment: string;
+  reviewType: 'booking' | 'general';
   isApproved: boolean;
   isPublic: boolean;
   createdAt: string;
@@ -32,11 +33,12 @@ const reviewService = {
     return response.data;
   },
 
-  // Create review
+  // Create review (for booking or general testimonial)
   createReview: async (reviewData: {
-    bookingId: string;
+    bookingId?: string; // Optional for general reviews
     rating: number;
     comment: string;
+    reviewType?: 'booking' | 'general';
     isPublic?: boolean;
   }) => {
     const response = await api.post('/reviews', reviewData);

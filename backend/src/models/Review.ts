@@ -2,12 +2,13 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IReview extends Document {
   user: mongoose.Types.ObjectId;
-  booking: mongoose.Types.ObjectId;
+  booking?: mongoose.Types.ObjectId; // Optional - for general testimonials
   userName: string;
   userEmail: string;
   company?: string;
   rating: number;
   comment: string;
+  reviewType: 'booking' | 'general'; // Type of review
   isApproved: boolean;
   isPublic: boolean;
   createdAt: Date;
@@ -24,7 +25,7 @@ const ReviewSchema: Schema = new Schema(
     booking: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Booking',
-      required: true,
+      required: false, // Optional for general testimonials
     },
     userName: {
       type: String,
@@ -47,6 +48,11 @@ const ReviewSchema: Schema = new Schema(
       type: String,
       required: true,
       maxlength: 1000,
+    },
+    reviewType: {
+      type: String,
+      enum: ['booking', 'general'],
+      default: 'general',
     },
     isApproved: {
       type: Boolean,

@@ -3,12 +3,12 @@ import Review from '../models/Review';
 import Booking from '../models/Booking';
 import { AuthRequest } from '../middleware/auth';
 
-// @desc    Create review for completed booking
+// @desc    Create review (for booking or general testimonial)
 // @route   POST /api/reviews
 // @access  Private
 export const createReview = async (req: AuthRequest, res: Response) => {
   try {
-    const { bookingId, rating, comment, isPublic } = req.body;
+    const { bookingId, rating, comment, isPublic, reviewType } = req.body;
 
     // Validate rating
     if (!rating || rating < 1 || rating > 5) {
@@ -18,64 +18,80 @@ export const createReview = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Check if booking exists and belongs to user
-    const booking = await Booking.findById(bookingId);
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: 'Booking not found',
-      });
-    }
-
-    if (booking.userId?.toString() !== req.user!._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only review your own bookings',
-      });
-    }
-
-    // Check if booking is completed
-    if (booking.status !== 'completed') {
+    // Validate comment
+    if (!comment || comment.trim().length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'You can only review completed bookings',
+        message: 'Review comment is required',
       });
     }
 
-    if (!booking.canReview) {
-      return res.status(400).json({
-        success: false,
-        message: 'This booking is not eligible for review',
-      });
-    }
+    // Determine review type
+    const isGeneralReview = reviewType === 'general' || !bookingId;
 
-    // Check if review already exists for this booking
-    const existingReview = await Review.findOne({ booking: bookingId });
+    // If booking review, validate booking
+    if (!isGeneralReview && bookingId) {
+      const booking = await Booking.findById(bookingId);
 
-    if (existingReview) {
-      return res.status(400).json({
-        success: false,
-        message: 'You have already reviewed this booking',
-      });
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: 'Booking not found',
+        });
+      }
+
+      if (booking.userId?.toString() !== req.user!._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only review your own bookings',
+        });
+      }
+
+      // Check if booking is completed
+      if (booking.status !== 'completed') {
+        return res.status(400).json({
+          success: false,
+          message: 'You can only review completed bookings',
+        });
+      }
+
+      if (!booking.canReview) {
+        return res.status(400).json({
+          success: false,
+          message: 'This booking is not eligible for review',
+        });
+      }
+
+      // Check if review already exists for this booking
+      const existingReview = await Review.findOne({ booking: bookingId });
+
+      if (existingReview) {
+        return res.status(400).json({
+          success: false,
+          message: 'You have already reviewed this booking',
+        });
+      }
     }
 
     // Create review
     const review = await Review.create({
       user: req.user!._id,
-      booking: bookingId,
+      booking: isGeneralReview ? undefined : bookingId,
       userName: req.user!.name,
       userEmail: req.user!.email,
       company: req.user!.company,
       rating,
       comment,
+      reviewType: isGeneralReview ? 'general' : 'booking',
       isPublic: isPublic !== false, // Default to true
       isApproved: false, // Admin must approve
     });
 
     res.status(201).json({
       success: true,
-      message: 'Review submitted successfully! It will be visible after admin approval.',
+      message: isGeneralReview
+        ? 'Thank you for your testimonial! It will be visible after admin approval.'
+        : 'Review submitted successfully! It will be visible after admin approval.',
       data: review,
     });
   } catch (error: any) {

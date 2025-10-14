@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { ShoppingCart, Check } from 'lucide-react'
 import { useCart } from '../../contexts/CartContext'
+import { useAuth } from '../../contexts/AuthContext'
+import recommendationService from '../../services/recommendationService'
 
 interface AddToCartButtonProps {
   product: {
@@ -15,11 +17,12 @@ interface AddToCartButtonProps {
 
 export function AddToCartButton({ product, price, disabled = false }: AddToCartButtonProps) {
   const { addToCart } = useCart()
+  const { isAuthenticated } = useAuth()
   const [showAdded, setShowAdded] = useState(false)
 
   const handleAddToCart = () => {
     if (disabled) return
-    
+
     addToCart({
       id: product.id,
       name: product.name,
@@ -27,6 +30,19 @@ export function AddToCartButton({ product, price, disabled = false }: AddToCartB
       price: price,
       image: product.image,
     })
+
+    // Record purchase interaction if user is authenticated
+    if (isAuthenticated) {
+      recommendationService
+        .recordInteraction({
+          productId: product.id.toString(),
+          interactionType: 'purchase',
+          productCategory: product.category,
+        })
+        .catch((error) => {
+          console.error('Failed to record purchase interaction:', error);
+        });
+    }
 
     setShowAdded(true)
     setTimeout(() => setShowAdded(false), 2000)
