@@ -12,7 +12,7 @@ import {
 import bookingService from '../services/bookingService'
 import { TimeSlotPicker } from './TimeSlotPicker'
 import { useLocation } from 'react-router-dom'
-import { CartItem } from '../contexts/CartContext'
+import { CartItem, useCart } from '../contexts/CartContext'
 import { generateBookingReceipt } from '../utils/pdfGenerator'
 import { useAuth } from '../contexts/AuthContext'
 import { Link } from 'react-router-dom'
@@ -22,6 +22,7 @@ interface BookingFormProps {
 }
 export function BookingForm({ onSubmit }: BookingFormProps) {
   const { isAuthenticated } = useAuth()
+  const { clearCart } = useCart()
   const location = useLocation()
   const [formData, setFormData] = useState({
     date: '',
@@ -36,11 +37,13 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
     additionalInfo: '',
   })
   const [loading, setLoading] = useState(false)
+  const [isQuoteRequest, setIsQuoteRequest] = useState(false)
 
   // Check if coming from cart quote request
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     if (params.get('type') === 'quote') {
+      setIsQuoteRequest(true)
       const quoteCart = localStorage.getItem('quoteCart')
       const cartTotal = localStorage.getItem('cartTotal')
 
@@ -106,6 +109,11 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
     try {
       const response = await bookingService.create(formData)
       const bookingData = response.data
+
+      // Clear cart if this was a quote request
+      if (isQuoteRequest) {
+        clearCart()
+      }
 
       // Reset form on success
       setFormData({

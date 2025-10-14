@@ -298,7 +298,7 @@ export function BookingDashboard(): React.ReactElement {
         reviewsFilter.isApproved,
         reviewsFilter.rating
       )
-      setReviews(response.reviews || [])
+      setReviews(response.data || [])
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load reviews')
     } finally {

@@ -32,9 +32,9 @@ export function Testimonials() {
     try {
       setLoading(true);
       const data = await reviewService.getPublicReviews(selectedRating);
-      setReviews(data.reviews || []);
+      setReviews(data.data || []);
       setAverageRating(data.averageRating || 0);
-      setTotalReviews(data.totalReviews || 0);
+      setTotalReviews(data.count || 0);
       setError('');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load reviews');
