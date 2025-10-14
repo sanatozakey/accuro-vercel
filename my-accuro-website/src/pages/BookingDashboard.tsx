@@ -33,14 +33,20 @@ import {
   Shield,
   Award,
   Star,
+  TrendingUp,
+  Activity,
+  Eye,
+  MessageSquare,
+  ShoppingCart,
 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import bookingService from '../services/bookingService'
 import userService, { User as UserType } from '../services/userService'
 import analyticsService from '../services/analyticsService'
 import reviewService, { Review } from '../services/reviewService'
 import activityLogService, { ActivityLog } from '../services/activityLogService'
+import recommendationAdminService, { UserInteraction, RecommendationStats } from '../services/recommendationAdminService'
 // Define types for our booking data
 interface Booking {
   _id: string
@@ -150,7 +156,7 @@ export function BookingDashboard(): React.ReactElement {
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [conclusion, setConclusion] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
-  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'logs' | 'users' | 'analytics' | 'activityLogs' | 'reviews'>(
+  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'logs' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'recommendations'>(
     'table',
   )
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
@@ -184,6 +190,11 @@ export function BookingDashboard(): React.ReactElement {
     isApproved?: boolean
     rating?: number
   }>({})
+
+  // Recommendations state
+  const [recommendationsStats, setRecommendationsStats] = useState<RecommendationStats | null>(null)
+  const [userInteractions, setUserInteractions] = useState<UserInteraction[]>([])
+  const [recommendationsLoading, setRecommendationsLoading] = useState<boolean>(false)
 
   const [newBooking, setNewBooking] = useState<NewBooking>({
     date: new Date().toISOString().split('T')[0],
@@ -295,6 +306,22 @@ export function BookingDashboard(): React.ReactElement {
     }
   }
 
+  const fetchRecommendationsData = async (): Promise<void> => {
+    setRecommendationsLoading(true)
+    try {
+      const [statsResponse, interactionsResponse] = await Promise.all([
+        recommendationAdminService.getStats(),
+        recommendationAdminService.getAllInteractions(),
+      ])
+      setRecommendationsStats(statsResponse.data)
+      setUserInteractions(interactionsResponse.data)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to load recommendations data')
+    } finally {
+      setRecommendationsLoading(false)
+    }
+  }
+
   // Load activity logs when tab is selected
   useEffect(() => {
     if (viewMode === 'activityLogs') {
@@ -308,6 +335,13 @@ export function BookingDashboard(): React.ReactElement {
       fetchReviews()
     }
   }, [viewMode, reviewsFilter])
+
+  // Load recommendations when tab is selected
+  useEffect(() => {
+    if (viewMode === 'recommendations') {
+      fetchRecommendationsData()
+    }
+  }, [viewMode])
 
   // Filter users based on search
   useEffect(() => {
@@ -826,15 +860,23 @@ export function BookingDashboard(): React.ReactElement {
                 className="h-10 mr-4"
               />
               <h1 className="text-2xl font-bold text-gray-900">
-                Meeting Bookings Dashboard
+                Admin Dashboard
               </h1>
             </div>
-            <button
-              onClick={logout}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
-            >
-              Logout
-            </button>
+            <div className="flex items-center gap-3">
+              <a
+                href="/"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Back to Website
+              </a>
+              <button
+                onClick={logout}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -917,6 +959,13 @@ export function BookingDashboard(): React.ReactElement {
             >
               <BarChart3 className="h-4 w-4 mr-2" />
               Analytics
+            </button>
+            <button
+              onClick={() => setViewMode('recommendations')}
+              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'recommendations' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Recommendations
             </button>
           </div>
         </div>
@@ -1791,6 +1840,304 @@ export function BookingDashboard(): React.ReactElement {
                     </div>
                   )}
                 </div>
+              </>
+            )}
+
+            {/* Recommendations View */}
+            {viewMode === 'recommendations' && (
+              <>
+                {recommendationsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="h-8 w-8 text-blue-600 animate-spin mr-3" />
+                    <p className="text-gray-600">Loading recommendation data...</p>
+                  </div>
+                ) : recommendationsStats ? (
+                  <>
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                      <div className="bg-white rounded-lg shadow-md p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">Total Interactions</p>
+                            <p className="text-3xl font-bold text-gray-900">{recommendationsStats.totalInteractions}</p>
+                          </div>
+                          <Activity className="h-12 w-12 text-blue-600" />
+                        </div>
+                      </div>
+
+                      <div className="bg-white rounded-lg shadow-md p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">Active Users</p>
+                            <p className="text-3xl font-bold text-gray-900">{recommendationsStats.totalUsers}</p>
+                          </div>
+                          <Users className="h-12 w-12 text-green-600" />
+                        </div>
+                      </div>
+
+                      <div className="bg-white rounded-lg shadow-md p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">Top Products</p>
+                            <p className="text-3xl font-bold text-gray-900">{recommendationsStats.topProducts.length}</p>
+                          </div>
+                          <Star className="h-12 w-12 text-yellow-600" />
+                        </div>
+                      </div>
+
+                      <div className="bg-white rounded-lg shadow-md p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">Categories</p>
+                            <p className="text-3xl font-bold text-gray-900">
+                              {recommendationsStats.interactionsByCategory.length}
+                            </p>
+                          </div>
+                          <Package className="h-12 w-12 text-purple-600" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Charts Row */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                      {/* Interaction Types Pie Chart */}
+                      <div className="bg-white rounded-lg shadow-md p-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Interactions by Type</h3>
+                        {recommendationsStats.interactionsByType.length > 0 ? (
+                          <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                              <Pie
+                                data={recommendationsStats.interactionsByType.map((item) => ({
+                                  name: item._id.charAt(0).toUpperCase() + item._id.slice(1),
+                                  value: item.count,
+                                }))}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ name, percent }) =>
+                                  `${name}: ${(percent * 100).toFixed(0)}%`
+                                }
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="value"
+                              >
+                                {recommendationsStats.interactionsByType.map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5]} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <p className="text-center text-gray-500 py-12">No interaction data yet</p>
+                        )}
+                      </div>
+
+                      {/* Category Interactions Bar Chart */}
+                      <div className="bg-white rounded-lg shadow-md p-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">
+                          Interactions by Category
+                        </h3>
+                        {recommendationsStats.interactionsByCategory.length > 0 ? (
+                          <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={recommendationsStats.interactionsByCategory.slice(0, 6).map((item) => ({
+                              name: item._id,
+                              interactions: item.count,
+                            }))}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                              <YAxis />
+                              <Tooltip />
+                              <Bar dataKey="interactions" fill="#3B82F6" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <p className="text-center text-gray-500 py-12">No category data yet</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Top Products Table */}
+                    <div className="bg-white rounded-lg shadow-md mb-8">
+                      <div className="p-6 border-b border-gray-200">
+                        <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                          <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
+                          Top Products by Engagement
+                        </h3>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Rank
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Product
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Interactions
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Total Weight
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {recommendationsStats.topProducts.length > 0 ? (
+                              recommendationsStats.topProducts.map((product, index) => (
+                                <tr key={product.productId} className="hover:bg-gray-50">
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="text-lg font-bold text-gray-900">#{index + 1}</span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="font-medium text-gray-900">{product.productName}</div>
+                                    <div className="text-sm text-gray-500">{product.productId}</div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="text-sm text-gray-900">
+                                      {product.interactionCount}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="text-sm font-medium text-blue-600">
+                                      {product.totalWeight}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                                  No product data yet
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Recent Interactions */}
+                    <div className="bg-white rounded-lg shadow-md">
+                      <div className="p-6 border-b border-gray-200">
+                        <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                          <Clock className="h-5 w-5 mr-2 text-blue-600" />
+                          Recent Interactions
+                        </h3>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                User
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Type
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Product
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Category
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Weight
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Time
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {userInteractions.length > 0 ? (
+                              userInteractions.slice(0, 20).map((interaction) => {
+                                const getInteractionIcon = (type: string) => {
+                                  switch (type) {
+                                    case 'view':
+                                      return <Eye className="h-4 w-4 text-blue-600" />;
+                                    case 'booking':
+                                      return <Calendar className="h-4 w-4 text-green-600" />;
+                                    case 'inquiry':
+                                      return <MessageSquare className="h-4 w-4 text-yellow-600" />;
+                                    case 'purchase':
+                                      return <ShoppingCart className="h-4 w-4 text-purple-600" />;
+                                    default:
+                                      return <Activity className="h-4 w-4 text-gray-600" />;
+                                  }
+                                };
+
+                                const getInteractionBadgeColor = (type: string) => {
+                                  switch (type) {
+                                    case 'view':
+                                      return 'bg-blue-100 text-blue-800';
+                                    case 'booking':
+                                      return 'bg-green-100 text-green-800';
+                                    case 'inquiry':
+                                      return 'bg-yellow-100 text-yellow-800';
+                                    case 'purchase':
+                                      return 'bg-purple-100 text-purple-800';
+                                    default:
+                                      return 'bg-gray-100 text-gray-800';
+                                  }
+                                };
+
+                                return (
+                                  <tr key={interaction._id} className="hover:bg-gray-50">
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                      <div className="text-sm font-medium text-gray-900">
+                                        {interaction.userId?.name || 'Unknown'}
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        {interaction.userId?.email || 'N/A'}
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                      <span
+                                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getInteractionBadgeColor(
+                                          interaction.interactionType
+                                        )}`}
+                                      >
+                                        {getInteractionIcon(interaction.interactionType)}
+                                        {interaction.interactionType}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                      {interaction.productId}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                      {interaction.productCategory}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                      <span className="text-sm font-medium text-blue-600">
+                                        {interaction.weight}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                      {new Date(interaction.createdAt).toLocaleString()}
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            ) : (
+                              <tr>
+                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                  No interactions recorded yet
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <Activity className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">No recommendation data available</p>
+                  </div>
+                )}
               </>
             )}
           </div>
