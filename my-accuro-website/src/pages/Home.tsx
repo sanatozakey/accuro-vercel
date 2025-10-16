@@ -9,7 +9,7 @@ export function Home() {
       <section className="bg-navy-900 text-white py-16">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6">
               Instrumentation & Calibration Solutions
             </h1>
             <p className="text-xl mb-8">
@@ -32,7 +32,7 @@ export function Home() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-bold mb-4">Who We Are</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-4">Who We Are</h2>
               <p className="text-gray-700 mb-4">
                 Accuro is a leading provider of high-quality instrumentation and
                 calibration solutions for various industries. We specialize in
@@ -66,7 +66,7 @@ export function Home() {
       {/* Backed by Company */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-12 text-center">
+          <h2 className="text-4xl md:text-5xl font-bold mb-12 text-center">
             Backed by Industry Leaders
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
@@ -109,7 +109,7 @@ export function Home() {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Our Products</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">Our Products</h2>
             <p className="text-gray-700 max-w-3xl mx-auto">
               We offer a comprehensive range of Beamex calibration equipment and
               accessories for various industrial applications
@@ -123,7 +123,7 @@ export function Home() {
                 className="w-full h-48 object-contain p-4"
               />
               <div className="p-4">
-                <h3 className="font-semibold text-lg mb-2">Beamex MC6</h3>
+                <h3 className="text-2xl md:text-3xl font-semibold mb-2">Beamex MC6</h3>
                 <p className="text-gray-600 text-sm mb-3">
                   Advanced field calibrator and communicator
                 </p>
@@ -142,7 +142,7 @@ export function Home() {
                 className="w-full h-48 object-contain p-4"
               />
               <div className="p-4">
-                <h3 className="font-semibold text-lg mb-2">Beamex MC4</h3>
+                <h3 className="text-2xl md:text-3xl font-semibold mb-2">Beamex MC4</h3>
                 <p className="text-gray-600 text-sm mb-3">
                   Documenting process calibrator
                 </p>
@@ -161,7 +161,7 @@ export function Home() {
                 className="w-full h-48 object-contain p-4"
               />
               <div className="p-4">
-                <h3 className="font-semibold text-lg mb-2">Beamex FB Series</h3>
+                <h3 className="text-2xl md:text-3xl font-semibold mb-2">Beamex FB Series</h3>
                 <p className="text-gray-600 text-sm mb-3">
                   Field temperature block
                 </p>
@@ -180,7 +180,7 @@ export function Home() {
                 className="w-full h-48 object-contain p-4"
               />
               <div className="p-4">
-                <h3 className="font-semibold text-lg mb-2">Beamex CMX</h3>
+                <h3 className="text-2xl md:text-3xl font-semibold mb-2">Beamex CMX</h3>
                 <p className="text-gray-600 text-sm mb-3">
                   Calibration management software
                 </p>
@@ -217,7 +217,7 @@ export function Home() {
               />
             </div>
             <div className="order-1 md:order-2">
-              <h2 className="text-3xl font-bold mb-4">Why We Work at Accuro</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-4">Why We Work at Accuro</h2>
               <p className="text-gray-700 mb-4">
                 At Accuro, we're passionate about providing the best calibration
                 solutions to our clients. Our team consists of dedicated

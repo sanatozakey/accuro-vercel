@@ -14,8 +14,9 @@ export function LazyImage({ src, alt, className = '', placeholder }: LazyImagePr
 
   useEffect(() => {
     let observer: IntersectionObserver
+    const currentImg = imgRef.current
 
-    if (imgRef.current) {
+    if (currentImg) {
       observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -30,12 +31,12 @@ export function LazyImage({ src, alt, className = '', placeholder }: LazyImagePr
         }
       )
 
-      observer.observe(imgRef.current)
+      observer.observe(currentImg)
     }
 
     return () => {
-      if (observer && imgRef.current) {
-        observer.unobserve(imgRef.current)
+      if (observer && currentImg) {
+        observer.unobserve(currentImg)
       }
     }
   }, [src])

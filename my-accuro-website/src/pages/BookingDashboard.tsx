@@ -1,4 +1,4 @@
-import React, { useEffect, useState, cloneElement } from 'react'
+import React, { useEffect, useState, useCallback, cloneElement } from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -17,7 +17,6 @@ import {
   XCircle,
   AlertCircle,
   Search,
-  Filter,
   RefreshCw,
   Edit,
   Plus,
@@ -136,7 +135,7 @@ const statusOptions: string[] = [
   'cancelled',
 ]
 export function BookingDashboard(): React.ReactElement {
-  const { isAdmin, logout } = useAuth()
+  const { logout } = useAuth()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [filteredBookings, setFilteredBookings] =
     useState<Booking[]>([])
@@ -301,7 +300,7 @@ export function BookingDashboard(): React.ReactElement {
   }, [viewMode])
 
   // Fetch activity logs
-  const fetchActivityLogs = async (): Promise<void> => {
+  const fetchActivityLogs = useCallback(async (): Promise<void> => {
     setActivityLogsLoading(true)
     try {
       const response = await activityLogService.getAllActivityLogs({
@@ -314,10 +313,10 @@ export function BookingDashboard(): React.ReactElement {
     } finally {
       setActivityLogsLoading(false)
     }
-  }
+  }, [activityLogsFilter])
 
   // Fetch reviews
-  const fetchReviews = async (): Promise<void> => {
+  const fetchReviews = useCallback(async (): Promise<void> => {
     setReviewsLoading(true)
     try {
       const response = await reviewService.getAllReviews(
@@ -330,7 +329,7 @@ export function BookingDashboard(): React.ReactElement {
     } finally {
       setReviewsLoading(false)
     }
-  }
+  }, [reviewsFilter.isApproved, reviewsFilter.rating])
 
   const fetchRecommendationsData = async (): Promise<void> => {
     setRecommendationsLoading(true)
@@ -358,14 +357,14 @@ export function BookingDashboard(): React.ReactElement {
     if (viewMode === 'activityLogs') {
       fetchActivityLogs()
     }
-  }, [viewMode, activityLogsFilter])
+  }, [viewMode, activityLogsFilter, fetchActivityLogs])
 
   // Load reviews when tab is selected
   useEffect(() => {
     if (viewMode === 'reviews') {
       fetchReviews()
     }
-  }, [viewMode, reviewsFilter])
+  }, [viewMode, reviewsFilter, fetchReviews])
 
   // Load recommendations when tab is selected
   useEffect(() => {

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, Building, Camera, Save, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import authService from '../services/authService';
-import api from '../services/api';
 
 export function Profile() {
   const { user, updateUser } = useAuth();

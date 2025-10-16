@@ -60,7 +60,7 @@ export function Navbar() {
             </Link>
             <Link
               to="/booking"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-md text-sm font-medium transition"
             >
               Book Meeting
             </Link>
@@ -70,7 +70,7 @@ export function Navbar() {
               <div className="relative ml-2">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-md transition"
+                  className="flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 px-3 py-3 rounded-md transition"
                 >
                   {user?.profilePicture ? (
                     <img
@@ -147,13 +147,13 @@ export function Navbar() {
               <div className="flex space-x-3 ml-2">
                 <Link
                   to="/login"
-                  className="text-gray-700 hover:text-blue-600 text-sm font-medium px-3 py-2 transition"
+                  className="text-gray-700 hover:text-blue-600 text-sm font-medium px-3 py-3 transition"
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup"
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-4 py-2 rounded-md transition"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-4 py-3 rounded-md transition"
                 >
                   Sign Up
                 </Link>
@@ -258,7 +258,7 @@ export function Navbar() {
                 </Link>
                 <Link
                   to="/signup"
-                  className="block bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md transition text-center"
+                  className="block bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-3 rounded-md transition text-center"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Sign Up

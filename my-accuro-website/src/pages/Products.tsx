@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ExternalLink, Search, Filter, ShoppingCart } from 'lucide-react'
-import { products, productCategories, getProductsByCategory, Product } from '../data/products'
+import { ExternalLink, Search, Filter } from 'lucide-react'
+import { productCategories, getProductsByCategory, Product } from '../data/products'
 import { LazyImage } from '../components/LazyImage'
 import { AddToCartButton } from '../components/cart/AddToCartButton'
 import { MiniCart } from '../components/cart/MiniCart'
@@ -11,7 +11,6 @@ import recommendationService from '../services/recommendationService'
 export function Products() {
   const [selectedCategory, setSelectedCategory] = useState('All Products')
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [currency, setCurrency] = useState<'PHP' | 'USD'>('PHP')
 
   // Filter products based on category and search query
@@ -31,7 +30,7 @@ export function Products() {
       {/* Products Header */}
       <section className="bg-navy-900 text-white py-12">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-bold mb-3">Beamex Products</h1>
+          <h1 className="text-5xl md:text-6xl font-bold mb-3">Beamex Products</h1>
           <p className="text-base max-w-2xl">
             Complete range of calibration solutions for all your calibration needs.
           </p>
@@ -76,7 +75,7 @@ export function Products() {
               <div className="flex bg-white border border-gray-300 rounded-md overflow-hidden">
                 <button
                   onClick={() => setCurrency('PHP')}
-                  className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium transition ${
+                  className={`flex-1 sm:flex-none px-4 py-3 text-sm font-medium transition ${
                     currency === 'PHP'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -86,7 +85,7 @@ export function Products() {
                 </button>
                 <button
                   onClick={() => setCurrency('USD')}
-                  className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium transition ${
+                  className={`flex-1 sm:flex-none px-4 py-3 text-sm font-medium transition ${
                     currency === 'USD'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white text-gray-700 hover:bg-gray-50'
@@ -118,14 +117,14 @@ export function Products() {
           {filteredProducts.length === 0 ? (
             <div className="text-center py-12">
               <Search className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">No products found</h3>
+              <h3 className="text-2xl md:text-3xl font-semibold text-gray-700 mb-2">No products found</h3>
               <p className="text-sm text-gray-500 mb-4">Try adjusting your search or filter criteria</p>
               <button
                 onClick={() => {
                   setSearchQuery('')
                   setSelectedCategory('All Products')
                 }}
-                className="px-5 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition"
+                className="px-5 py-3 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition"
               >
                 Clear Filters
               </button>
@@ -143,20 +142,20 @@ export function Products() {
       {/* Call to Action */}
       <section className="bg-blue-600 text-white py-10">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold mb-3">Need Help Choosing?</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-3">Need Help Choosing?</h2>
           <p className="text-sm mb-5 max-w-xl mx-auto">
             Our calibration experts are here to help you select the perfect solution.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a
               href="/contact"
-              className="inline-block bg-white text-blue-600 px-6 py-2.5 rounded-md font-medium text-sm hover:bg-gray-100 transition"
+              className="inline-block bg-white text-blue-600 px-6 py-3 rounded-md font-medium text-sm hover:bg-gray-100 transition"
             >
               Contact Us
             </a>
             <a
               href="/booking"
-              className="inline-block bg-blue-700 text-white px-6 py-2.5 rounded-md font-medium text-sm hover:bg-blue-800 transition border border-white"
+              className="inline-block bg-blue-700 text-white px-6 py-3 rounded-md font-medium text-sm hover:bg-blue-800 transition border border-white"
             >
               Schedule Consultation
             </a>
@@ -172,15 +171,6 @@ function ProductCard({ product, currency }: { product: Product; currency: 'PHP' 
   const { isAuthenticated } = useAuth();
   const [hasRecordedView, setHasRecordedView] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-
-  const formatPrice = (price: number, curr: 'PHP' | 'USD') => {
-    return new Intl.NumberFormat(curr === 'PHP' ? 'en-PH' : 'en-US', {
-      style: 'currency',
-      currency: curr,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price)
-  }
 
   // Record view interaction when product card comes into view
   useEffect(() => {
@@ -212,13 +202,14 @@ function ProductCard({ product, currency }: { product: Product; currency: 'PHP' 
       }
     );
 
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
+    const currentCard = cardRef.current;
+    if (currentCard) {
+      observer.observe(currentCard);
     }
 
     return () => {
-      if (cardRef.current) {
-        observer.unobserve(cardRef.current);
+      if (currentCard) {
+        observer.unobserve(currentCard);
       }
     };
   }, [isAuthenticated, hasRecordedView, product.id, product.category]);
@@ -226,7 +217,7 @@ function ProductCard({ product, currency }: { product: Product; currency: 'PHP' 
   return (
     <div
       ref={cardRef}
-      className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 flex flex-col">
+      className="bg-white rounded-lg overflow-hidden shadow-sm border border-gray-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 flex flex-col">
       {/* Product Image */}
       <div className="relative h-44 bg-gray-50 flex items-center justify-center p-3">
         <LazyImage

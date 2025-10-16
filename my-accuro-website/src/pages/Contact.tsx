@@ -70,7 +70,7 @@ export function Contact() {
       {/* Contact Header */}
       <section className="bg-navy-900 text-white py-12">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-bold">
+          <h1 className="text-5xl md:text-6xl font-bold">
             Get In Touch With Us
           </h1>
           <p className="mt-4 max-w-3xl">
@@ -85,14 +85,14 @@ export function Contact() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Contact Form */}
             <div>
-              <h2 className="text-2xl font-bold mb-6">Send Us a Message</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">Send Us a Message</h2>
 
               {success && (
                 <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
                   <div className="flex">
                     <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
                     <div>
-                      <h3 className="text-green-800 font-medium">Message sent successfully!</h3>
+                      <h3 className="text-2xl md:text-3xl font-semibold text-green-800">Message sent successfully!</h3>
                       <p className="text-green-700 mt-1 text-sm">
                         We'll get back to you as soon as possible.
                       </p>
@@ -252,13 +252,13 @@ export function Contact() {
             </div>
             {/* Contact Information */}
             <div>
-              <h2 className="text-2xl font-bold mb-6">Contact Information</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">Contact Information</h2>
               <div className="bg-gray-50 p-6 rounded-lg shadow-sm mb-8">
                 <ul className="space-y-4">
                   <li className="flex items-start">
                     <Phone className="text-blue-600 mr-4 mt-1" size={20} />
                     <div>
-                      <h3 className="font-semibold text-gray-800">Phone</h3>
+                      <h3 className="text-2xl md:text-3xl font-semibold text-gray-800">Phone</h3>
                       <p className="text-gray-600">+63 9171507737</p>
                       <p className="text-gray-600">
                         Monday to Friday, 9am to 5pm PHT
@@ -268,14 +268,14 @@ export function Contact() {
                   <li className="flex items-start">
                     <Mail className="text-blue-600 mr-4 mt-1" size={20} />
                     <div>
-                      <h3 className="font-semibold text-gray-800">Email</h3>
+                      <h3 className="text-2xl md:text-3xl font-semibold text-gray-800">Email</h3>
                       <p className="text-gray-600">info@accuro.com.ph</p>
                     </div>
                   </li>
                   <li className="flex items-start">
                     <MapPin className="text-blue-600 mr-4 mt-1" size={20} />
                     <div>
-                      <h3 className="font-semibold text-gray-800">
+                      <h3 className="text-2xl md:text-3xl font-semibold text-gray-800">
                         Office Address
                       </h3>
                       <p className="text-gray-600">

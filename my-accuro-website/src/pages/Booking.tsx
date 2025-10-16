@@ -13,7 +13,7 @@ import { BookingForm } from '../components/BookingForm'
 import bookingService from '../services/bookingService'
 import { generateBookingReceipt } from '../utils/pdfGenerator'
 
-interface Booking {
+interface BookingItem {
   _id: string
   date: string
   time: string
@@ -38,7 +38,7 @@ interface BookingData {
 export function Booking() {
   const [bookingSubmitted, setBookingSubmitted] = useState(false)
   const [error, setError] = useState('')
-  const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([])
+  const [upcomingBookings, setUpcomingBookings] = useState<BookingItem[]>([])
   const [loadingBookings, setLoadingBookings] = useState(true)
   const [lastBookingData, setLastBookingData] = useState<BookingData | null>(null)
 
@@ -53,11 +53,11 @@ export function Booking() {
       today.setHours(0, 0, 0, 0)
 
       const upcoming = response.data
-        .filter((booking: Booking) => {
+        .filter((booking: BookingItem) => {
           const bookingDate = new Date(booking.date)
           return bookingDate >= today && booking.status === 'confirmed' && booking.status !== 'completed'
         })
-        .sort((a: Booking, b: Booking) => {
+        .sort((a: BookingItem, b: BookingItem) => {
           return new Date(a.date).getTime() - new Date(b.date).getTime()
         })
         .slice(0, 10) // Show only next 10 appointments
@@ -122,7 +122,7 @@ export function Booking() {
       {/* Booking Header */}
       <section className="bg-navy-900 text-white py-12">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-bold">Schedule a Meeting</h1>
+          <h1 className="text-5xl md:text-6xl font-bold">Schedule a Meeting</h1>
           <p className="mt-4 max-w-3xl">
             Book a consultation with our team to discuss your calibration and
             instrumentation needs
@@ -138,7 +138,7 @@ export function Booking() {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold">Meeting Request Form</h2>
+                  <h2 className="text-4xl md:text-5xl font-bold">Meeting Request Form</h2>
                 </div>
                 {bookingSubmitted && (
                   <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
@@ -155,7 +155,7 @@ export function Booking() {
                         {lastBookingData && (
                           <button
                             onClick={handleDownloadReceipt}
-                            className="mt-3 inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition"
+                            className="mt-3 inline-flex items-center px-4 py-3 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition"
                           >
                             <Download className="h-4 w-4 mr-2" />
                             Download Receipt (PDF)
@@ -184,7 +184,7 @@ export function Booking() {
             {/* Sidebar Information */}
             <div className="lg:col-span-1">
               <div className="bg-gray-50 rounded-lg shadow-md border border-gray-200 p-6 mb-6">
-                <h3 className="text-xl font-bold mb-4">What to Expect</h3>
+                <h3 className="text-2xl md:text-3xl font-semibold mb-4">What to Expect</h3>
                 <ul className="space-y-4">
                   <li className="flex">
                     <Clock className="h-5 w-5 text-blue-600 mr-3 flex-shrink-0 mt-0.5" />
@@ -210,7 +210,7 @@ export function Booking() {
                 </ul>
               </div>
               <div className="bg-blue-50 rounded-lg shadow-md border border-blue-100 p-6 mb-6">
-                <h3 className="text-xl font-bold mb-4">
+                <h3 className="text-2xl md:text-3xl font-semibold mb-4">
                   Need Immediate Assistance?
                 </h3>
                 <p className="text-gray-700 mb-4">
@@ -237,7 +237,7 @@ export function Booking() {
               <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
                 <div className="flex items-center mb-4">
                   <Calendar className="h-5 w-5 text-blue-600 mr-2" />
-                  <h3 className="text-xl font-bold">Scheduled Appointments</h3>
+                  <h3 className="text-2xl md:text-3xl font-semibold">Scheduled Appointments</h3>
                 </div>
                 {loadingBookings ? (
                   <div className="text-center py-4">
@@ -296,7 +296,7 @@ export function Booking() {
       {/* Related Products */}
       <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-8">Featured Products</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-8">Featured Products</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg overflow-hidden shadow-md border border-gray-200">
               <img
@@ -305,7 +305,7 @@ export function Booking() {
                 className="w-full h-48 object-contain p-4"
               />
               <div className="p-4">
-                <h3 className="font-semibold text-lg mb-2">Beamex MC6</h3>
+                <h3 className="text-2xl md:text-3xl font-semibold mb-2">Beamex MC6</h3>
                 <p className="text-gray-600 text-sm mb-3">
                   Advanced field calibrator and communicator
                 </p>
@@ -324,7 +324,7 @@ export function Booking() {
                 className="w-full h-48 object-contain p-4"
               />
               <div className="p-4">
-                <h3 className="font-semibold text-lg mb-2">Beamex CENTRiCAL</h3>
+                <h3 className="text-2xl md:text-3xl font-semibold mb-2">Beamex CENTRiCAL</h3>
                 <p className="text-gray-600 text-sm mb-3">
                   Temperature calibration system
                 </p>
@@ -343,7 +343,7 @@ export function Booking() {
                 className="w-full h-48 object-contain p-4"
               />
               <div className="p-4">
-                <h3 className="font-semibold text-lg mb-2">Temperature Sensors</h3>
+                <h3 className="text-2xl md:text-3xl font-semibold mb-2">Temperature Sensors</h3>
                 <p className="text-gray-600 text-sm mb-3">
                   High-precision temperature sensors
                 </p>
@@ -362,7 +362,7 @@ export function Booking() {
                 className="w-full h-48 object-contain p-4"
               />
               <div className="p-4">
-                <h3 className="font-semibold text-lg mb-2">Calibration Pumps</h3>
+                <h3 className="text-2xl md:text-3xl font-semibold mb-2">Calibration Pumps</h3>
                 <p className="text-gray-600 text-sm mb-3">
                   Pressure generation equipment
                 </p>

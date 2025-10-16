@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Calendar,
   Clock,
@@ -11,7 +11,6 @@ import {
   XCircle,
   RotateCcw,
   Star,
-  Download,
   MessageSquare,
   Filter,
   RefreshCw
@@ -50,14 +49,6 @@ export function UserDashboard() {
   });
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    fetchBookings();
-  }, []);
-
-  useEffect(() => {
-    filterBookings();
-  }, [bookings, filterStatus]);
-
   const fetchBookings = async () => {
     try {
       setLoading(true);
@@ -71,13 +62,21 @@ export function UserDashboard() {
     }
   };
 
-  const filterBookings = () => {
+  const filterBookings = useCallback(() => {
     if (filterStatus === 'all') {
       setFilteredBookings(bookings);
     } else {
       setFilteredBookings(bookings.filter((b) => b.status === filterStatus));
     }
-  };
+  }, [bookings, filterStatus]);
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  useEffect(() => {
+    filterBookings();
+  }, [filterBookings]);
 
   const getStatusBadge = (status: string) => {
     const badges = {

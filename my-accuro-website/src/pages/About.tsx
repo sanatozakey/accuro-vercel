@@ -5,7 +5,7 @@ export function About() {
       {/* About Header */}
       <section className="bg-navy-900 text-white py-12">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-bold">About Us</h1>
+          <h1 className="text-5xl md:text-6xl font-bold">About Us</h1>
           <p className="mt-4 max-w-3xl">
             Learn more about Accuro and our commitment to providing high-quality
             instrumentation and calibration solutions
@@ -17,7 +17,7 @@ export function About() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-bold mb-6">Our Company</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">Our Company</h2>
               <p className="text-gray-700 mb-4">
                 Accuro is a leading provider of high-quality instrumentation and
                 calibration solutions for various industries. We specialize in
@@ -66,7 +66,7 @@ export function About() {
       {/* Who We Serve */}
       <section className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-10 text-center">Who We Serve</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-10 text-center">Who We Serve</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-lg shadow-md">
               <img
@@ -74,7 +74,7 @@ export function About() {
                 alt="Oil and gas industry"
                 className="w-full h-48 object-cover rounded mb-4"
               />
-              <h3 className="text-xl font-semibold mb-3">Oil & Gas</h3>
+              <h3 className="text-2xl md:text-3xl font-semibold mb-3">Oil & Gas</h3>
               <p className="text-gray-700">
                 We provide reliable calibration solutions for the oil and gas
                 industry, ensuring accurate measurements and compliance with
@@ -87,7 +87,7 @@ export function About() {
                 alt="Pharmaceutical industry"
                 className="w-full h-48 object-cover rounded mb-4"
               />
-              <h3 className="text-xl font-semibold mb-3">Pharmaceutical</h3>
+              <h3 className="text-2xl md:text-3xl font-semibold mb-3">Pharmaceutical</h3>
               <p className="text-gray-700">
                 Our calibration solutions help pharmaceutical companies maintain
                 precise measurements required for quality control and regulatory
@@ -100,7 +100,7 @@ export function About() {
                 alt="Power generation industry"
                 className="w-full h-48 object-cover rounded mb-4"
               />
-              <h3 className="text-xl font-semibold mb-3">Power Generation</h3>
+              <h3 className="text-2xl md:text-3xl font-semibold mb-3">Power Generation</h3>
               <p className="text-gray-700">
                 We serve power generation facilities with calibration equipment
                 that ensures efficient operations and compliance with

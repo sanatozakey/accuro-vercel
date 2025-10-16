@@ -6,14 +6,12 @@ import {
   Building,
   FileText,
   Package,
-  Download,
   LogIn,
 } from 'lucide-react'
 import bookingService from '../services/bookingService'
 import { TimeSlotPicker } from './TimeSlotPicker'
 import { useLocation } from 'react-router-dom'
 import { CartItem, useCart } from '../contexts/CartContext'
-import { generateBookingReceipt } from '../utils/pdfGenerator'
 import { useAuth } from '../contexts/AuthContext'
 import { Link } from 'react-router-dom'
 
@@ -167,7 +165,7 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
     return (
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
         <LogIn className="h-16 w-16 text-yellow-600 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Login Required</h3>
+        <h3 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Login Required</h3>
         <p className="text-gray-700 mb-6">
           You need to be logged in to schedule a meeting. This allows you to view and manage your bookings from your dashboard.
         </p>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Star, Filter, TrendingUp, Users, Award, Send, X } from 'lucide-react';
 import reviewService, { Review } from '../services/reviewService';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
 export function Testimonials() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -24,11 +24,7 @@ export function Testimonials() {
     comment: '',
   });
 
-  useEffect(() => {
-    fetchReviews();
-  }, [selectedRating]);
-
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     try {
       setLoading(true);
       const data = await reviewService.getPublicReviews(selectedRating);
@@ -42,7 +38,11 @@ export function Testimonials() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedRating]);
+
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,7 +112,7 @@ export function Testimonials() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <Award className="h-16 w-16 text-blue-400 mx-auto mb-4" />
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Customer Testimonials</h1>
+            <h1 className="text-5xl md:text-6xl font-bold mb-4">Customer Testimonials</h1>
             <p className="text-xl text-gray-300">
               See what our satisfied clients have to say about our calibration services
             </p>
@@ -150,7 +150,7 @@ export function Testimonials() {
               ) : (
                 <div className="bg-white rounded-lg shadow-lg p-6">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold text-gray-900">Share Your Experience</h3>
+                    <h3 className="text-2xl md:text-3xl font-semibold text-gray-900">Share Your Experience</h3>
                     <button
                       onClick={() => {
                         setShowForm(false);
@@ -248,7 +248,7 @@ export function Testimonials() {
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 text-center">
               <Award className="h-12 w-12 text-blue-600 mx-auto mb-3" />
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
+              <h3 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">
                 Share Your Experience
               </h3>
               <p className="text-gray-600 mb-4">
@@ -256,7 +256,7 @@ export function Testimonials() {
               </p>
               <Link
                 to="/login?redirect=/testimonials"
-                className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition"
+                className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition"
               >
                 Log In to Write a Review
               </Link>
@@ -310,7 +310,7 @@ export function Testimonials() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setSelectedRating(undefined)}
-                  className={`px-4 py-2 rounded-md font-medium transition ${
+                  className={`px-4 py-3 rounded-md font-medium transition ${
                     selectedRating === undefined
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -322,7 +322,7 @@ export function Testimonials() {
                   <button
                     key={rating}
                     onClick={() => setSelectedRating(rating)}
-                    className={`px-4 py-2 rounded-md font-medium transition flex items-center gap-2 ${
+                    className={`px-4 py-3 rounded-md font-medium transition flex items-center gap-2 ${
                       selectedRating === rating
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -354,7 +354,7 @@ export function Testimonials() {
             ) : reviews.length === 0 ? (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
                 <Award className="h-16 w-16 text-blue-400 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                <h3 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">
                   {selectedRating
                     ? `No ${selectedRating}-star reviews yet`
                     : 'No reviews yet'}
@@ -411,7 +411,7 @@ export function Testimonials() {
       {!loading && reviews.length > 0 && (
         <section className="py-12 bg-blue-900 text-white">
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">
               Ready to Experience Excellence?
             </h2>
             <p className="text-xl text-blue-200 mb-6">

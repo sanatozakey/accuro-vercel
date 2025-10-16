@@ -9,11 +9,10 @@ import {
   MessageSquare,
   Package,
   RefreshCw,
-  BarChart3,
   Star,
   Clock,
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import recommendationAdminService, {
   UserInteraction,
   RecommendationStats,
