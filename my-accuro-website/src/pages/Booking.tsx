@@ -55,7 +55,7 @@ export function Booking() {
       const upcoming = response.data
         .filter((booking: Booking) => {
           const bookingDate = new Date(booking.date)
-          return bookingDate >= today && booking.status === 'confirmed'
+          return bookingDate >= today && booking.status === 'confirmed' && booking.status !== 'completed'
         })
         .sort((a: Booking, b: Booking) => {
           return new Date(a.date).getTime() - new Date(b.date).getTime()

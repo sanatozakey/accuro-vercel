@@ -198,6 +198,10 @@ export function BookingDashboard(): React.ReactElement {
   const [userInteractions, setUserInteractions] = useState<UserInteraction[]>([])
   const [recommendationsLoading, setRecommendationsLoading] = useState<boolean>(false)
 
+  // Past bookings warning state
+  const [pastBookings, setPastBookings] = useState<Booking[]>([])
+  const [showPastBookingsWarning, setShowPastBookingsWarning] = useState<boolean>(false)
+
   const [newBooking, setNewBooking] = useState<NewBooking>({
     date: new Date().toISOString().split('T')[0],
     time: '10:00',
@@ -261,6 +265,26 @@ export function BookingDashboard(): React.ReactElement {
   useEffect(() => {
     fetchBookings()
   }, [])
+
+  // Check for past bookings that need attention
+  useEffect(() => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const overdue = bookings.filter((booking) => {
+      if (booking.status === 'completed' || booking.status === 'cancelled') return false
+
+      const bookingDate = new Date(booking.date)
+      bookingDate.setHours(0, 0, 0, 0)
+
+      return bookingDate < today
+    })
+
+    if (overdue.length > 0) {
+      setPastBookings(overdue)
+      setShowPastBookingsWarning(true)
+    }
+  }, [bookings])
 
   // Load users when users tab is selected
   useEffect(() => {
@@ -364,10 +388,13 @@ export function BookingDashboard(): React.ReactElement {
     setFilteredUsers(result)
   }, [userSearchTerm, users])
   // Create calendar events from filteredBookings (so filters work in calendar view)
+  // Exclude completed bookings from calendar view
   useEffect(() => {
     const events: CalendarEvent[] = []
 
     filteredBookings.forEach((booking) => {
+      // Skip completed bookings - they should not appear on the calendar
+      if (booking.status === 'completed') return
       if (!booking.date || !booking.time) return
 
       try {
@@ -483,7 +510,11 @@ export function BookingDashboard(): React.ReactElement {
   // Handle completion status change
   const markBookingAsCompleted = async (id: string, conclusion: string): Promise<void> => {
     try {
-      await bookingService.update(id, { isCompleted: true, conclusion })
+      await bookingService.update(id, {
+        status: 'completed',
+        conclusion,
+        canReview: true
+      })
       // Refresh bookings from server
       await fetchBookings()
       setIsCompletionModalOpen(false)
@@ -535,6 +566,30 @@ export function BookingDashboard(): React.ReactElement {
       setIsCompletionModalOpen(true)
     }
   }
+
+  // Handle past bookings - mark all as complete
+  const markAllPastAsCompleted = async (): Promise<void> => {
+    try {
+      for (const booking of pastBookings) {
+        await bookingService.update(booking._id, {
+          status: 'completed',
+          conclusion: 'Automatically completed - past booking',
+          canReview: true
+        })
+      }
+      await fetchBookings()
+      setShowPastBookingsWarning(false)
+      setPastBookings([])
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to mark bookings as completed')
+    }
+  }
+
+  // Handle past bookings - dismiss warning
+  const dismissPastBookingsWarning = (): void => {
+    setShowPastBookingsWarning(false)
+  }
+
   // Toggle edit mode
   const toggleEditMode = (): void => {
     if (isEditMode && selectedBooking) {
@@ -1002,6 +1057,7 @@ export function BookingDashboard(): React.ReactElement {
                 <option value="confirmed">Confirmed</option>
                 <option value="rescheduled">Rescheduled</option>
                 <option value="cancelled">Cancelled</option>
+                <option value="completed">Completed</option>
               </select>
             </div>
             {viewMode === 'logs' && (
@@ -3031,6 +3087,106 @@ export function BookingDashboard(): React.ReactElement {
                   onClick={() => setIsUserModalOpen(false)}
                 >
                   Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Past Bookings Warning Modal */}
+      {showPastBookingsWarning && pastBookings.length > 0 && (
+        <div className="fixed inset-0 overflow-y-auto z-50">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+              &#8203;
+            </span>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <AlertCircle className="h-6 w-6 text-yellow-600" />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Past Bookings Require Attention
+                    </h3>
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-500 mb-4">
+                        You have {pastBookings.length} booking{pastBookings.length > 1 ? 's' : ''} that {pastBookings.length > 1 ? 'are' : 'is'} past the current date. Please review and take action:
+                      </p>
+                      <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {pastBookings.map((booking) => (
+                              <tr key={booking._id}>
+                                <td className="px-4 py-2 text-sm text-gray-900">
+                                  {new Date(booking.date).toLocaleDateString()}
+                                </td>
+                                <td className="px-4 py-2 text-sm text-gray-900">{booking.company}</td>
+                                <td className="px-4 py-2 text-sm">
+                                  {renderStatusBadge(booking.status)}
+                                </td>
+                                <td className="px-4 py-2 text-sm">
+                                  <div className="flex space-x-2">
+                                    <button
+                                      onClick={() => {
+                                        setSelectedBooking(booking)
+                                        setEditedBooking({ ...booking })
+                                        setShowPastBookingsWarning(false)
+                                        openCompletionModal()
+                                      }}
+                                      className="text-blue-600 hover:text-blue-900 text-xs"
+                                    >
+                                      Complete
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setSelectedBooking(booking)
+                                        setEditedBooking({ ...booking })
+                                        setShowPastBookingsWarning(false)
+                                        openRescheduleModal()
+                                      }}
+                                      className="text-indigo-600 hover:text-indigo-900 text-xs"
+                                    >
+                                      Reschedule
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={markAllPastAsCompleted}
+                >
+                  Mark All as Complete
+                </button>
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={dismissPastBookingsWarning}
+                >
+                  Dismiss for Now
                 </button>
               </div>
             </div>
