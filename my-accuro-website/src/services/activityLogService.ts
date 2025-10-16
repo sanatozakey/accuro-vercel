@@ -22,6 +22,7 @@ const activityLogService = {
     action?: string;
     resourceType?: string;
     userId?: string;
+    productCategory?: string;
   }) => {
     const response = await api.get('/activity-logs', { params });
     return response.data;

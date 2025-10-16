@@ -181,7 +181,9 @@ export function BookingDashboard(): React.ReactElement {
   const [activityLogsFilter, setActivityLogsFilter] = useState<{
     action?: string
     resourceType?: string
+    productCategory?: string
   }>({})
+  const [showProductCategoryFilter, setShowProductCategoryFilter] = useState<boolean>(false)
 
   // Reviews state
   const [reviews, setReviews] = useState<Review[]>([])
@@ -321,6 +323,11 @@ export function BookingDashboard(): React.ReactElement {
       setRecommendationsLoading(false)
     }
   }
+
+  // Initialize product category filter visibility based on resource type
+  useEffect(() => {
+    setShowProductCategoryFilter(activityLogsFilter.resourceType === 'booking');
+  }, [activityLogsFilter.resourceType]);
 
   // Load activity logs when tab is selected
   useEffect(() => {
@@ -1578,7 +1585,7 @@ export function BookingDashboard(): React.ReactElement {
               <>
                 {/* Filter Section */}
                 <div className="p-4 border-b bg-gray-50">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Resource Type
@@ -1586,10 +1593,15 @@ export function BookingDashboard(): React.ReactElement {
                       <select
                         className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"
                         value={activityLogsFilter.resourceType || ''}
-                        onChange={(e) => setActivityLogsFilter({
-                          ...activityLogsFilter,
-                          resourceType: e.target.value || undefined
-                        })}
+                        onChange={(e) => {
+                          const newResourceType = e.target.value || undefined;
+                          setShowProductCategoryFilter(newResourceType === 'booking');
+                          setActivityLogsFilter({
+                            action: activityLogsFilter.action,
+                            resourceType: newResourceType,
+                            productCategory: newResourceType === 'booking' ? activityLogsFilter.productCategory : undefined
+                          });
+                        }}
                       >
                         <option value="">All Types</option>
                         <option value="user">User</option>
@@ -1599,6 +1611,31 @@ export function BookingDashboard(): React.ReactElement {
                         <option value="system">System</option>
                       </select>
                     </div>
+                    {showProductCategoryFilter && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Product Category
+                        </label>
+                        <select
+                          className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"
+                          value={activityLogsFilter.productCategory || ''}
+                          onChange={(e) => setActivityLogsFilter({
+                            ...activityLogsFilter,
+                            productCategory: e.target.value || undefined
+                          })}
+                        >
+                          <option value="">All Products</option>
+                          <option value="Beamex Calibrators">Beamex Calibrators</option>
+                          <option value="Beamex Calibration Benches">Beamex Calibration Benches</option>
+                          <option value="Beamex Calibration Software">Beamex Calibration Software</option>
+                          <option value="Beamex Calibration Accessories">Beamex Calibration Accessories</option>
+                          <option value="Beamex Pressure Measurement">Beamex Pressure Measurement</option>
+                          <option value="Beamex Temperature Measurement">Beamex Temperature Measurement</option>
+                          <option value="Beamex Electrical Measurement">Beamex Electrical Measurement</option>
+                          <option value="Beamex Integrated Solutions">Beamex Integrated Solutions</option>
+                        </select>
+                      </div>
+                    )}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Action

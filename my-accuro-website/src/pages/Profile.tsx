@@ -21,6 +21,7 @@ export function Profile() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -30,31 +31,58 @@ export function Profile() {
     }));
   };
 
+  const processImageFile = (file: File) => {
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image size must be less than 2MB');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file');
+      return;
+    }
+
+    // Convert to base64
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfilePicture(reader.result as string);
+      setError('');
+    };
+    reader.onerror = () => {
+      setError('Failed to read image file');
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (max 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        setError('Image size must be less than 2MB');
-        return;
-      }
+      processImageFile(file);
+    }
+  };
 
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        setError('Please select a valid image file');
-        return;
-      }
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
 
-      // Convert to base64
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePicture(reader.result as string);
-        setError('');
-      };
-      reader.onerror = () => {
-        setError('Failed to read image file');
-      };
-      reader.readAsDataURL(file);
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processImageFile(file);
     }
   };
 
@@ -110,20 +138,27 @@ export function Profile() {
           {/* Profile Picture Section */}
           <div className="px-6 py-8 border-b border-gray-200">
             <div className="flex flex-col items-center">
-              <div className="relative">
-                {profilePicture ? (
-                  <img
-                    src={profilePicture}
-                    alt="Profile"
-                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
-                  />
-                ) : (
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center border-4 border-white shadow-lg">
-                    <span className="text-4xl font-bold text-white">
-                      {getInitials(formData.name || 'U')}
-                    </span>
-                  </div>
-                )}
+              <div
+                className="relative"
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <div className={`transition-all ${isDragging ? 'ring-4 ring-blue-400 ring-opacity-50 scale-105' : ''}`}>
+                  {profilePicture ? (
+                    <img
+                      src={profilePicture}
+                      alt="Profile"
+                      className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center border-4 border-white shadow-lg">
+                      <span className="text-4xl font-bold text-white">
+                        {getInitials(formData.name || 'U')}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -140,7 +175,7 @@ export function Profile() {
                 />
               </div>
               <p className="mt-4 text-sm text-gray-500">
-                Click the camera icon to upload a new profile picture
+                Click the camera icon or drag & drop an image to upload a new profile picture
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 Max size: 2MB. Supported formats: JPG, PNG, GIF

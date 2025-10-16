@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import ActivityLog from '../models/ActivityLog';
+import Booking from '../models/Booking';
 import { AuthRequest } from '../middleware/auth';
 
 // @desc    Get all activity logs (Admin only)
@@ -7,19 +8,42 @@ import { AuthRequest } from '../middleware/auth';
 // @access  Private/Admin
 export const getAllActivityLogs = async (req: AuthRequest, res: Response) => {
   try {
-    const { page = 1, limit = 50, action, resourceType, userId } = req.query;
+    const { page = 1, limit = 50, action, resourceType, userId, productCategory } = req.query;
 
     const query: any = {};
     if (action) query.action = action;
     if (resourceType) query.resourceType = resourceType;
     if (userId) query.user = userId;
 
-    const logs = await ActivityLog.find(query)
-      .sort({ createdAt: -1 })
-      .limit(Number(limit))
-      .skip((Number(page) - 1) * Number(limit));
+    let logs;
+    let total;
 
-    const total = await ActivityLog.countDocuments(query);
+    // If filtering by product category for bookings, we need to join with Booking collection
+    if (productCategory && resourceType === 'booking') {
+      // First, find all bookings with the specified product category
+      const bookings = await Booking.find({
+        product: productCategory as string,
+      }).select('_id');
+
+      const bookingIds = bookings.map((b) => b._id.toString());
+
+      // Then find activity logs where resourceId matches these booking IDs
+      query.resourceId = { $in: bookingIds };
+
+      logs = await ActivityLog.find(query)
+        .sort({ createdAt: -1 })
+        .limit(Number(limit))
+        .skip((Number(page) - 1) * Number(limit));
+
+      total = await ActivityLog.countDocuments(query);
+    } else {
+      logs = await ActivityLog.find(query)
+        .sort({ createdAt: -1 })
+        .limit(Number(limit))
+        .skip((Number(page) - 1) * Number(limit));
+
+      total = await ActivityLog.countDocuments(query);
+    }
 
     res.status(200).json({
       success: true,
