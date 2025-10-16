@@ -754,6 +754,13 @@ export function BookingDashboard(): React.ReactElement {
             Rescheduled
           </span>
         )
+      case 'completed':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <CheckSquare className="w-3 h-3 mr-1" />
+            Completed
+          </span>
+        )
       default:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
@@ -3136,7 +3143,7 @@ export function BookingDashboard(): React.ReactElement {
                                 </td>
                                 <td className="px-4 py-2 text-sm text-gray-900">{booking.company}</td>
                                 <td className="px-4 py-2 text-sm">
-                                  {renderStatusBadge(booking.status)}
+                                  {getStatusBadge(booking.status)}
                                 </td>
                                 <td className="px-4 py-2 text-sm">
                                   <div className="flex space-x-2">
