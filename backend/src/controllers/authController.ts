@@ -221,24 +221,66 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 // @access  Private
 export const updateDetails = async (req: AuthRequest, res: Response) => {
   try {
-    const fieldsToUpdate = {
-      name: req.body.name,
-      email: req.body.email,
-      phone: req.body.phone,
-      company: req.body.company,
-      profilePicture: req.body.profilePicture,
-    };
+    // Check if email is being changed and if it already exists
+    if (req.body.email && req.body.email !== req.user!.email) {
+      const emailExists = await User.findOne({ email: req.body.email });
+      if (emailExists) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email already in use by another account',
+        });
+      }
+    }
+
+    const fieldsToUpdate: any = {};
+    if (req.body.name !== undefined) fieldsToUpdate.name = req.body.name;
+    if (req.body.email !== undefined) fieldsToUpdate.email = req.body.email;
+    if (req.body.phone !== undefined) fieldsToUpdate.phone = req.body.phone;
+    if (req.body.company !== undefined) fieldsToUpdate.company = req.body.company;
+    if (req.body.profilePicture !== undefined) fieldsToUpdate.profilePicture = req.body.profilePicture;
 
     const user = await User.findByIdAndUpdate(req.user!._id, fieldsToUpdate, {
       new: true,
       runValidators: true,
     });
 
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: user._id,
+        userName: user.name,
+        userEmail: user.email,
+        action: 'PROFILE_UPDATED',
+        resourceType: 'user',
+        resourceId: user._id.toString(),
+        details: `Profile updated for user: ${user.email}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
+
     res.status(200).json({
       success: true,
       data: user,
     });
   } catch (error: any) {
+    // Handle MongoDB duplicate key error
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email already in use',
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
