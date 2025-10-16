@@ -2664,6 +2664,16 @@ export function BookingDashboard(): React.ReactElement {
                             </button>
                           </>
                         )}
+                      {selectedBooking.status === 'cancelled' && (
+                        <button
+                          type="button"
+                          className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm"
+                          onClick={() => deleteBooking(selectedBooking._id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Booking
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:w-auto sm:text-sm"
