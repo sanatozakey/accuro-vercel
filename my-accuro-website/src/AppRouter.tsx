@@ -130,7 +130,9 @@ export function AppRouter() {
             path="/admin/bookings"
             element={
               <ProtectedRoute adminOnly={true}>
-                <BookingDashboard />
+                <Layout>
+                  <BookingDashboard />
+                </Layout>
               </ProtectedRoute>
             }
           />
@@ -138,7 +140,9 @@ export function AppRouter() {
             path="/admin/recommendations"
             element={
               <ProtectedRoute adminOnly={true}>
-                <RecommendationsMonitor />
+                <Layout>
+                  <RecommendationsMonitor />
+                </Layout>
               </ProtectedRoute>
             }
           />
