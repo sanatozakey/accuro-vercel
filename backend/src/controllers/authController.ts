@@ -232,6 +232,30 @@ export const updateDetails = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    // Validate profile picture size if provided (max 3MB base64 string for safety)
+    if (req.body.profilePicture !== undefined && req.body.profilePicture) {
+      const base64String = req.body.profilePicture;
+
+      // Check if it's a valid base64 image
+      if (!base64String.startsWith('data:image/')) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid image format. Must be a base64 encoded image.',
+        });
+      }
+
+      // Estimate size of base64 string (approximately 75% of string length)
+      const estimatedSizeInBytes = base64String.length * 0.75;
+      const maxSizeInBytes = 3 * 1024 * 1024; // 3MB
+
+      if (estimatedSizeInBytes > maxSizeInBytes) {
+        return res.status(400).json({
+          success: false,
+          message: 'Image is too large. Please use an image smaller than 1MB.',
+        });
+      }
+    }
+
     const fieldsToUpdate: any = {};
     if (req.body.name !== undefined) fieldsToUpdate.name = req.body.name;
     if (req.body.email !== undefined) fieldsToUpdate.email = req.body.email;

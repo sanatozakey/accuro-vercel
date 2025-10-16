@@ -32,9 +32,11 @@ export function Profile() {
   };
 
   const processImageFile = (file: File) => {
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Image size must be less than 2MB');
+    // Validate file size (max 1MB to account for base64 encoding overhead)
+    // Base64 encoding increases size by ~33%, so 1MB file becomes ~1.33MB
+    const maxFileSize = 1 * 1024 * 1024; // 1MB
+    if (file.size > maxFileSize) {
+      setError('Image size must be less than 1MB');
       return;
     }
 
@@ -47,7 +49,19 @@ export function Profile() {
     // Convert to base64
     const reader = new FileReader();
     reader.onloadend = () => {
-      setProfilePicture(reader.result as string);
+      const base64String = reader.result as string;
+
+      // Additional check: validate base64 size (accounting for encoding overhead)
+      // Roughly estimate: base64 string should be < 2MB for database compatibility
+      const base64SizeInBytes = base64String.length * 0.75; // Approximate size
+      const maxBase64Size = 2 * 1024 * 1024; // 2MB
+
+      if (base64SizeInBytes > maxBase64Size) {
+        setError('Encoded image is too large. Please use a smaller image or compress it.');
+        return;
+      }
+
+      setProfilePicture(base64String);
       setError('');
     };
     reader.onerror = () => {
@@ -178,7 +192,7 @@ export function Profile() {
                 Click the camera icon or drag & drop an image to upload a new profile picture
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                Max size: 2MB. Supported formats: JPG, PNG, GIF
+                Max size: 1MB. Supported formats: JPG, PNG, GIF
               </p>
             </div>
           </div>
