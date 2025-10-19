@@ -12,14 +12,19 @@ export function Products() {
   const [selectedCategory, setSelectedCategory] = useState('All Products')
   const [searchQuery, setSearchQuery] = useState('')
   const [currency, setCurrency] = useState<'PHP' | 'USD'>('PHP')
+  const [showDiscontinued, setShowDiscontinued] = useState(false)
 
-  // Filter products based on category and search query
+  // Filter products based on category, search query, and discontinued status
   const filteredProducts = getProductsByCategory(selectedCategory).filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.category.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesSearch
+
+    const isDiscontinued = product.description.toLowerCase().includes('discontinued')
+    const matchesDiscontinuedFilter = showDiscontinued || !isDiscontinued
+
+    return matchesSearch && matchesDiscontinuedFilter
   })
 
   return (
@@ -70,6 +75,17 @@ export function Products() {
                   ))}
                 </select>
               </div>
+
+              {/* Show Discontinued Toggle */}
+              <label className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition">
+                <input
+                  type="checkbox"
+                  checked={showDiscontinued}
+                  onChange={(e) => setShowDiscontinued(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 whitespace-nowrap">Show Discontinued</span>
+              </label>
 
               {/* Currency Toggle */}
               <div className="flex bg-white border border-gray-300 rounded-md overflow-hidden">
@@ -123,6 +139,7 @@ export function Products() {
                 onClick={() => {
                   setSearchQuery('')
                   setSelectedCategory('All Products')
+                  setShowDiscontinued(false)
                 }}
                 className="px-5 py-3 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition"
               >
