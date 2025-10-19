@@ -1,0 +1,769 @@
+{
+  "catalog_metadata": {
+    "source": "https://www.beamex.com/products/",
+    "scraped_date": "2025-10-20",
+    "total_categories": 4,
+    "total_products": 29,
+    "manufacturer": "Beamex Oy Ab"
+  },
+  "categories": {
+    "calibration_management_software": {
+      "category_name": "Calibration Management Software",
+      "description": "Software solutions for managing calibration assets, planning procedures, and ensuring compliance",
+      "products": [
+        {
+          "product_name": "Beamex CMX Calibration Management Software",
+          "category": "Calibration Management Software",
+          "subcategory": "Enterprise Software",
+          "product_url": "https://www.beamex.com/calibration-software/cmx/",
+          "description": "Beamex CMX is an all-in-one calibration management solution designed to help organizations manage instrumentation assets safely and plan/execute calibrations efficiently, even in highly regulated industries. The software enables permanent storage of calibration results with full traceability history and supports compliance with regulatory requirements including 21 CFR Part 11.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/12/logical-v2-scaled.jpg",
+          "features": [
+            "Instrument management with hierarchical organization and predefined function templates",
+            "Role-based access control with authentication and user-group permissions",
+            "Reference management with calibration intervals and uncertainty specifications",
+            "Digital data flow integration with Beamex calibrators and bMobile application",
+            "Guided calibration process ensuring standardized execution",
+            "Uncertainty calculation for combined expanded uncertainty at each calibration point",
+            "Full calibration history with permanent data storage",
+            "Regulatory compliance tracking with change management",
+            "Patented Mobile Security Plus technology for offline data integrity",
+            "Work order automation via Beamex Business Bridge integration with ERP/CMMS systems",
+            "Maintenance inspection planning, scheduling, and digital documentation",
+            "Weighing instrument calibration based on EURAMET, OIML, and NIST standards",
+            "Data Loader tool for bulk instrument management",
+            "Extensive configurability including custom reports and certificates",
+            "Electronic signatures for data integrity",
+            "Automatic result validation workflows with email notifications",
+            "Single Sign-On (SSO) support using Microsoft Entra ID",
+            "Beamex Sync for asynchronous data exchange over internet"
+          ],
+          "specifications": {
+            "installation_options": "On-premises (workstation/floating server) or cloud-based (Microsoft Azure)",
+            "integration": "Seamless communication with Beamex documenting calibrators and bMobile application",
+            "compliance": "Fulfills 21 CFR Part 11",
+            "variants": {
+              "CMX_Professional": "Highly configurable solution with standard main features and optional advanced features; available as workstation or floating server installation",
+              "CMX_Enterprise": "All-in-one solution for large multi-site companies including all main and advanced features; floating server installation",
+              "Cloud_Installation": "CMX Professional or Enterprise deployable on Microsoft Azure for easier IT management and scalability"
+            }
+          },
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex LOGiCAL Calibration Management Software",
+          "category": "Calibration Management Software",
+          "subcategory": "Cloud Software",
+          "product_url": "https://www.beamex.com/calibration-software/logical/",
+          "description": "Beamex LOGiCAL is a subscription-based, cloud-hosted calibration management platform designed to help organizations digitalize and streamline their instrumentation calibration processes. The software enables users to manage calibration assets, plan procedures, execute guided calibrations, and generate compliance documentation through an integrated ecosystem.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/12/logical-v2-scaled.jpg",
+          "features": [
+            "Cloud-Based Infrastructure - Data stored securely in Microsoft Azure with automatic updates and no manual backups required",
+            "Instrument Management - Unlimited instrument database with hierarchical organization by plant structure",
+            "Reference Management - Automated tracking of calibration reference instruments with scheduled maintenance alerts",
+            "Guided Calibration Process - Standardized workflows ensuring consistent execution across teams",
+            "Digital Data Flow - Seamless integration with Beamex MC6/MC4/MC2 calibrators and bMobile application",
+            "Calibration Certificate Generation - Configurable, automated certificate creation with full historical records",
+            "Role-Based Access Control - Security model restricting user access by job role and facility location",
+            "Multi-Tenant Architecture - Supports unlimited simultaneous users and instruments at no additional cost",
+            "Data Analysis & Reporting - Comprehensive calibration history review and performance analytics",
+            "Offline Capability - Mobile solutions function offline with automatic synchronization when reconnected"
+          ],
+          "specifications": {
+            "deployment_model": "Software-as-a-Service (SaaS)",
+            "infrastructure": "Microsoft Azure cloud platform",
+            "security": "CREST-certified continuous security testing; strong encryption protocols",
+            "user_capacity": "Unlimited concurrent users included",
+            "instrument_capacity": "Unlimited instruments per subscription",
+            "mobile_integration": "Compatible with Beamex bMobile application and documenting calibrators",
+            "data_protection": "Industry-standard security practices with regular threat assessments"
+          },
+          "additional_images": []
+        },
+        {
+          "product_name": "CMX Analytics Dashboard",
+          "category": "Calibration Management Software",
+          "subcategory": "Analytics Add-on",
+          "product_url": "https://www.beamex.com/calibration-software/cmx/analytics-dashboard/",
+          "description": "The CMX Analytics Dashboard is a visual analysis tool integrated with Beamex CMX Calibration Management Software. It transforms calibration data into actionable insights, enabling organizations to optimize calibration activities, improve productivity, and ensure regulatory compliance through comprehensive performance monitoring and predictive analytics.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/08/cmx-dashboard-v1-scaled.jpg",
+          "features": [
+            "Visual KPI Summary - Easy-to-use visual summary of key calibration performance indicators including failed calibrations, overdue calibrations, reference standards usage, and calibrator traceability",
+            "Workload Overview - Team workload analysis over time to predict resource needs and improve efficiency",
+            "Advanced History Trending - Device manufacturer and model maintenance history analysis enabling preventive maintenance decisions",
+            "Calibration History Analysis - Drift prediction and forecasting to potentially extend calibration intervals",
+            "Uncertainty Impact Visualization - Analysis showing how measurement uncertainty affects calibration pass/fail status and test uncertainty ratio (TUR) validation",
+            "Risk Prediction - Historical instrument behavior analysis to forecast failed calibration likelihood"
+          ],
+          "specifications": {
+            "integration": "Integrated with Beamex CMX Calibration Management Software v2.17+",
+            "deployment": "Cloud and on-premises deployment options available",
+            "compatibility": "Compatible with leading maintenance systems (IBM Maximo, SAP, Infor EAM)",
+            "electronic_signature": "Electronic signature capability for reports"
+          },
+          "additional_images": [
+            "https://www.beamex.com/app/uploads/2022/11/cmx20dashboard20v1-scaled.jpg",
+            "https://www.beamex.com/app/uploads/2022/11/cmx20dashboard20v1-1024x683.jpg"
+          ]
+        },
+        {
+          "product_name": "Beamex Business Bridge",
+          "category": "Calibration Management Software",
+          "subcategory": "Integration Middleware",
+          "product_url": "https://www.beamex.com/calibration-software/cmx/business-bridge/",
+          "description": "Beamex Business Bridge is a commercial, configurable off-the-shelf integration solution that connects Beamex CMX Calibration Management Software with maintenance management systems such as SAP or IBM Maximo. The platform enables automated digital data flow between calibration and asset management systems, eliminating manual data entry and reducing operational inefficiencies.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/10/logical-v3-e1715176046279.png",
+          "features": [
+            "Automated Work Order Management - Calibration work orders automatically transfer from maintenance systems to CMX",
+            "Digital Data Flow - Eliminates paper-based processes and manual data entry",
+            "Bidirectional Communication - Results and acknowledgments automatically return to the maintenance system",
+            "Error Reduction - Minimizes human typing errors through single-source data entry",
+            "Data Integrity - Ensures traceable, reliable calibration data across systems",
+            "Compliance Support - Maintains complete digital audit trails for regulatory requirements",
+            "System Integration - Compatible with major CMMS platforms including SAP and IBM Maximo"
+          ],
+          "specifications": {
+            "integration_type": "Configurable middleware solution",
+            "compatible_systems": "Beamex CMX, SAP, IBM Maximo",
+            "data_exchange": "Automated bidirectional synchronization",
+            "deployment": "Commercial off-the-shelf (COTS) solution"
+          },
+          "additional_images": [
+            "https://www.beamex.com/app/uploads/2022/09/beamex-cmx-dashboard-v2-1024x576.jpg"
+          ]
+        }
+      ]
+    },
+    "field_calibration_equipment": {
+      "category_name": "Field Calibration Equipment",
+      "description": "Portable calibrators and accessories for field calibration of process instruments",
+      "products": [
+        {
+          "product_name": "Beamex MC6 Advanced Field Calibrator and Communicator",
+          "category": "Field Calibration Equipment",
+          "subcategory": "Multifunction Field Calibrator",
+          "product_url": "https://www.beamex.com/calibrators/beamex-mc6/",
+          "description": "The MC6 is a high-accuracy field calibrator offering calibration capabilities for pressure, temperature, and various electrical signals. It functions as a multifunction calibrator and multi-bus field communicator for HART, FOUNDATION Fieldbus, and Profibus PA protocols. The device enables fully automated calibrations and digital data capture at the source, integrating with Beamex calibration management software for streamlined workflows.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/11/mc6-facing-slightly-left-v1-with-shadow.png",
+          "features": [
+            "Pressure measurement (internal/external modules)",
+            "Voltage measurement (±1 V and −1…60 VDC)",
+            "Current measurement (±100 mA)",
+            "Frequency measurement (0…50 kHz)",
+            "Pulse counting (0…10 Mpulse)",
+            "Switch state sensing",
+            "RTD and thermocouple measurement/simulation",
+            "Resistance measurement and simulation (0…4 kΩ)",
+            "Five operational modes: Meter, Calibrator, Documenting Calibrator, Data Logger, Fieldbus Communicator",
+            "Multi-bus field communicator (HART, FOUNDATION Fieldbus, Profibus PA simultaneously)",
+            "Automatic calibration capabilities",
+            "Built-in 24 VDC loop supply",
+            "Step-by-step guided calibration process",
+            "Error calculation and pass/fail analysis",
+            "Digital documentation without manual entry",
+            "5.7\" touchscreen display (640 x 480 TFT LCD)",
+            "Multilingual interface",
+            "Operable with bare fingers or gloved hands",
+            "IP65 rating (water and dust-proof)",
+            "Lightweight and ergonomic",
+            "Rechargeable lithium-ion battery (10-16 hours operation)",
+            "Integration with LOGiCAL and CMX software",
+            "Wireless Bluetooth communication capability"
+          ],
+          "specifications": {
+            "display": "5.7\" diagonal, 640 x 480 TFT LCD",
+            "ip_rating": "IP65",
+            "battery": "Rechargeable lithium-ion, 10-16 hours operation",
+            "operational_modes": "Meter, Calibrator, Documenting Calibrator, Data Logger, Fieldbus Communicator",
+            "fieldbus_protocols": "HART, FOUNDATION Fieldbus, Profibus PA"
+          },
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex MC6-Ex Intrinsically Safe Advanced Field Calibrator and Communicator",
+          "category": "Field Calibration Equipment",
+          "subcategory": "Intrinsically Safe Field Calibrator",
+          "product_url": "https://www.beamex.com/calibrators/beamex-mc6-ex/",
+          "description": "The MC6-Ex is an ATEX, IECEx, and North American-certified intrinsically safe field calibrator designed for use in hazardous areas. It combines multifunction calibration capabilities with fieldbus communication in a single portable device, eliminating the need for hot work permits and gas detectors when operating in potentially explosive environments.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/11/mc6-ex-facing-slightly-left-v1-with-shadow.png",
+          "features": [
+            "Intrinsic Safety Certification - ATEX, IECEx, and North American certified for Zones 0, 1, 2 and Divisions 1, 2",
+            "Multifunction Capabilities - Pressure, temperature, and electrical signal calibration",
+            "Field Communicator - Multi-bus support for HART, FOUNDATION Fieldbus, and Profibus PA protocols",
+            "Five Operational Modes - Meter, Calibrator, Documenting Calibrator, Data Logger, and Fieldbus Communicator",
+            "High Accuracy - Traceable, accredited calibration certificates included",
+            "Robust Design - IP65-rated, dust and waterproof with integrated impact protectors",
+            "Large Touchscreen - 5.7\" multilingual display usable with bare hands or gloves",
+            "Field-Replaceable Battery - Smart NiMh pack with 4-8 hour operation",
+            "Digital Integration - Communicates with Beamex LOGiCAL and CMX calibration management software",
+            "Automatic Documentation - Captures calibration data without manual entry",
+            "Internal Loop Supply - For transmitter calibration without external equipment"
+          ],
+          "specifications": {
+            "display": "5.7\" TFT LCD, 640 x 480 resolution",
+            "touch_panel": "5-wire resistive touchscreen",
+            "weight": "2.5-2.9 kg",
+            "dimensions": "207 x 231 x 80 mm (D x W x H)",
+            "battery": "Rechargeable NiMh, 4200 mAh, 4-8 hours operation",
+            "certifications": "ATEX, IECEx, North American (Zones 0, 1, 2 and Divisions 1, 2)",
+            "ip_rating": "IP65"
+          },
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex MC6-T Multifunction Temperature Calibrator and Communicator",
+          "category": "Field Calibration Equipment",
+          "subcategory": "Temperature Dry Block Calibrator",
+          "product_url": "https://www.beamex.com/calibrators/beamex-mc6-t/",
+          "description": "The MC6-T combines an advanced temperature dry block with integrated multifunction process calibrator and communicator technology. It offers versatility for temperature, pressure, and electrical signal calibrations, plus multi-bus communicator functionality for fieldbus instruments. The device is designed for industrial environments with patented temperature control algorithms and multiple safety features.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/11/mc6-t150-facing-slightly-left-v1-with-shadow.png",
+          "features": [
+            "Temperature Generation & Control - Range from -30 to 150°C (MC6-T150) or 50 to 660°C (MC6-T660)",
+            "Active Multizone Temperature Control - Triple/dual zone technology with excellent temperature gradient",
+            "Multifunction Capabilities - Temperature, pressure, and electrical signal calibration in one device",
+            "Field Communicator - HART, FOUNDATION Fieldbus, and Profibus PA protocols (all three simultaneously enabled)",
+            "Documenting Calibrator - Digital data capture and integration with calibration management software",
+            "Group Calibration - Automatic calibration of multiple temperature instruments simultaneously",
+            "Battery Operation - Rechargeable lithium-ion, 10-16 hours runtime (most functions except temperature control)",
+            "Multiple User Interface Modes - Temperature Calibrator, Documenting Calibrator, Calibrator, Data Logger, and Communicator modes",
+            "Safety Features - Tilt sensor, warning light, standalone overheat protection",
+            "Sanitary Sensor Capability - Designed to calibrate short and sanitary sensors"
+          ],
+          "specifications": {
+            "dimensions": "322 × 180 × 298 mm",
+            "weight_MC6_T150": "9.4 kg",
+            "weight_MC6_T660": "8.6 kg",
+            "display": "5.7\" TFT LCD, 640 × 480 resolution",
+            "power": "230V/115V ±10%, 50/60 Hz",
+            "operating_temperature": "0-45°C",
+            "temperature_range_MC6_T150": "-30 to 150°C",
+            "temperature_range_MC6_T660": "50 to 660°C"
+          },
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex bMobile Calibration Application",
+          "category": "Field Calibration Equipment",
+          "subcategory": "Mobile Calibration Software",
+          "product_url": "https://www.beamex.com/calibrators/bmobile/",
+          "description": "An intuitive, multi-platform mobile solution designed for field technicians to execute and document calibrations offline. The application integrates with Beamex CMX or LOGiCAL calibration management software, guiding users through pre-configured calibration procedures step-by-step.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/12/bmobile-v1.png",
+          "features": [
+            "Guided Calibration Execution - Step-by-step procedures for any process instrument type",
+            "Paperless Documentation - Eliminates manual pen-and-paper recording",
+            "Automatic Calculations - Performs error calculations and pass/fail analysis automatically",
+            "Maintenance Inspections - Create and execute inspection checklists with CMX",
+            "Weighing Instrument Calibrations - Supports EURAMET, OIML, and NIST standards",
+            "Data Integrity Protection - Mobile Security Plus technology for offline data security",
+            "Multi-Platform Support - Available on iOS, Android, and Windows",
+            "Offline Capability - Stores results securely when internet unavailable",
+            "Electronic Signatures - Optional security features for regulated industries",
+            "Flexible Instrument Management - Create/edit instruments on-the-fly with LOGiCAL"
+          ],
+          "specifications": {
+            "platforms": "iOS, Android, Windows 10 & 11",
+            "distribution": "Free download from App Store, Google Play, Beamex Download Center",
+            "demo_mode": "Included for trial purposes",
+            "integration": "Works with CMX and LOGiCAL software",
+            "data_transfer": "Syncs results back to calibration management system"
+          },
+          "additional_images": [
+            "https://www.beamex.com/app/uploads/2022/12/pharmaceutical-industry-v29-683x1024.jpg"
+          ]
+        },
+        {
+          "product_name": "Beamex ePG Electric Pressure Pump and Controller",
+          "category": "Field Calibration Equipment",
+          "subcategory": "Pressure Generation",
+          "product_url": "https://www.beamex.com/calibrators/beamex-epg/",
+          "description": "The Beamex ePG is a portable, battery-operated electric pressure generation device designed for industrial pressure calibration applications. It operates across a pressure range from -0.85 to 20 bar (-12.4 to 300 psi) and functions as a standalone unit compatible with any existing pressure calibrator. The device eliminates the need for manual hand pumps by enabling pressure generation with the push of a button.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/11/epg-facing-slightly-left-v1-with-shadow.png",
+          "features": [
+            "Effortless pressure generation via coarse and fine adjustment buttons",
+            "Flexible compatibility with any pressure calibrator (no need to purchase new equipment)",
+            "User-serviceable design with common maintenance tasks performable by operators",
+            "Field-replaceable Li-ion battery with extended operation time (over one week typical use)",
+            "Automatic communication capability with Beamex MC6 family calibrators for fully automated pressure calibrations",
+            "Water and dust resistant construction for field durability",
+            "One-handed operation with shoulder strap for portability",
+            "Backlit controls for visibility in various lighting conditions",
+            "Sustainable design allowing firmware updates and easy spare parts replacement"
+          ],
+          "specifications": {
+            "pressure_range": "-0.85 to 20 bar (-12.4 to 300 psi)",
+            "setpoint_adjustability": "< 10 mbar (< 0.15 psi)",
+            "pressure_generation_time_0_20_bar": "< 110 seconds",
+            "pressure_generation_time_0_to_minus_0_85_bar": "< 45 seconds",
+            "wetted_materials": "Aluminum, brass, stainless steel, thermoplastic polyester, food-grade LMS oil",
+            "dimensions": "231mm H × 157mm W × 62mm D (9.1\" × 6.2\" × 2.4\")",
+            "weight": "~2.3 kg (~5 lbs)"
+          },
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex PG Calibration Pumps",
+          "category": "Field Calibration Equipment",
+          "subcategory": "Hand-Operated Pressure Pumps",
+          "product_url": "https://www.beamex.com/calibrators/beamex-pg-calibration-pumps/",
+          "description": "Beamex offers a comprehensive range of hand-operated calibration pumps designed for pressure calibration across various industrial applications. These pumps enable technicians to generate precise reference pressures for calibrating pressure instruments in process industries.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/11/pg-pumps-family-v1.png",
+          "features": [
+            "Hand-operated design for field portability",
+            "Multiple pressure range options",
+            "Fine-tuning adjustment capabilities",
+            "Durable construction for industrial use",
+            "Compatible with Beamex MC6 family calibrators"
+          ],
+          "specifications": {
+            "models": {
+              "PGM": {
+                "pressure_range": "0-20 bar / 0-300 psi",
+                "medium": "Air",
+                "features": "Accurate volume control, sturdy construction"
+              },
+              "PGC": {
+                "pressure_range": "-0.95 to 35 bar / -13.7 to 510 psi",
+                "medium": "Air",
+                "features": "Pressure/vacuum selector, fine-tuning capability"
+              },
+              "PGHH": {
+                "pressure_range": "0-700 bar / 0-10,000 psi",
+                "medium": "Hydraulic liquid",
+                "features": "Adjustable volume control"
+              },
+              "PGPH": {
+                "pressure_range": "-0.95 to 140 bar / -13.7 to 2,000 psi",
+                "medium": "Pneumatic (air)",
+                "features": "Generates pressure/vacuum quickly, hand-tight connectors"
+              },
+              "PGL": {
+                "pressure_range": "±400 mbar / ±160 iwc",
+                "medium": "Air",
+                "features": "Temperature-stable design, screw-operated adjustment"
+              }
+            }
+          },
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex Temperature Sensors",
+          "category": "Field Calibration Equipment",
+          "subcategory": "Reference Temperature Sensors",
+          "product_url": "https://www.beamex.com/calibrators/temperature-sensors/",
+          "description": "Beamex offers a comprehensive range of temperature reference sensors designed for industrial calibration applications. These sensors serve as precision measurement tools for validating temperature instrumentation across various industries and operational environments.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/11/temperature-sensors-family-v1.png",
+          "features": [
+            "RPRT - Very accurate and extremely stable sensor for demanding calibrations with stability up to ±0.007 °C",
+            "RPRT - Available in straight and 90° bent configurations",
+            "RPRT - Integrated memory storing sensor coefficients",
+            "RPRT - Lemo connector compatible with Beamex MC6 family calibrators",
+            "IPRT-300 - Robust general-purpose Pt100 sensor with accuracy of ±0.04 °C when using correction coefficients",
+            "IPRT-300 - Better than 1/3 DIN accuracy without coefficients",
+            "IPRT-300 - IEC60751 Pt100 (385) standard compliant",
+            "SIRT-155 - Optimized for short and flanged sanitary sensor calibration",
+            "SIRT-155 - Very short and thin design with thin cable",
+            "SIRT-155 - IEC60751 Class A Pt100 sensor"
+          ],
+          "specifications": {
+            "models": {
+              "RPRT-420-300": {
+                "max_temperature": "420 °C",
+                "length": "300 mm",
+                "diameter": "6.35 mm",
+                "configuration": "Straight",
+                "calibrated_range": "-45 to 420 °C"
+              },
+              "RPRT-420-230A": {
+                "max_temperature": "420 °C",
+                "length": "230 mm",
+                "diameter": "6.35 mm",
+                "configuration": "90° angled",
+                "calibrated_range": "-45 to 420 °C"
+              },
+              "RPRT-660-300": {
+                "max_temperature": "660 °C",
+                "length": "300 mm",
+                "diameter": "6.35 mm",
+                "configuration": "Straight"
+              }
+            }
+          },
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex FB Field Temperature Block",
+          "category": "Field Calibration Equipment",
+          "subcategory": "Portable Dry Block Calibrator",
+          "product_url": "https://www.beamex.com/calibrators/beamex-fb/",
+          "description": "The Beamex FB is a portable temperature calibration device designed for industrial field applications. It functions as a dry block calibrator that enables technicians to perform temperature calibrations on-site with laboratory-grade accuracy. The device weighs approximately 8 kg and is compact enough for field portability.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/11/fbxxx-facing-left-v1b-with-shadow.png",
+          "features": [
+            "Portability - Lightweight at ~8 kg with small, carry-friendly design",
+            "Speed - Rapid temperature transitions: cools to –25°C in 15 minutes, heats to +660°C in 15 minutes",
+            "Accuracy - Display accuracy up to ±0.2°C with control stability of ±0.01°C",
+            "Uniformity - Dual zone-controlled block with axial uniformity ±0.04°C and radial uniformity ±0.01°C",
+            "Smart Reference Sensors - Internal reference thermometer (R models) compatible with Beamex smart reference sensors featuring plug-and-play memory",
+            "User Interface - Large LCD display, multilingual menu-based interface, graphic and audible stability indicators",
+            "Safety Features - HOT warning light for temperatures exceeding +50°C",
+            "Communication - Port enabling integration with Beamex MC calibrators for automated calibration and documentation",
+            "Certification - Delivered with accredited calibration certificate"
+          ],
+          "specifications": {
+            "models": {
+              "FB150/FB150R": {
+                "temperature_range": "−25°C to +150°C (−13°F to +302°F)"
+              },
+              "FB350/FB350R": {
+                "temperature_range": "+33°C to +350°C (+91.4°F to +662°F)"
+              },
+              "FB660/FB660R": {
+                "temperature_range": "+50°C to +660°C (+122°F to +1220°F)"
+              }
+            },
+            "weight": "~8 kg"
+          },
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex MB Metrology Temperature Block",
+          "category": "Field Calibration Equipment",
+          "subcategory": "High-Accuracy Dry Block Calibrator",
+          "product_url": "https://www.beamex.com/calibrators/beamex-mb/",
+          "description": "The Beamex MB is a portable temperature dry block calibrator engineered to deliver laboratory-grade accuracy in a field-deployable format. It functions as a stable heat source suitable for both laboratory and field environments, enabling users to conduct high-precision temperature calibrations without requiring separate reference equipment in many applications.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/11/mb-facing-left-v1-with-shadow.png",
+          "features": [
+            "High Accuracy & Stability - Internal temperature measurement with display accuracy up to ±0.1°C and exceptional stability of ±0.005°C",
+            "Built-in Reference Input - Optional external reference sensor connection (R models) with measurement accuracy to ±0.006°C",
+            "Axial Uniformity - Dual zone control technology providing uniformity to ±0.02°C",
+            "Extended Immersion Depth - Up to 203mm (160mm for MB140) reducing stem conduction errors",
+            "Loading Compensation - Specifications to ±0.005°C with dual zone control",
+            "MC Calibrator Communication - Compatible with Beamex MC6 calibrators for automated calibration and documentation",
+            "ITS-90 Compensation - Supports ITS-90 or CVD coefficients for sensor error correction",
+            "Portable Design - Bath-level accuracy in a convenient, transportable dry block format"
+          ],
+          "specifications": {
+            "models": {
+              "MB140/MB140R": {
+                "temperature_range": "-45°C to +140°C (-49°F to +284°F)"
+              },
+              "MB155/MB155R": {
+                "temperature_range": "-30°C to +155°C (-22°F to +311°F)"
+              },
+              "MB425/MB425R": {
+                "temperature_range": "+35°C to +425°C (+95°F to +797°F)"
+              },
+              "MB700/MB700R": {
+                "temperature_range": "+50°C to +700°C (+122°F to +1292°F)"
+              }
+            },
+            "display_accuracy": "±0.1°C",
+            "stability": "±0.005°C"
+          },
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex EXT External Pressure Modules",
+          "category": "Field Calibration Equipment",
+          "subcategory": "Pressure Measurement Modules",
+          "product_url": "https://www.beamex.com/calibrators/beamex-ext-modules/",
+          "description": "The Beamex EXT range comprises external pressure modules designed to expand calibration capabilities. These devices increase configuration possibilities and add flexibility, making it possible to calibrate even more pressure ranges with the same calibrator.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/11/ext-module-photo-img2008-09-17-111831.png",
+          "features": [
+            "High-accuracy pressure measurement modules",
+            "Wide pressure range coverage: vacuum to 1,000 bar (14,500 psi)",
+            "Compatible with Beamex MC family calibrators",
+            "Two variants available: EXT (Standard) and EXT-IS (Intrinsically safe for hazardous environments)",
+            "Enables multi-range calibration with single calibrator"
+          ],
+          "specifications": {
+            "pressure_range": "Vacuum to 1,000 bar / 14,500 psi",
+            "accuracy": "High-accuracy classification",
+            "compatibility": "Beamex MC family calibrators",
+            "variants": "Standard (EXT) and Intrinsically Safe (EXT-IS)"
+          },
+          "additional_images": []
+        }
+      ]
+    },
+    "workshop_calibration": {
+      "category_name": "Workshop Calibration",
+      "description": "Workshop and laboratory calibration solutions for comprehensive instrument maintenance",
+      "products": [
+        {
+          "product_name": "Beamex CENTRiCAL Workshop Calibration Solution",
+          "category": "Workshop Calibration",
+          "subcategory": "Modular Calibration Bench",
+          "product_url": "https://www.beamex.com/calibrators/beamex-centrical-calibration-bench/",
+          "description": "The CENTRiCAL is a modular workshop calibration system designed for the process industries. It represents decades of experience providing world-class solutions and combines ease of use, versatility, and ergonomic design. The solution enables efficient maintenance of process instruments including transmitters, converters, temperature probes, recorders, and indicators in workshop and laboratory environments.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2019/05/centrical-bench-v1.png",
+          "features": [
+            "Modular Design - Configurable according to specific needs with ability to add or replace modules",
+            "Ergonomic - Electronically adjustable bench height for maximum comfort",
+            "ESD Protected - All components protected against electrostatic discharge",
+            "Pre-Calibrated - Delivered with calibration certificates for immediate use",
+            "Digital Integration - Connects with Beamex calibration management software (LOGiCAL/CMX)",
+            "High Accuracy - Provides accurate measurements with low calibration uncertainty",
+            "Automated Documentation - MC6-WS calibrator documents calibrations digitally without manual entry",
+            "Multiple Configuration Options - Available as bench, trolley, or tabletop solution",
+            "Sustainable Design - Modular construction supports long-term use and upgrades"
+          ],
+          "specifications": {
+            "configurations": {
+              "bench_options": [
+                "CENTRiCAL M (motorized, adjustable height)",
+                "CENTRiCAL CM (motorized corner bench)",
+                "CENTRiCAL F (fixed height)",
+                "CENTRiCAL CF (fixed height corner)"
+              ],
+              "form_factors": [
+                "Calibration bench",
+                "Calibration trolley (with wheels and lockable drawer)",
+                "Tabletop solution"
+              ]
+            },
+            "core_component": "MC6-WS Advanced Workshop Calibrator",
+            "optional_components": "AC/DC power supplies, multimeters, soldering stations, oscilloscopes, function generators"
+          },
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex MC6-WS Advanced Workshop Calibrator and Communicator",
+          "category": "Workshop Calibration",
+          "subcategory": "Panel-Mounted Workshop Calibrator",
+          "product_url": "https://www.beamex.com/calibrators/beamex-mc6-ws/",
+          "description": "The MC6-WS is a high-accuracy, panel-mounted workshop calibrator and communicator, that combines advanced functionality with ease-of-use. It serves as the core component of the Beamex CENTRiCAL workshop calibration solution, enabling automated calibrations with digital data capture and secure result storage across pressure, temperature, and electrical signal measurements.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/11/mc6-ws-facing-slightly-left-v1-with-shadow.png",
+          "features": [
+            "Pressure measurement (panel-mounted/external modules)",
+            "Voltage measurement (±1V and −1…60 VDC)",
+            "Current measurement (±100 mA)",
+            "Frequency measurement (0…50 kHz)",
+            "Pulse counting (0…10 Mpulse)",
+            "Switch state sensing",
+            "RTD and thermocouple measurement/simulation",
+            "Resistance measurement and simulation (0…4 kΩ)",
+            "Multi-bus fieldbus communicator (HART, FOUNDATION Fieldbus, Profibus PA)",
+            "Automatic calibration execution",
+            "Digital data capture at source",
+            "Integration with calibration management software",
+            "Five operational modes: Meter, Calibrator, Documenting Calibrator, Data Logger, Fieldbus Communicator",
+            "5.7\" touchscreen display (640 x 480 TFT LCD)",
+            "Multiple language support",
+            "Step-by-step guidance",
+            "Built-in 24 VDC loop supply",
+            "Dual simultaneous measurement channels (resistance, RTD, thermocouple)",
+            "Data logging capability (up to nine simultaneous measurements)",
+            "Traceable accredited calibration certificate included"
+          ],
+          "specifications": {
+            "display": "5.7\" diagonal, 640 x 480 TFT LCD",
+            "touch_panel": "5-wire resistive touchscreen",
+            "weight": "5.5 kg (12 lb)",
+            "dimensions": "250 × 200 × 305 mm (W × H × D)"
+          },
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex POC8 Automatic Pressure Controller",
+          "category": "Workshop Calibration",
+          "subcategory": "Automatic Pressure Controller",
+          "product_url": "https://www.beamex.com/calibrators/beamex-poc8/",
+          "description": "The POC8 is an accurate and user-friendly automatic pressure output controller designed for workshop and desktop calibration applications. It provides regulated pressure output ranging from vacuum to 210 bar (3045 psi). The device integrates with Beamex's calibration ecosystem, including MC6 family calibrators and calibration management software, to create a comprehensive automated pressure calibration solution.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/11/poc8-facing-left-v1b.png",
+          "features": [
+            "Automatic pressure calibration capability",
+            "7-inch color LCD touchscreen display",
+            "Multi-language user interface (10+ languages)",
+            "Vacuum to 210 bar (3045 psi) pressure range",
+            "Integration with Beamex CENTRiCAL workshop calibration bench",
+            "Standalone desktop version available",
+            "Compatible with Beamex MC6 calibrators",
+            "Integrates with Beamex calibration software for documentation and management"
+          ],
+          "specifications": {
+            "pressure_range": "Vacuum to 210 bar (3045 psi)",
+            "display": "7-inch color LCD touchscreen",
+            "configuration_options": "Desktop model or integrated workshop version",
+            "languages_supported": "10+ language options"
+          },
+          "additional_images": []
+        }
+      ]
+    },
+    "discontinued_products": {
+      "category_name": "Discontinued Products",
+      "description": "Previously available products that have been replaced by newer models",
+      "products": [
+        {
+          "product_name": "Beamex MC2 Process Calibrator",
+          "category": "Discontinued Products",
+          "subcategory": "Field Calibrator",
+          "product_url": "https://www.beamex.com/calibrators/beamex-mc2/",
+          "status": "Discontinued in May 2023",
+          "description": "A compact, lightweight portable calibrator designed for practical field use. The device features a graphical display, multilingual interface, and full numerical keyboard for quick and simple calibration operations.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/11/mc2-mf-straight-forward-v1-with-shadow.png",
+          "features": [
+            "Compact and user-friendly design with graphical display",
+            "Impact protectors and membrane keyboard for durability",
+            "Wide configuration possibilities with internal and external pressure modules",
+            "Communication capability with calibration management software",
+            "Multilingual menu-based interface"
+          ],
+          "specifications": {
+            "measurement_functions": "Internal pressure module with external module connections, current, voltage, frequency, switch sensing, pulse counting, RTD, thermocouple, resistance, and mV",
+            "generation_functions": "Current, voltage, frequency, pulse, mV, and resistance simulation",
+            "loop_supply": "HART-compatible 24 VDC"
+          },
+          "replacement_product": "Beamex MC6",
+          "replacement_url": "https://www.beamex.com/calibrators/beamex-mc6/",
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex MC4 Documenting Process Calibrator",
+          "category": "Discontinued Products",
+          "subcategory": "Field Calibrator",
+          "product_url": "https://www.beamex.com/calibrators/beamex-mc4/",
+          "status": "Discontinued in May 2023",
+          "description": "The MC4 is a compact, hand-held calibrator designed for field use that automatically documents calibration results and integrates with Beamex calibration management software for a fully digital workflow.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2022/11/mc4-facing-slightly-left-2007-08-15-v1.png",
+          "features": [
+            "All-in-one multifunction capability (pressure, electrical, temperature measurements)",
+            "Graphical display with menu-based, multilingual interface",
+            "Document as you go functionality with automatic data storage",
+            "Communication with calibration software (CMX and LOGiCAL)",
+            "Traceable, accredited calibration certificate included with each unit",
+            "Full numerical keyboard for quick operation"
+          ],
+          "specifications": {
+            "measurement_functions": "Pressure, current, voltage, frequency, pulse counting, switch sensing, mV, resistance, RTD, and thermocouple",
+            "generation_functions": "Current, voltage, frequency, pulse, mV, and resistance simulation",
+            "loop_supply": "Internal HART-compatible 24 VDC",
+            "external_modules": "Connection capability for external pressure modules"
+          },
+          "replacement_product": "Beamex MC6",
+          "replacement_url": "https://www.beamex.com/calibrators/beamex-mc6/",
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex MC5 Multifunction Calibrator",
+          "category": "Discontinued Products",
+          "subcategory": "Field Calibrator",
+          "product_url": "https://www.beamex.com/calibrators/beamex-mc5/",
+          "status": "Discontinued in 2014",
+          "description": "An all-in-one documenting multifunction calibrator designed for calibrating pressure, temperature, electrical, and frequency signals. The MC5 featured modular construction for flexible, user-specific configurations and was the world's first Fieldbus calibrator: a combination of a calibrator and a fieldbus configurator in one unit.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2016/06/Beamex-MC5_v1-scaled-1.jpg",
+          "features": [
+            "Multifunction calibration capabilities (pressure, temperature, electrical, frequency)",
+            "Modular construction for customization",
+            "Fieldbus configuration functionality",
+            "Documenting capabilities",
+            "All-in-one design"
+          ],
+          "specifications": {},
+          "replacement_product": "Beamex MC6",
+          "replacement_url": "https://www.beamex.com/calibrators/beamex-mc6/",
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex MC5-IS Intrinsically Safe Calibrator",
+          "category": "Discontinued Products",
+          "subcategory": "Intrinsically Safe Field Calibrator",
+          "product_url": "https://www.beamex.com/calibrators/beamex-mc5-is/",
+          "status": "Discontinued in 2017",
+          "description": "The MC5-IS was a robust, multifunction calibrator designed for potentially explosive hazardous environments such as offshore platforms, oil refineries, and chemical plants. Its modular architecture allowed customization based on specific operational requirements.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2016/06/MC5-IS-at-field-v2-scaled-1.jpg",
+          "features": [
+            "Documenting capabilities with multifunction calibration",
+            "Modular design for configuration flexibility",
+            "Suitable for hazardous area deployment",
+            "Pressure, temperature, electrical, and frequency signal calibration"
+          ],
+          "specifications": {},
+          "replacement_product": "Beamex MC6-Ex",
+          "replacement_url": "https://www.beamex.com/calibrators/beamex-mc6-ex/",
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex MC5P Panel-Mounted Calibrator",
+          "category": "Discontinued Products",
+          "subcategory": "Workshop Calibrator",
+          "product_url": "https://www.beamex.com/calibrators/beamex-mc5p/",
+          "status": "Discontinued in 2015",
+          "description": "The MC5P was a versatile panel-mounted calibrator designed for calibrating pressure, temperature, electrical, and frequency signals in workshop environments.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2016/08/MC5P-facing-slightly-left-v1-scaled-1.jpg",
+          "features": [
+            "Multi-function calibration capabilities",
+            "Panel-mounted design",
+            "Support for pressure, temperature, and electrical measurements",
+            "Frequency signal calibration"
+          ],
+          "specifications": {},
+          "replacement_product": "Beamex MC6-WS",
+          "replacement_url": "https://www.beamex.com/calibrators/beamex-mc6-ws/",
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex MCS200 Calibration Bench",
+          "category": "Discontinued Products",
+          "subcategory": "Workshop Calibration Bench",
+          "product_url": "https://www.beamex.com/calibrators/beamex-mcs200/",
+          "status": "Discontinued",
+          "description": "The MCS200 was a modular test and calibration bench designed for workshop-based calibration and maintenance operations. Each bench was built to meet customer-specific requirements.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2016/06/MCS200-workbench-v1-scaled-1.jpg",
+          "features": [
+            "Pressure, temperature, and electrical signal calibration",
+            "Electrical testing and measurements",
+            "Single and three-phase motor maintenance and testing",
+            "Soldering and de-soldering capabilities",
+            "Educational applications"
+          ],
+          "specifications": {},
+          "replacement_product": "Beamex CENTRiCAL",
+          "replacement_url": "https://www.beamex.com/calibrators/beamex-centrical-calibration-bench/",
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex MC2-IS Intrinsically Safe Calibrator",
+          "category": "Discontinued Products",
+          "subcategory": "Intrinsically Safe Field Calibrator",
+          "product_url": "https://www.beamex.com/calibrators/beamex-mc2-is/",
+          "status": "Discontinued",
+          "description": "The MC2-IS was a compact intrinsically safe calibrator designed for use in potentially explosive hazardous environments, including offshore platforms, oil refineries, and chemical/petrochemical plants.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2016/06/MC2-IS-portrait-v1-scaled-1.jpg",
+          "features": [
+            "Intrinsically safe design for hazardous areas",
+            "Compact and practical form factor",
+            "Multi-function calibration capabilities",
+            "Portable field calibrator"
+          ],
+          "specifications": {},
+          "replacement_product": "Beamex MC6-Ex",
+          "replacement_url": "https://www.beamex.com/calibrators/beamex-mc6-ex/",
+          "additional_images": []
+        },
+        {
+          "product_name": "Beamex POC6 Pressure Controller",
+          "category": "Discontinued Products",
+          "subcategory": "Automatic Pressure Controller",
+          "product_url": "https://www.beamex.com/calibrators/beamex-poc6/",
+          "status": "Discontinued",
+          "description": "The POC6 was a quick and accurate pressure controller that functioned as either a standalone unit or integrated with Beamex documenting calibrators to create a fully paperless automated calibration process. It was available in both panel-mounted and portable desktop configurations.",
+          "main_image_url": "https://www.beamex.com/app/uploads/2016/06/MCS200-workbench-v4-scaled-1.jpg",
+          "features": [
+            "Accurate pressure output control",
+            "Standalone or integrated operation capability",
+            "Available as panel-mounted or portable desktop version",
+            "Compatible with Beamex documenting calibrators and calibration software",
+            "Automated calibration documentation"
+          ],
+          "specifications": {
+            "pressure_range": "Vacuum to 210 bar (3045 psi)"
+          },
+          "replacement_product": "Beamex POC8 or Beamex ePG",
+          "replacement_url": "https://www.beamex.com/calibrators/beamex-poc8/",
+          "additional_images": []
+        }
+      ]
+    }
+  }
+}

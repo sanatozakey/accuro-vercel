@@ -9,7 +9,9 @@
       "Bash(npx playwright install)",
       "Bash(npm start)",
       "Bash(npm run lint)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "WebFetch(domain:www.beamex.com)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []
