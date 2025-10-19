@@ -30,7 +30,7 @@ export const products: Product[] = [
     name: 'Beamex CMX Calibration Management Software',
     category: 'Calibration Software',
     description: 'All-in-one calibration management solution designed to help organizations manage instrumentation assets safely and plan/execute calibrations efficiently, even in highly regulated industries.',
-    image: 'https://www.beamex.com/app/uploads/2022/12/logical-v2-scaled.jpg',
+    image: 'https://www.beamex.com/app/uploads/2022/09/cmx-calibration-software-1280-720px-v1.jpg',
     beamexUrl: 'https://www.beamex.com/calibration-software/cmx/',
     priceRange: '₱800,000 - ₱2,500,000',
     priceRangeUSD: '$14,300 - $44,600',
