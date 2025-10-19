@@ -8,6 +8,10 @@ import {
   getMyReviews,
 } from '../controllers/reviewController';
 import { protect, adminOnly } from '../middleware/auth';
+import {
+  validateCreateReview,
+  handleValidationErrors,
+} from '../middleware/validation';
 
 const router = express.Router();
 
@@ -15,7 +19,7 @@ const router = express.Router();
 router.get('/', getPublicReviews);
 
 // Protected routes (requires authentication)
-router.post('/', protect, createReview);
+router.post('/', protect, validateCreateReview, handleValidationErrors, createReview);
 router.get('/my-reviews', protect, getMyReviews);
 
 // Admin routes

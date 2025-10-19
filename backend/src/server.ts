@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/database';
 import { errorHandler } from './middleware/errorHandler';
 import { seedAdminUser } from './utils/seedAdmin';
+import { corsConfig } from './config/cors';
+import { createIndexes } from './config/indexes';
 
 // Load env vars
 dotenv.config();
@@ -23,22 +25,20 @@ import recommendationRoutes from './routes/recommendationRoutes';
 const app: Application = express();
 
 // Connect to database
-connectDB().then(() => {
+connectDB().then(async () => {
   // Seed admin user after DB connection
-  seedAdminUser();
+  await seedAdminUser();
+
+  // Create database indexes for optimal performance
+  await createIndexes();
 });
 
 // Body parser middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' })); // Increased limit for base64 images
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // CORS middleware
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-    credentials: true,
-  })
-);
+app.use(cors(corsConfig));
 
 // Mount routes
 app.use('/api/auth', authRoutes);
