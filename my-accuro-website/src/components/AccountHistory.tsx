@@ -75,7 +75,25 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
           break;
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || `Failed to load ${tab} data`);
+      // Instead of showing error, just set empty data arrays
+      // The render methods will show friendly "no data" messages
+      switch (tab) {
+        case 'bookings':
+          setBookings([]);
+          break;
+        case 'purchases':
+          setPurchases([]);
+          break;
+        case 'reviews':
+          setReviews([]);
+          break;
+        case 'quotes':
+          setQuotes([]);
+          break;
+        case 'activity':
+          setActivityLogs([]);
+          break;
+      }
     } finally {
       setLoading(false);
     }

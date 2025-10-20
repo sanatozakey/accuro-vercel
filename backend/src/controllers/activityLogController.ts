@@ -92,6 +92,39 @@ export const createActivityLog = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// @desc    Get current user's activity logs
+// @route   GET /api/activity-logs/my
+// @access  Private
+export const getMyActivityLogs = async (req: AuthRequest, res: Response) => {
+  try {
+    const { page = 1, limit = 50, resourceType } = req.query;
+
+    const query: any = { user: req.user!._id };
+    if (resourceType) query.resourceType = resourceType;
+
+    const logs = await ActivityLog.find(query)
+      .sort({ createdAt: -1 })
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit));
+
+    const total = await ActivityLog.countDocuments(query);
+
+    res.status(200).json({
+      success: true,
+      count: logs.length,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+      data: logs,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
 // Helper function to log activity (can be imported and used in other controllers)
 export const logActivity = async (
   user: { _id: string; name: string; email: string },

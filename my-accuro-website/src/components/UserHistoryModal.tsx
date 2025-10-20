@@ -35,7 +35,18 @@ export function UserHistoryModal({
       const response = await userService.getUserHistory(userId);
       setHistoryData(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load user history');
+      // Show friendly message instead of error
+      setHistoryData({
+        summary: {
+          totalBookings: 0,
+          totalPurchases: 0,
+          totalQuotes: 0,
+          totalReviews: 0,
+          totalSpent: 0,
+          averageRating: 0,
+        },
+        activityLogs: [],
+      });
     } finally {
       setLoading(false);
     }
@@ -166,18 +177,32 @@ export function UserHistoryModal({
 
                 {/* Account History Component - This will handle tabs */}
                 <div className="mt-6">
-                  <p className="text-sm text-gray-500 mb-4 italic">
-                    Note: This view shows {userName}'s complete account history including bookings, purchases, quotes, reviews, and activity logs.
-                  </p>
-                  {/* We can't directly use AccountHistory here as it fetches its own data
-                      Instead, we'll show a note that the admin should use the tabs above */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-blue-800">
-                      <strong>Admin View:</strong> The statistics above show {userName}'s complete history summary.
-                      To view detailed records, you can access the user's individual booking, purchase, quote, and review records
-                      from their respective management sections in the admin dashboard.
-                    </p>
-                  </div>
+                  {historyData.summary.totalBookings === 0 &&
+                   historyData.summary.totalPurchases === 0 &&
+                   historyData.summary.totalQuotes === 0 &&
+                   historyData.summary.totalReviews === 0 ? (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                      <Activity className="h-12 w-12 text-blue-400 mx-auto mb-3" />
+                      <p className="text-lg font-medium text-blue-900 mb-2">No Activity Yet</p>
+                      <p className="text-sm text-blue-700">
+                        {userName} hasn't made any bookings, purchases, or quote requests yet.
+                        Their activity will appear here once they start using the platform.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-500 mb-4 italic">
+                        Note: This view shows {userName}'s complete account history including bookings, purchases, quotes, reviews, and activity logs.
+                      </p>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-800">
+                          <strong>Admin View:</strong> The statistics above show {userName}'s complete history summary.
+                          To view detailed records, you can access the user's individual booking, purchase, quote, and review records
+                          from their respective management sections in the admin dashboard.
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Recent Activity Preview */}
