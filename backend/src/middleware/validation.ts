@@ -141,39 +141,56 @@ export const validateUpdateDetails: ValidationChain[] = [
 // ==================== BOOKING VALIDATIONS ====================
 
 export const validateCreateBooking: ValidationChain[] = [
-  body('productId')
+  body('date')
     .notEmpty()
-    .withMessage('Product ID is required')
-    .isMongoId()
-    .withMessage('Invalid product ID format'),
-  body('preferredDate')
-    .notEmpty()
-    .withMessage('Preferred date is required')
+    .withMessage('Date is required')
     .isISO8601()
-    .withMessage('Invalid date format')
-    .custom((value) => {
-      const date = new Date(value);
-      const now = new Date();
-      if (date < now) {
-        throw new Error('Preferred date must be in the future');
-      }
-      return true;
-    }),
-  body('preferredTime')
+    .withMessage('Invalid date format'),
+  body('time')
     .notEmpty()
-    .withMessage('Preferred time is required')
+    .withMessage('Time is required')
     .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)
     .withMessage('Invalid time format (use HH:MM)'),
-  body('location')
-    .optional()
+  body('company')
     .trim()
+    .notEmpty()
+    .withMessage('Company name is required')
+    .isLength({ min: 2, max: 200 })
+    .withMessage('Company name must be between 2 and 200 characters'),
+  body('contactName')
+    .trim()
+    .notEmpty()
+    .withMessage('Contact name is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Contact name must be between 2 and 100 characters'),
+  body('contactEmail')
+    .isEmail()
+    .withMessage('Please provide a valid contact email')
+    .normalizeEmail()
+    .trim(),
+  body('contactPhone')
+    .trim()
+    .notEmpty()
+    .withMessage('Contact phone is required'),
+  body('purpose')
+    .trim()
+    .notEmpty()
+    .withMessage('Meeting purpose is required'),
+  body('location')
+    .trim()
+    .notEmpty()
+    .withMessage('Meeting location is required')
     .isLength({ max: 500 })
     .withMessage('Location must not exceed 500 characters'),
-  body('notes')
+  body('product')
+    .trim()
+    .notEmpty()
+    .withMessage('Product/service of interest is required'),
+  body('additionalInfo')
     .optional()
     .trim()
-    .isLength({ max: 1000 })
-    .withMessage('Notes must not exceed 1000 characters'),
+    .isLength({ max: 2000 })
+    .withMessage('Additional information must not exceed 2000 characters'),
 ];
 
 export const validateUpdateBooking: ValidationChain[] = [
@@ -289,11 +306,10 @@ export const validateUpdateProduct: ValidationChain[] = [
 // ==================== REVIEW VALIDATIONS ====================
 
 export const validateCreateReview: ValidationChain[] = [
-  body('productId')
-    .notEmpty()
-    .withMessage('Product ID is required')
+  body('bookingId')
+    .optional()
     .isMongoId()
-    .withMessage('Invalid product ID format'),
+    .withMessage('Invalid booking ID format'),
   body('rating')
     .notEmpty()
     .withMessage('Rating is required')
@@ -303,15 +319,42 @@ export const validateCreateReview: ValidationChain[] = [
     .trim()
     .notEmpty()
     .withMessage('Comment is required')
-    .isLength({ min: 10, max: 1000 })
-    .withMessage('Comment must be between 10 and 1000 characters'),
+    .isLength({ min: 1, max: 1000 })
+    .withMessage('Comment must be between 1 and 1000 characters'),
+  body('reviewType')
+    .optional()
+    .isIn(['booking', 'general'])
+    .withMessage('Review type must be either "booking" or "general"'),
+  body('isPublic')
+    .optional()
+    .isBoolean()
+    .withMessage('isPublic must be a boolean'),
 ];
 
 // ==================== CONTACT FORM VALIDATIONS ====================
 
 export const validateContactForm: ValidationChain[] = [
-  nameValidation(),
+  body('firstName')
+    .trim()
+    .notEmpty()
+    .withMessage('First name is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('First name must be between 2 and 100 characters')
+    .matches(/^[a-zA-Z\s'-]+$/)
+    .withMessage('First name can only contain letters, spaces, hyphens, and apostrophes'),
+  body('lastName')
+    .trim()
+    .notEmpty()
+    .withMessage('Last name is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Last name must be between 2 and 100 characters')
+    .matches(/^[a-zA-Z\s'-]+$/)
+    .withMessage('Last name can only contain letters, spaces, hyphens, and apostrophes'),
   emailValidation(),
+  body('phone')
+    .trim()
+    .notEmpty()
+    .withMessage('Phone number is required'),
   body('subject')
     .trim()
     .notEmpty()
@@ -324,7 +367,11 @@ export const validateContactForm: ValidationChain[] = [
     .withMessage('Message is required')
     .isLength({ min: 20, max: 2000 })
     .withMessage('Message must be between 20 and 2000 characters'),
-  phoneValidation(),
+  body('company')
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Company name must not exceed 200 characters'),
 ];
 
 // ==================== ID PARAM VALIDATIONS ====================
