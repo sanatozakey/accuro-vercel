@@ -43,6 +43,18 @@ export function Contact() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    // Frontend validation
+    if (formData.message.length < 20) {
+      setError('Message must be at least 20 characters long. You currently have ' + formData.message.length + ' characters.')
+      return
+    }
+
+    if (formData.message.length > 2000) {
+      setError('Message must be no more than 2000 characters long.')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -65,8 +77,10 @@ export function Contact() {
           `${e.field}: ${e.message}`
         ).join(', ');
         setError(errorMessages);
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
       } else {
-        setError(err.response?.data?.message || 'Failed to send message. Please try again.')
+        setError('Failed to send message. Please try again.')
       }
     } finally {
       setLoading(false)

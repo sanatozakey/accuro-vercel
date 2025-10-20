@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { LoadingSpinner } from './components/LoadingSpinner'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -73,6 +73,10 @@ export function AppRouter() {
                 <Booking />
               </Layout>
             }
+          />
+          <Route
+            path="/quote"
+            element={<Navigate to="/products" replace />}
           />
           <Route
             path="/login"
