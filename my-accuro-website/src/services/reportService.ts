@@ -140,6 +140,12 @@ class ReportService {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   }
+
+  // Download report as PDF
+  async downloadReportPDF(reportId: string) {
+    const blob = await this.exportReportToPDF(reportId);
+    this.downloadPDF(blob, `report_${reportId}_${Date.now()}.pdf`);
+  }
 }
 
 export default new ReportService();

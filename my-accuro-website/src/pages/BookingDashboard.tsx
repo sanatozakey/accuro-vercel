@@ -45,8 +45,8 @@ import userService, { User as UserType } from '../services/userService'
 import analyticsService from '../services/analyticsService'
 import reviewService, { Review } from '../services/reviewService'
 import activityLogService, { ActivityLog } from '../services/activityLogService'
-import recommendationAdminService, { UserInteraction, RecommendationStats } from '../services/recommendationAdminService'
 import EnhancedAnalytics from '../components/EnhancedAnalytics'
+import { ReportsTab } from '../components/ReportsTab'
 // Define types for our booking data
 interface Booking {
   _id: string
@@ -156,7 +156,7 @@ export function BookingDashboard(): React.ReactElement {
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [conclusion, setConclusion] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
-  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'logs' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'recommendations'>(
+  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'logs' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports'>(
     'table',
   )
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
@@ -193,10 +193,10 @@ export function BookingDashboard(): React.ReactElement {
     rating?: number
   }>({})
 
-  // Recommendations state
-  const [recommendationsStats, setRecommendationsStats] = useState<RecommendationStats | null>(null)
+  // reports state
+  const [reportsStats, setreportsStats] = useState<reportstats | null>(null)
   const [userInteractions, setUserInteractions] = useState<UserInteraction[]>([])
-  const [recommendationsLoading, setRecommendationsLoading] = useState<boolean>(false)
+  const [reportsLoading, setreportsLoading] = useState<boolean>(false)
 
   // Past bookings warning state
   const [pastBookings, setPastBookings] = useState<Booking[]>([])
@@ -332,19 +332,19 @@ export function BookingDashboard(): React.ReactElement {
     }
   }, [reviewsFilter.isApproved, reviewsFilter.rating])
 
-  const fetchRecommendationsData = async (): Promise<void> => {
-    setRecommendationsLoading(true)
+  const fetchreportsData = async (): Promise<void> => {
+    setreportsLoading(true)
     try {
       const [statsResponse, interactionsResponse] = await Promise.all([
-        recommendationAdminService.getStats(),
-        recommendationAdminService.getAllInteractions(),
+        reportService.getStats(),
+        reportService.getAllInteractions(),
       ])
-      setRecommendationsStats(statsResponse.data)
+      setreportsStats(statsResponse.data)
       setUserInteractions(interactionsResponse.data)
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load recommendations data')
+      setError(err.response?.data?.message || 'Failed to load reports data')
     } finally {
-      setRecommendationsLoading(false)
+      setreportsLoading(false)
     }
   }
 
@@ -367,10 +367,10 @@ export function BookingDashboard(): React.ReactElement {
     }
   }, [viewMode, reviewsFilter, fetchReviews])
 
-  // Load recommendations when tab is selected
+  // Load reports when tab is selected
   useEffect(() => {
-    if (viewMode === 'recommendations') {
-      fetchRecommendationsData()
+    if (viewMode === 'reports') {
+      fetchreportsData()
     }
   }, [viewMode])
 
@@ -1030,11 +1030,11 @@ export function BookingDashboard(): React.ReactElement {
               Analytics
             </button>
             <button
-              onClick={() => setViewMode('recommendations')}
-              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'recommendations' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
+              onClick={() => setViewMode('reports')}
+              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'reports' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
             >
               <TrendingUp className="h-4 w-4 mr-2" />
-              Recommendations
+              Reports
             </button>
           </div>
         </div>
@@ -1948,15 +1948,20 @@ export function BookingDashboard(): React.ReactElement {
               </>
             )}
 
-            {/* Recommendations View */}
-            {viewMode === 'recommendations' && (
+            {/* Reports View */}
+            {viewMode === 'reports' && (
+              <ReportsTab />
+            )}
+
+            {/* OLD reports View - DISABLED */}
+            {false && viewMode === 'reports_old' && (
               <>
-                {recommendationsLoading ? (
+                {reportsLoading ? (
                   <div className="flex items-center justify-center py-12">
                     <RefreshCw className="h-8 w-8 text-blue-600 animate-spin mr-3" />
                     <p className="text-gray-600">Loading recommendation data...</p>
                   </div>
-                ) : recommendationsStats ? (
+                ) : reportsStats ? (
                   <>
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -1964,7 +1969,7 @@ export function BookingDashboard(): React.ReactElement {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm text-gray-600 mb-1">Total Interactions</p>
-                            <p className="text-3xl font-bold text-gray-900">{recommendationsStats.totalInteractions}</p>
+                            <p className="text-3xl font-bold text-gray-900">{reportsStats.totalInteractions}</p>
                           </div>
                           <Activity className="h-12 w-12 text-blue-600" />
                         </div>
@@ -1974,7 +1979,7 @@ export function BookingDashboard(): React.ReactElement {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm text-gray-600 mb-1">Active Users</p>
-                            <p className="text-3xl font-bold text-gray-900">{recommendationsStats.totalUsers}</p>
+                            <p className="text-3xl font-bold text-gray-900">{reportsStats.totalUsers}</p>
                           </div>
                           <Users className="h-12 w-12 text-green-600" />
                         </div>
@@ -1984,7 +1989,7 @@ export function BookingDashboard(): React.ReactElement {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm text-gray-600 mb-1">Top Products</p>
-                            <p className="text-3xl font-bold text-gray-900">{recommendationsStats.topProducts.length}</p>
+                            <p className="text-3xl font-bold text-gray-900">{reportsStats.topProducts.length}</p>
                           </div>
                           <Star className="h-12 w-12 text-yellow-600" />
                         </div>
@@ -1995,7 +2000,7 @@ export function BookingDashboard(): React.ReactElement {
                           <div>
                             <p className="text-sm text-gray-600 mb-1">Categories</p>
                             <p className="text-3xl font-bold text-gray-900">
-                              {recommendationsStats.interactionsByCategory.length}
+                              {reportsStats.interactionsByCategory.length}
                             </p>
                           </div>
                           <Package className="h-12 w-12 text-purple-600" />
@@ -2008,11 +2013,11 @@ export function BookingDashboard(): React.ReactElement {
                       {/* Interaction Types Pie Chart */}
                       <div className="bg-white rounded-lg shadow-md p-6">
                         <h3 className="text-lg font-bold text-gray-900 mb-4">Interactions by Type</h3>
-                        {recommendationsStats.interactionsByType.length > 0 ? (
+                        {reportsStats.interactionsByType.length > 0 ? (
                           <ResponsiveContainer width="100%" height={300}>
                             <PieChart>
                               <Pie
-                                data={recommendationsStats.interactionsByType.map((item) => ({
+                                data={reportsStats.interactionsByType.map((item) => ({
                                   name: item._id.charAt(0).toUpperCase() + item._id.slice(1),
                                   value: item.count,
                                 }))}
@@ -2026,7 +2031,7 @@ export function BookingDashboard(): React.ReactElement {
                                 fill="#8884d8"
                                 dataKey="value"
                               >
-                                {recommendationsStats.interactionsByType.map((entry, index) => (
+                                {reportsStats.interactionsByType.map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5]} />
                                 ))}
                               </Pie>
@@ -2043,9 +2048,9 @@ export function BookingDashboard(): React.ReactElement {
                         <h3 className="text-lg font-bold text-gray-900 mb-4">
                           Interactions by Category
                         </h3>
-                        {recommendationsStats.interactionsByCategory.length > 0 ? (
+                        {reportsStats.interactionsByCategory.length > 0 ? (
                           <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={recommendationsStats.interactionsByCategory.slice(0, 6).map((item) => ({
+                            <BarChart data={reportsStats.interactionsByCategory.slice(0, 6).map((item) => ({
                               name: item._id,
                               interactions: item.count,
                             }))}>
@@ -2089,8 +2094,8 @@ export function BookingDashboard(): React.ReactElement {
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                            {recommendationsStats.topProducts.length > 0 ? (
-                              recommendationsStats.topProducts.map((product, index) => (
+                            {reportsStats.topProducts.length > 0 ? (
+                              reportsStats.topProducts.map((product, index) => (
                                 <tr key={product.productId} className="hover:bg-gray-50">
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <span className="text-lg font-bold text-gray-900">#{index + 1}</span>
@@ -3249,3 +3254,4 @@ export function BookingDashboard(): React.ReactElement {
     </div>
   )
 }
+
