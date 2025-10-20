@@ -98,4 +98,10 @@ const QuoteSchema: Schema = new Schema(
   }
 );
 
+// Indexes for efficient querying
+QuoteSchema.index({ userId: 1, createdAt: -1 });
+QuoteSchema.index({ customerEmail: 1 });
+QuoteSchema.index({ status: 1, createdAt: -1 });
+QuoteSchema.index({ 'items.productId': 1 });
+
 export default mongoose.model<IQuote>('Quote', QuoteSchema);

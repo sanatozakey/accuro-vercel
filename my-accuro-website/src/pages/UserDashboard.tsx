@@ -20,6 +20,7 @@ import bookingService, { Booking } from '../services/bookingService';
 import reviewService from '../services/reviewService';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ProductRecommendations } from '../components/ProductRecommendations';
+import { AccountHistory } from '../components/AccountHistory';
 
 export function UserDashboard() {
   const { user } = useAuth();
@@ -255,6 +256,9 @@ export function UserDashboard() {
       <div className="container mx-auto px-4 py-8">
         {/* Product Recommendations */}
         <ProductRecommendations limit={5} />
+
+        {/* Account History Section */}
+        <AccountHistory className="mb-8" />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">

@@ -62,10 +62,30 @@ export const authorize = (...roles: string[]) => {
 };
 
 export const adminOnly = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!req.user || req.user.role !== 'admin') {
+  if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'superadmin')) {
     return res.status(403).json({
       success: false,
       message: 'Access denied. Admin privileges required.',
+    });
+  }
+  next();
+};
+
+export const superAdminOnly = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user || req.user.role !== 'superadmin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Super admin privileges required.',
+    });
+  }
+  next();
+};
+
+export const adminOrSuperAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'superadmin')) {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Admin or super admin privileges required.',
     });
   }
   next();

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Quote from '../models/Quote';
+import ActivityLog from '../models/ActivityLog';
 import { AuthRequest } from '../middleware/auth';
 
 // @desc    Get all quotes
@@ -60,6 +61,25 @@ export const createQuote = async (req: AuthRequest, res: Response) => {
 
     const quote = await Quote.create(req.body);
 
+    // Log activity if user is authenticated
+    if (req.user) {
+      try {
+        await ActivityLog.create({
+          user: req.user._id,
+          userName: req.user.name,
+          userEmail: req.user.email,
+          action: 'QUOTE_CREATED',
+          resourceType: 'quote',
+          resourceId: quote._id.toString(),
+          details: `Quote request created for ${quote.company} - ${quote.items.length} items, Total: $${quote.totalEstimatedPrice}`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
+
     res.status(201).json({
       success: true,
       data: quote,
@@ -75,7 +95,7 @@ export const createQuote = async (req: AuthRequest, res: Response) => {
 // @desc    Update quote
 // @route   PUT /api/quotes/:id
 // @access  Private/Admin
-export const updateQuote = async (req: Request, res: Response) => {
+export const updateQuote = async (req: AuthRequest, res: Response) => {
   try {
     let quote = await Quote.findById(req.params.id);
 
@@ -86,10 +106,30 @@ export const updateQuote = async (req: Request, res: Response) => {
       });
     }
 
+    const originalStatus = quote.status;
     quote = await Quote.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
+
+    // Log activity (assume admin is making the update)
+    if (req.user) {
+      try {
+        await ActivityLog.create({
+          user: req.user._id,
+          userName: req.user.name,
+          userEmail: req.user.email,
+          action: 'QUOTE_UPDATED',
+          resourceType: 'quote',
+          resourceId: quote!._id.toString(),
+          details: `Quote updated for ${quote!.company}. Status: ${originalStatus} → ${quote!.status}`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -106,7 +146,7 @@ export const updateQuote = async (req: Request, res: Response) => {
 // @desc    Delete quote
 // @route   DELETE /api/quotes/:id
 // @access  Private/Admin
-export const deleteQuote = async (req: Request, res: Response) => {
+export const deleteQuote = async (req: AuthRequest, res: Response) => {
   try {
     const quote = await Quote.findById(req.params.id);
 
@@ -118,6 +158,25 @@ export const deleteQuote = async (req: Request, res: Response) => {
     }
 
     await quote.deleteOne();
+
+    // Log activity (assume admin is deleting)
+    if (req.user) {
+      try {
+        await ActivityLog.create({
+          user: req.user._id,
+          userName: req.user.name,
+          userEmail: req.user.email,
+          action: 'QUOTE_DELETED',
+          resourceType: 'quote',
+          resourceId: quote._id.toString(),
+          details: `Quote deleted for ${quote.company} (Total: $${quote.totalEstimatedPrice})`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
 
     res.status(200).json({
       success: true,

@@ -132,10 +132,16 @@ export const createIndexes = async () => {
 
     // ==================== QUOTES COLLECTION ====================
     await db.collection('quotes').createIndex(
-      { email: 1 },
+      { userId: 1 },
+      { name: 'quotes_user' }
+    );
+    console.log('✓ Created index on quotes.userId');
+
+    await db.collection('quotes').createIndex(
+      { customerEmail: 1 },
       { name: 'quotes_email' }
     );
-    console.log('✓ Created index on quotes.email');
+    console.log('✓ Created index on quotes.customerEmail');
 
     await db.collection('quotes').createIndex(
       { createdAt: -1 },
@@ -147,7 +153,72 @@ export const createIndexes = async () => {
       { status: 1 },
       { name: 'quotes_status' }
     );
-    console.log('✓ Created index on quotes.status (if exists)');
+    console.log('✓ Created index on quotes.status');
+
+    // Compound index for user quotes sorted by date
+    await db.collection('quotes').createIndex(
+      { userId: 1, createdAt: -1 },
+      { name: 'quotes_user_created' }
+    );
+    console.log('✓ Created compound index on quotes.userId + createdAt');
+
+    // Compound index for status + date queries
+    await db.collection('quotes').createIndex(
+      { status: 1, createdAt: -1 },
+      { name: 'quotes_status_created' }
+    );
+    console.log('✓ Created compound index on quotes.status + createdAt');
+
+    // ==================== PURCHASE HISTORY COLLECTION ====================
+    await db.collection('purchasehistories').createIndex(
+      { user: 1 },
+      { name: 'purchasehistories_user' }
+    );
+    console.log('✓ Created index on purchasehistories.user');
+
+    await db.collection('purchasehistories').createIndex(
+      { orderNumber: 1 },
+      { unique: true, name: 'purchasehistories_ordernumber_unique' }
+    );
+    console.log('✓ Created unique index on purchasehistories.orderNumber');
+
+    await db.collection('purchasehistories').createIndex(
+      { userEmail: 1 },
+      { name: 'purchasehistories_email' }
+    );
+    console.log('✓ Created index on purchasehistories.userEmail');
+
+    await db.collection('purchasehistories').createIndex(
+      { orderStatus: 1 },
+      { name: 'purchasehistories_order_status' }
+    );
+    console.log('✓ Created index on purchasehistories.orderStatus');
+
+    await db.collection('purchasehistories').createIndex(
+      { paymentStatus: 1 },
+      { name: 'purchasehistories_payment_status' }
+    );
+    console.log('✓ Created index on purchasehistories.paymentStatus');
+
+    await db.collection('purchasehistories').createIndex(
+      { createdAt: -1 },
+      { name: 'purchasehistories_created_desc' }
+    );
+    console.log('✓ Created index on purchasehistories.createdAt');
+
+    // Compound index for user purchase history sorted by date
+    await db.collection('purchasehistories').createIndex(
+      { user: 1, createdAt: -1 },
+      { name: 'purchasehistories_user_created' }
+    );
+    console.log('✓ Created compound index on purchasehistories.user + createdAt');
+
+    // Compound index for order/payment status queries
+    await db.collection('purchasehistories').createIndex(
+      { paymentStatus: 1, orderStatus: 1 },
+      { name: 'purchasehistories_payment_order_status' }
+    );
+    console.log('✓ Created compound index on purchasehistories.paymentStatus + orderStatus');
 
     // ==================== ACTIVITY LOGS COLLECTION ====================
     await db.collection('activitylogs').createIndex(

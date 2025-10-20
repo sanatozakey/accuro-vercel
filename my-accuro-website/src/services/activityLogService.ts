@@ -14,6 +14,18 @@ export interface ActivityLog {
   createdAt: string;
 }
 
+export interface ActivityLogsResponse {
+  success: boolean;
+  count: number;
+  data: ActivityLog[];
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+  };
+}
+
 const activityLogService = {
   // Get all activity logs with pagination and filters (Admin only)
   getAllActivityLogs: async (params?: {
@@ -24,7 +36,17 @@ const activityLogService = {
     userId?: string;
     productCategory?: string;
   }) => {
-    const response = await api.get('/activity-logs', { params });
+    const response = await api.get<ActivityLogsResponse>('/activity-logs', { params });
+    return response.data;
+  },
+
+  // Get current user's activity logs
+  getMyActivityLogs: async (params?: {
+    page?: number;
+    limit?: number;
+    resourceType?: string;
+  }) => {
+    const response = await api.get<ActivityLogsResponse>('/activity-logs/my', { params });
     return response.data;
   },
 

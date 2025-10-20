@@ -32,9 +32,38 @@ export interface QuoteResponse {
   data: Quote;
 }
 
+export interface QuotesResponse {
+  success: boolean;
+  count: number;
+  data: Quote[];
+}
+
 class QuoteService {
   async create(data: QuoteData): Promise<QuoteResponse> {
     const response = await api.post<QuoteResponse>('/quotes', data);
+    return response.data;
+  }
+
+  async getMyQuotes(): Promise<QuotesResponse> {
+    const response = await api.get<QuotesResponse>('/quotes/my');
+    return response.data;
+  }
+
+  async getAll(params?: { status?: string }): Promise<QuotesResponse> {
+    const response = await api.get<QuotesResponse>('/quotes', { params });
+    return response.data;
+  }
+
+  async getById(id: string): Promise<QuoteResponse> {
+    const response = await api.get<QuoteResponse>(`/quotes/${id}`);
+    return response.data;
+  }
+
+  async updateStatus(id: string, status: string, adminNotes?: string): Promise<QuoteResponse> {
+    const response = await api.put<QuoteResponse>(`/quotes/${id}/status`, {
+      status,
+      adminNotes,
+    });
     return response.data;
   }
 }

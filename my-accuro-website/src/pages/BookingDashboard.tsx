@@ -46,6 +46,7 @@ import analyticsService from '../services/analyticsService'
 import reviewService, { Review } from '../services/reviewService'
 import activityLogService, { ActivityLog } from '../services/activityLogService'
 import recommendationAdminService, { UserInteraction, RecommendationStats } from '../services/recommendationAdminService'
+import EnhancedAnalytics from '../components/EnhancedAnalytics'
 // Define types for our booking data
 interface Booking {
   _id: string
@@ -135,7 +136,7 @@ const statusOptions: string[] = [
   'cancelled',
 ]
 export function BookingDashboard(): React.ReactElement {
-  const { logout } = useAuth()
+  const { logout, user: currentUser, isSuperAdmin } = useAuth()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [filteredBookings, setFilteredBookings] =
     useState<Booking[]>([])
@@ -809,9 +810,9 @@ export function BookingDashboard(): React.ReactElement {
     }
   }
 
-  const updateUserRole = async (userId: string, newRole: 'user' | 'admin'): Promise<void> => {
+  const updateUserRole = async (userId: string, newRole: 'user' | 'admin' | 'superadmin'): Promise<void> => {
     try {
-      await userService.update(userId, { role: newRole })
+      await userService.changeRole(userId, newRole)
       await fetchUsers()
       setError('')
       setIsUserModalOpen(false)
@@ -1492,7 +1493,12 @@ export function BookingDashboard(): React.ReactElement {
                           <div className="text-sm text-gray-900">{user.phone || 'N/A'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {user.role === 'admin' ? (
+                          {user.role === 'superadmin' ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              <Shield className="w-3 h-3 mr-1" />
+                              Super Admin
+                            </span>
+                          ) : user.role === 'admin' ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                               <Shield className="w-3 h-3 mr-1" />
                               Admin
@@ -3060,30 +3066,61 @@ export function BookingDashboard(): React.ReactElement {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           User Role
                         </label>
+                        {selectedUser.role === 'superadmin' && !isSuperAdmin ? (
+                          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-2">
+                            <p className="text-sm text-yellow-800">
+                              <Shield className="inline h-4 w-4 mr-1" />
+                              Only super admins can modify super admin roles.
+                            </p>
+                          </div>
+                        ) : null}
                         <div className="space-y-2">
-                          <label className="inline-flex items-center p-3 border rounded-md border-gray-300 cursor-pointer hover:bg-gray-50 w-full">
+                          <label className={`inline-flex items-center p-3 border rounded-md border-gray-300 ${selectedUser.role === 'superadmin' && !isSuperAdmin ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'} w-full`}>
                             <input
                               type="radio"
                               name="role"
                               value="user"
                               checked={editedUser.role === 'user'}
-                              onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value as 'user' | 'admin' })}
+                              onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value as 'user' | 'admin' | 'superadmin' })}
+                              disabled={selectedUser.role === 'superadmin' && !isSuperAdmin}
                               className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
                             />
                             <span className="ml-3 text-sm text-gray-700">User - Standard access</span>
                           </label>
-                          <label className="inline-flex items-center p-3 border rounded-md border-gray-300 cursor-pointer hover:bg-gray-50 w-full">
+                          <label className={`inline-flex items-center p-3 border rounded-md border-gray-300 ${(selectedUser.role === 'superadmin' || selectedUser.role === 'admin') && !isSuperAdmin ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'} w-full`}>
                             <input
                               type="radio"
                               name="role"
                               value="admin"
                               checked={editedUser.role === 'admin'}
-                              onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value as 'user' | 'admin' })}
+                              onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value as 'user' | 'admin' | 'superadmin' })}
+                              disabled={(selectedUser.role === 'superadmin' || selectedUser.role === 'admin') && !isSuperAdmin}
                               className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
                             />
                             <span className="ml-3 text-sm text-gray-700">Admin - Full access to dashboard</span>
                           </label>
+                          {isSuperAdmin && (
+                            <label className="inline-flex items-center p-3 border rounded-md border-red-300 cursor-pointer hover:bg-red-50 w-full">
+                              <input
+                                type="radio"
+                                name="role"
+                                value="superadmin"
+                                checked={editedUser.role === 'superadmin'}
+                                onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value as 'user' | 'admin' | 'superadmin' })}
+                                className="focus:ring-red-500 h-4 w-4 text-red-600 border-gray-300"
+                              />
+                              <span className="ml-3 text-sm text-gray-700">
+                                <Shield className="inline h-4 w-4 mr-1 text-red-600" />
+                                Super Admin - Unrestricted access & user role management
+                              </span>
+                            </label>
+                          )}
                         </div>
+                        {!isSuperAdmin && (
+                          <p className="mt-2 text-xs text-gray-500">
+                            Note: Only super admins can change admin roles or create super admins.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>

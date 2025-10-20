@@ -5,7 +5,7 @@ export interface IActivityLog extends Document {
   userName: string;
   userEmail: string;
   action: string;
-  resourceType: 'user' | 'booking' | 'review' | 'auth' | 'system';
+  resourceType: 'user' | 'booking' | 'review' | 'quote' | 'purchase' | 'auth' | 'system';
   resourceId?: string;
   details?: string;
   ipAddress?: string;
@@ -36,7 +36,7 @@ const ActivityLogSchema: Schema = new Schema(
     },
     resourceType: {
       type: String,
-      enum: ['user', 'booking', 'review', 'auth', 'system'],
+      enum: ['user', 'booking', 'review', 'quote', 'purchase', 'auth', 'system'],
       required: true,
     },
     resourceId: {

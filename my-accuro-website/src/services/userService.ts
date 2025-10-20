@@ -4,7 +4,7 @@ export interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'superadmin';
   phone?: string;
   company?: string;
   profilePicture?: string;
@@ -29,6 +29,12 @@ const userService = {
   // Update user (Admin only)
   update: async (id: string, userData: Partial<User>) => {
     const response = await api.put(`/users/${id}`, userData);
+    return response.data;
+  },
+
+  // Change user role (Admin/Super Admin only)
+  changeRole: async (id: string, role: 'user' | 'admin' | 'superadmin') => {
+    const response = await api.patch(`/users/${id}/role`, { role });
     return response.data;
   },
 
