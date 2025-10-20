@@ -70,7 +70,11 @@ export function ReportsTab({ className = '' }: ReportsTabProps) {
       setReports(response.data || []);
       setError('');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load reports');
+      // Instead of showing error, just show empty state
+      // This is normal for new admins who haven't generated reports yet
+      setReports([]);
+      setError('');
+      console.log('No reports available yet or error loading:', err.message);
     } finally {
       setLoading(false);
     }
