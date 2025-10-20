@@ -143,6 +143,33 @@ export const updateQuote = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// @desc    Get user's quotes
+// @route   GET /api/quotes/my
+// @access  Private
+export const getMyQuotes = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authorized',
+      });
+    }
+
+    const quotes = await Quote.find({ userId: req.user._id }).sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: quotes.length,
+      data: quotes,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
 // @desc    Delete quote
 // @route   DELETE /api/quotes/:id
 // @access  Private/Admin

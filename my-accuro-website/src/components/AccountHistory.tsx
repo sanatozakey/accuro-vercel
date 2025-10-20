@@ -12,31 +12,40 @@ import {
   XCircle,
   AlertCircle,
   MessageSquare,
+  Package,
+  MapPin,
+  Truck,
+  DollarSign,
 } from 'lucide-react';
 import reviewService, { Review } from '../services/reviewService';
 import quoteService, { Quote } from '../services/quoteService';
 import activityLogService, { ActivityLog } from '../services/activityLogService';
+import bookingService, { Booking } from '../services/bookingService';
+import purchaseHistoryService, { PurchaseHistory } from '../services/purchaseHistoryService';
 import { LoadingSpinner } from './LoadingSpinner';
 
-type TabType = 'reviews' | 'purchases' | 'quotes' | 'activity';
+type TabType = 'bookings' | 'purchases' | 'quotes' | 'reviews' | 'activity';
 
 interface AccountHistoryProps {
   className?: string;
+  userId?: string; // Optional userId for admin viewing other users
 }
 
-export function AccountHistory({ className = '' }: AccountHistoryProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('reviews');
+export function AccountHistory({ className = '', userId }: AccountHistoryProps) {
+  const [activeTab, setActiveTab] = useState<TabType>('bookings');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Data states
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [purchases, setPurchases] = useState<PurchaseHistory[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
 
   useEffect(() => {
     loadTabData(activeTab);
-  }, [activeTab]);
+  }, [activeTab, userId]);
 
   const loadTabData = async (tab: TabType) => {
     setLoading(true);
@@ -44,6 +53,14 @@ export function AccountHistory({ className = '' }: AccountHistoryProps) {
 
     try {
       switch (tab) {
+        case 'bookings':
+          const bookingsData = await bookingService.getMyBookings();
+          setBookings(bookingsData.data || []);
+          break;
+        case 'purchases':
+          const purchasesData = await purchaseHistoryService.getMyPurchases();
+          setPurchases(purchasesData.data || []);
+          break;
         case 'reviews':
           const reviewsData = await reviewService.getMyReviews();
           setReviews(reviewsData.data || []);
@@ -56,9 +73,6 @@ export function AccountHistory({ className = '' }: AccountHistoryProps) {
           const activityData = await activityLogService.getMyActivityLogs();
           setActivityLogs(activityData.data || []);
           break;
-        case 'purchases':
-          // Placeholder for future purchase history implementation
-          break;
       }
     } catch (err: any) {
       setError(err.response?.data?.message || `Failed to load ${tab} data`);
@@ -69,22 +83,28 @@ export function AccountHistory({ className = '' }: AccountHistoryProps) {
 
   const tabs = [
     {
-      id: 'reviews' as TabType,
-      label: 'Reviews I\'ve Left',
-      icon: Star,
-      count: reviews.length,
+      id: 'bookings' as TabType,
+      label: 'My Bookings',
+      icon: Calendar,
+      count: bookings.length,
     },
     {
       id: 'purchases' as TabType,
       label: 'Purchase History',
       icon: ShoppingCart,
-      count: 0, // Placeholder
+      count: purchases.length,
     },
     {
       id: 'quotes' as TabType,
       label: 'Quote Requests',
       icon: FileText,
       count: quotes.length,
+    },
+    {
+      id: 'reviews' as TabType,
+      label: 'My Reviews',
+      icon: Star,
+      count: reviews.length,
     },
     {
       id: 'activity' as TabType,
@@ -94,7 +114,43 @@ export function AccountHistory({ className = '' }: AccountHistoryProps) {
     },
   ];
 
-  const getStatusBadge = (status: string) => {
+  const getBookingStatusBadge = (status: string) => {
+    const badges: Record<string, JSX.Element> = {
+      pending: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          <Clock className="h-3 w-3 mr-1" />
+          Pending
+        </span>
+      ),
+      confirmed: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Confirmed
+        </span>
+      ),
+      completed: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Completed
+        </span>
+      ),
+      cancelled: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+          <XCircle className="h-3 w-3 mr-1" />
+          Cancelled
+        </span>
+      ),
+      rescheduled: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+          <Clock className="h-3 w-3 mr-1" />
+          Rescheduled
+        </span>
+      ),
+    };
+    return badges[status] || null;
+  };
+
+  const getQuoteStatusBadge = (status: string) => {
     const badges: Record<string, JSX.Element> = {
       pending: (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -122,6 +178,230 @@ export function AccountHistory({ className = '' }: AccountHistoryProps) {
       ),
     };
     return badges[status] || null;
+  };
+
+  const getOrderStatusBadge = (status: string) => {
+    const badges: Record<string, JSX.Element> = {
+      processing: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          <Clock className="h-3 w-3 mr-1" />
+          Processing
+        </span>
+      ),
+      shipped: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          <Truck className="h-3 w-3 mr-1" />
+          Shipped
+        </span>
+      ),
+      delivered: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Delivered
+        </span>
+      ),
+      cancelled: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+          <XCircle className="h-3 w-3 mr-1" />
+          Cancelled
+        </span>
+      ),
+      returned: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <AlertCircle className="h-3 w-3 mr-1" />
+          Returned
+        </span>
+      ),
+    };
+    return badges[status] || null;
+  };
+
+  const renderBookingsTab = () => {
+    if (bookings.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Bookings Yet</h3>
+          <p className="text-gray-600 mb-4">
+            You haven't created any bookings yet
+          </p>
+          <a
+            href="/booking"
+            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition"
+          >
+            Create Booking
+          </a>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {bookings.map((booking) => (
+          <div
+            key={booking._id}
+            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+          >
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-3">
+              <div className="mb-2 md:mb-0">
+                <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                  {booking.company || 'Booking'}
+                </h4>
+                <p className="text-sm text-gray-600">
+                  {booking.product}
+                </p>
+              </div>
+              {getBookingStatusBadge(booking.status)}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <Calendar className="h-4 w-4 text-blue-600" />
+                <span>
+                  {new Date(booking.date).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <Clock className="h-4 w-4 text-blue-600" />
+                <span>{booking.time}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <MapPin className="h-4 w-4 text-blue-600" />
+                <span>{booking.location}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <Package className="h-4 w-4 text-blue-600" />
+                <span>Booking ID: {booking._id.slice(-8)}</span>
+              </div>
+            </div>
+
+            {booking.message && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <p className="text-xs text-gray-600 flex items-start gap-1">
+                  <MessageSquare className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                  <span>{booking.message}</span>
+                </p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderPurchasesTab = () => {
+    if (purchases.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            No Purchase History
+          </h3>
+          <p className="text-gray-600">
+            Your purchase history will appear here once you make your first purchase
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {purchases.map((purchase) => (
+          <div
+            key={purchase._id}
+            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+          >
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4">
+              <div className="mb-2 md:mb-0">
+                <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                  Order #{purchase.orderNumber}
+                </h4>
+                <p className="text-sm text-gray-600">
+                  {new Date(purchase.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </p>
+              </div>
+              <div className="flex flex-col items-start md:items-end gap-1">
+                {getOrderStatusBadge(purchase.orderStatus)}
+                <span className="text-sm text-gray-600 capitalize">
+                  Payment: {purchase.paymentStatus}
+                </span>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <h5 className="text-sm font-medium text-gray-700 mb-2">Items:</h5>
+              <div className="space-y-2">
+                {purchase.items.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{item.productName}</p>
+                      <p className="text-gray-600 text-xs">
+                        {item.category} • Qty: {item.quantity}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-gray-900">
+                        ${item.totalPrice.toFixed(2)}
+                      </p>
+                      <p className="text-gray-600 text-xs">
+                        ${item.unitPrice.toFixed(2)} each
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 pt-3">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-600">Subtotal:</span>
+                <span className="text-sm text-gray-900">${purchase.subtotal.toFixed(2)}</span>
+              </div>
+              {purchase.tax > 0 && (
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">Tax:</span>
+                  <span className="text-sm text-gray-900">${purchase.tax.toFixed(2)}</span>
+                </div>
+              )}
+              {purchase.shippingCost > 0 && (
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">Shipping:</span>
+                  <span className="text-sm text-gray-900">${purchase.shippingCost.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                <span className="text-base font-semibold text-gray-900">Total:</span>
+                <span className="text-base font-bold text-blue-600">
+                  ${purchase.totalAmount.toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {purchase.trackingNumber && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <Truck className="h-4 w-4 text-blue-600" />
+                  <span className="font-medium">Tracking:</span>
+                  <span className="font-mono">{purchase.trackingNumber}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const renderReviewsTab = () => {
@@ -213,20 +493,6 @@ export function AccountHistory({ className = '' }: AccountHistoryProps) {
     );
   };
 
-  const renderPurchasesTab = () => {
-    return (
-      <div className="text-center py-12">
-        <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Purchase History Coming Soon
-        </h3>
-        <p className="text-gray-600">
-          This feature will be available in a future update
-        </p>
-      </div>
-    );
-  };
-
   const renderQuotesTab = () => {
     if (quotes.length === 0) {
       return (
@@ -262,7 +528,7 @@ export function AccountHistory({ className = '' }: AccountHistoryProps) {
                   {quote.customerName} • {quote.customerEmail}
                 </p>
               </div>
-              {getStatusBadge(quote.status)}
+              {getQuoteStatusBadge(quote.status)}
             </div>
 
             <div className="mb-4">
@@ -344,6 +610,10 @@ export function AccountHistory({ className = '' }: AccountHistoryProps) {
           return Calendar;
         case 'review':
           return Star;
+        case 'quote':
+          return FileText;
+        case 'purchase':
+          return ShoppingCart;
         case 'auth':
           return CheckCircle;
         default:
@@ -357,6 +627,10 @@ export function AccountHistory({ className = '' }: AccountHistoryProps) {
           return 'text-blue-600 bg-blue-50';
         case 'review':
           return 'text-yellow-600 bg-yellow-50';
+        case 'quote':
+          return 'text-purple-600 bg-purple-50';
+        case 'purchase':
+          return 'text-green-600 bg-green-50';
         case 'auth':
           return 'text-green-600 bg-green-50';
         default:
@@ -473,8 +747,9 @@ export function AccountHistory({ className = '' }: AccountHistoryProps) {
           </div>
         ) : (
           <>
-            {activeTab === 'reviews' && renderReviewsTab()}
+            {activeTab === 'bookings' && renderBookingsTab()}
             {activeTab === 'purchases' && renderPurchasesTab()}
+            {activeTab === 'reviews' && renderReviewsTab()}
             {activeTab === 'quotes' && renderQuotesTab()}
             {activeTab === 'activity' && renderActivityTab()}
           </>
