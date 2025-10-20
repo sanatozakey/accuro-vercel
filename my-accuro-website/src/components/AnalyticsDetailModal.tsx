@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import analyticsService from '../services/analyticsService'
+import bookingService from '../services/bookingService'
 
 interface AnalyticsDetailModalProps {
   isOpen: boolean
   onClose: () => void
-  type: 'product-views' | 'cart' | 'quotes' | 'contacts' | 'registrations' | 'searches'
+  type: 'bookings' | 'product-views' | 'cart' | 'quotes' | 'contacts' | 'registrations' | 'searches'
   title: string
   filters?: {
     productId?: string
@@ -51,6 +52,19 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
 
       let response
       switch (type) {
+        case 'bookings':
+          const bookingsResponse = await bookingService.getAll(filters)
+          response = {
+            success: bookingsResponse.success,
+            data: bookingsResponse.data,
+            pagination: {
+              total: bookingsResponse.count,
+              page: currentPage,
+              pages: Math.ceil(bookingsResponse.count / 20),
+              limit: 20,
+            }
+          }
+          break
         case 'product-views':
           response = await analyticsService.getProductViewDetails(params)
           break
@@ -81,7 +95,11 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
         }
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load details')
+      console.error('AnalyticsDetailModal error:', err)
+      console.error('Error response:', err.response?.data)
+      console.error('Error type:', type)
+      console.error('Error filters:', filters)
+      setError(err.response?.data?.message || err.message || 'Failed to load details')
     } finally {
       setLoading(false)
     }
@@ -99,6 +117,29 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
 
   const renderTableHeader = () => {
     switch (type) {
+      case 'bookings':
+        return (
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Date & Time
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Company
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Contact
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Product
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Location
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Status
+            </th>
+          </tr>
+        )
       case 'product-views':
       case 'cart':
       case 'searches':
@@ -188,6 +229,45 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
 
   const renderTableRow = (item: any, index: number) => {
     switch (type) {
+      case 'bookings':
+        return (
+          <tr key={item._id || index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {new Date(item.date).toLocaleDateString()}
+              <div className="text-xs text-gray-500">{item.time}</div>
+            </td>
+            <td className="px-6 py-4 text-sm text-gray-900">
+              {item.company}
+            </td>
+            <td className="px-6 py-4 text-sm text-gray-900">
+              {item.contactName}
+              <div className="text-xs text-gray-500">{item.contactEmail}</div>
+            </td>
+            <td className="px-6 py-4 text-sm text-gray-900">
+              {item.product}
+            </td>
+            <td className="px-6 py-4 text-sm text-gray-900">
+              {item.location}
+            </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm">
+              <span
+                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  item.status === 'confirmed'
+                    ? 'bg-green-100 text-green-800'
+                    : item.status === 'pending'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : item.status === 'completed'
+                    ? 'bg-blue-100 text-blue-800'
+                    : item.status === 'cancelled'
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {item.status}
+              </span>
+            </td>
+          </tr>
+        )
       case 'product-views':
       case 'cart':
       case 'searches':
