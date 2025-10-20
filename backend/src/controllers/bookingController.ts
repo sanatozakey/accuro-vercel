@@ -229,6 +229,35 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       message: 'Booking created successfully! A confirmation email has been sent to your email address.',
     });
   } catch (error: any) {
+    // Log detailed error information for debugging
+    console.error('=== BOOKING CREATION ERROR ===');
+    console.error('Error Name:', error.name);
+    console.error('Error Message:', error.message);
+    console.error('Request Body:', JSON.stringify(req.body, null, 2));
+
+    // Check if it's a Mongoose validation error
+    if (error.name === 'ValidationError') {
+      console.error('Validation Errors:', JSON.stringify(error.errors, null, 2));
+
+      // Extract specific field errors
+      const fieldErrors: Record<string, string> = {};
+      for (const field in error.errors) {
+        fieldErrors[field] = error.errors[field].message;
+      }
+
+      console.error('Field Errors:', JSON.stringify(fieldErrors, null, 2));
+
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: fieldErrors,
+      });
+    }
+
+    // Log full error object for other errors
+    console.error('Full Error Object:', error);
+    console.error('Error Stack:', error.stack);
+
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
