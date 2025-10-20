@@ -46,7 +46,7 @@ import analyticsService from '../services/analyticsService'
 import reviewService, { Review } from '../services/reviewService'
 import activityLogService, { ActivityLog } from '../services/activityLogService'
 import EnhancedAnalytics from '../components/EnhancedAnalytics'
-import { ReportsTab } from '../components/ReportsTab'
+import { SimpleReportsTab } from '../components/SimpleReportsTab'
 import { UserHistoryModal } from '../components/UserHistoryModal'
 // Define types for our booking data
 interface Booking {
@@ -1883,7 +1883,7 @@ export function BookingDashboard(): React.ReactElement {
 
             {/* Reports View */}
             {viewMode === 'reports' && (
-              <ReportsTab />
+              <SimpleReportsTab />
             )}
 
             {/* OLD reports View - DISABLED */}
