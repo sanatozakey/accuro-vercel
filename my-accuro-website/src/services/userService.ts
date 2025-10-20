@@ -43,6 +43,12 @@ const userService = {
     const response = await api.delete(`/users/${id}`);
     return response.data;
   },
+
+  // Get user history (Admin only)
+  getUserHistory: async (userId: string) => {
+    const response = await api.get(`/user-history/${userId}`);
+    return response.data;
+  },
 };
 
 export default userService;

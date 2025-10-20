@@ -47,6 +47,7 @@ import reviewService, { Review } from '../services/reviewService'
 import activityLogService, { ActivityLog } from '../services/activityLogService'
 import EnhancedAnalytics from '../components/EnhancedAnalytics'
 import { ReportsTab } from '../components/ReportsTab'
+import { UserHistoryModal } from '../components/UserHistoryModal'
 // Define types for our booking data
 interface Booking {
   _id: string
@@ -166,6 +167,8 @@ export function BookingDashboard(): React.ReactElement {
   const [filteredUsers, setFilteredUsers] = useState<UserType[]>([])
   const [userSearchTerm, setUserSearchTerm] = useState<string>('')
   const [selectedUser, setSelectedUser] = useState<UserType | null>(null)
+  const [userHistoryModalOpen, setUserHistoryModalOpen] = useState(false)
+  const [historyUser, setHistoryUser] = useState<UserType | null>(null)
   const [isUserModalOpen, setIsUserModalOpen] = useState<boolean>(false)
   const [editedUser, setEditedUser] = useState<UserType | null>(null)
 
@@ -825,6 +828,11 @@ export function BookingDashboard(): React.ReactElement {
     setSelectedUser(user)
     setEditedUser({ ...user })
     setIsUserModalOpen(true)
+  }
+
+  const openUserHistoryModal = (user: UserType): void => {
+    setHistoryUser(user)
+    setUserHistoryModalOpen(true)
   }
 
   // Review management handlers
@@ -1525,6 +1533,13 @@ export function BookingDashboard(): React.ReactElement {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
+                            <button
+                              onClick={() => openUserHistoryModal(user)}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="View user history"
+                            >
+                              History
+                            </button>
                             <button
                               onClick={() => openUserModal(user)}
                               className="text-indigo-600 hover:text-indigo-900"
@@ -3250,6 +3265,17 @@ export function BookingDashboard(): React.ReactElement {
             </div>
           </div>
         </div>
+      )}
+
+      {/* User History Modal */}
+      {historyUser && (
+        <UserHistoryModal
+          userId={historyUser._id}
+          userName={historyUser.name}
+          userEmail={historyUser.email}
+          isOpen={userHistoryModalOpen}
+          onClose={() => setUserHistoryModalOpen(false)}
+        />
       )}
     </div>
   )
