@@ -37,6 +37,7 @@ interface EnhancedAnalyticsProps {
 
 const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDate }) => {
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [dashboardData, setDashboardData] = useState<any>(null)
   const [productViews, setProductViews] = useState<any[]>([])
   const [cartData, setCartData] = useState<any>(null)
@@ -58,6 +59,7 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
 
   const fetchAllAnalytics = async () => {
     setLoading(true)
+    setError('')
     try {
       const params = { startDate, endDate }
 
@@ -87,8 +89,10 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
       setContactData(contacts.data || null)
       setRegistrationData(registrations.data || null)
       setSearchData(searches.data || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load analytics:', error)
+      console.error('Error details:', error.response?.data)
+      setError(error.response?.data?.message || 'Failed to load analytics. Please check your permissions and try again.')
     } finally {
       setLoading(false)
     }
@@ -136,6 +140,27 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
         <div className="text-center">
           <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">Loading analytics...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+        <div className="flex items-start">
+          <AlertCircle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="text-lg font-medium text-red-800 mb-2">Failed to Load Analytics</h3>
+            <p className="text-sm text-red-700 mb-4">{error}</p>
+            <button
+              onClick={fetchAllAnalytics}
+              className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     )

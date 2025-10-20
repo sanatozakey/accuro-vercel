@@ -370,12 +370,12 @@ export function BookingDashboard(): React.ReactElement {
     }
   }, [viewMode, reviewsFilter, fetchReviews])
 
-  // Load reports when tab is selected
-  useEffect(() => {
-    if (viewMode === 'reports') {
-      fetchreportsData()
-    }
-  }, [viewMode])
+  // Load reports when tab is selected - DISABLED (ReportsTab handles its own data loading now)
+  // useEffect(() => {
+  //   if (viewMode === 'reports') {
+  //     fetchreportsData()
+  //   }
+  // }, [viewMode])
 
   // Filter users based on search
   useEffect(() => {
