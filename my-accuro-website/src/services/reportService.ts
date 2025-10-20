@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import api from './api';
 
 export interface ReportFilters {
   startDate: string;
@@ -34,98 +32,59 @@ export interface Report {
 }
 
 class ReportService {
-  private getAuthHeader() {
-    const token = localStorage.getItem('token');
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    };
-  }
-
   // Generate User Activity Report
   async generateUserActivityReport(filters: ReportFilters) {
-    const response = await axios.post(
-      `${API_URL}/reports/user-activity`,
-      filters,
-      this.getAuthHeader()
-    );
+    const response = await api.post('/reports/user-activity', filters);
     return response.data;
   }
 
   // Generate Sales/Booking Report
   async generateSalesBookingReport(filters: ReportFilters) {
-    const response = await axios.post(
-      `${API_URL}/reports/sales-booking`,
-      filters,
-      this.getAuthHeader()
-    );
+    const response = await api.post('/reports/sales-booking', filters);
     return response.data;
   }
 
   // Generate Product Performance Report
   async generateProductPerformanceReport(filters: ReportFilters) {
-    const response = await axios.post(
-      `${API_URL}/reports/product-performance`,
-      filters,
-      this.getAuthHeader()
-    );
+    const response = await api.post('/reports/product-performance', filters);
     return response.data;
   }
 
   // Generate Quote Request Report
   async generateQuoteRequestReport(filters: ReportFilters) {
-    const response = await axios.post(
-      `${API_URL}/reports/quote-request`,
-      filters,
-      this.getAuthHeader()
-    );
+    const response = await api.post('/reports/quote-request', filters);
     return response.data;
   }
 
   // Generate Contact Form Report
   async generateContactFormReport(filters: ReportFilters) {
-    const response = await axios.post(
-      `${API_URL}/reports/contact-form`,
-      filters,
-      this.getAuthHeader()
-    );
+    const response = await api.post('/reports/contact-form', filters);
     return response.data;
   }
 
   // Get all reports
   async getAllReports() {
-    const response = await axios.get(`${API_URL}/reports`, this.getAuthHeader());
+    const response = await api.get('/reports');
     return response.data;
   }
 
   // Get report by ID
   async getReportById(reportId: string) {
-    const response = await axios.get(
-      `${API_URL}/reports/${reportId}`,
-      this.getAuthHeader()
-    );
+    const response = await api.get(`/reports/${reportId}`);
     return response.data;
   }
 
   // Delete report
   async deleteReport(reportId: string) {
-    const response = await axios.delete(
-      `${API_URL}/reports/${reportId}`,
-      this.getAuthHeader()
-    );
+    const response = await api.delete(`/reports/${reportId}`);
     return response.data;
   }
 
   // Export report to PDF
   async exportReportToPDF(reportId: string) {
-    const response = await axios.get(
-      `${API_URL}/reports/${reportId}/export-pdf`,
-      {
-        ...this.getAuthHeader(),
-        responseType: 'blob',
-      }
-    );
+    const response = await api.get(`/reports/${reportId}/export-pdf`, {
+      responseType: 'blob',
+    });
     return response.data;
   }
 

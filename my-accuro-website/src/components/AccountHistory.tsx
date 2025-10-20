@@ -66,8 +66,18 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
           setReviews(reviewsData.data || []);
           break;
         case 'quotes':
+          // Fetch both Quote records and quote-related bookings
           const quotesData = await quoteService.getMyQuotes();
+          const bookingsForQuotes = await bookingService.getMyBookings();
+
+          // Filter bookings that contain quote request data
+          const quoteBookings = bookingsForQuotes.data.filter((booking: Booking) =>
+            booking.additionalInfo && booking.additionalInfo.includes('QUOTE REQUEST FROM CART')
+          );
+
           setQuotes(quotesData.data || []);
+          // Store quote-related bookings separately
+          setBookings(quoteBookings);
           break;
         case 'activity':
           const activityData = await activityLogService.getMyActivityLogs();
@@ -116,7 +126,7 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
       id: 'quotes' as TabType,
       label: 'Quote Requests',
       icon: FileText,
-      count: quotes.length,
+      count: quotes.length + bookings.filter(b => b.additionalInfo?.includes('QUOTE REQUEST FROM CART')).length,
     },
     {
       id: 'reviews' as TabType,
@@ -512,7 +522,10 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
   };
 
   const renderQuotesTab = () => {
-    if (quotes.length === 0) {
+    const hasQuotes = quotes.length > 0;
+    const hasQuoteBookings = bookings.length > 0;
+
+    if (!hasQuotes && !hasQuoteBookings) {
       return (
         <div className="text-center py-12">
           <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -521,10 +534,10 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
             You haven't requested any quotes yet
           </p>
           <a
-            href="/quote"
+            href="/products"
             className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition"
           >
-            Request a Quote
+            Browse Products
           </a>
         </div>
       );
@@ -603,6 +616,60 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
                 <p className="text-xs text-blue-800">{quote.adminNotes}</p>
               </div>
             )}
+          </div>
+        ))}
+
+        {/* Show quote-related bookings */}
+        {bookings.map((booking) => (
+          <div
+            key={`booking-${booking._id}`}
+            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+          >
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4">
+              <div className="mb-2 md:mb-0">
+                <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                  {booking.company}
+                </h4>
+                <p className="text-sm text-gray-600">
+                  {booking.contactName} • {booking.contactEmail}
+                </p>
+                <div className="flex items-center text-xs text-gray-500 mt-1">
+                  <Calendar className="h-3 w-3 mr-1" />
+                  Requested Meeting: {new Date(booking.date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })} at {booking.time}
+                </div>
+              </div>
+              {getBookingStatusBadge(booking.status)}
+            </div>
+
+            <div className="mb-4">
+              <h5 className="text-sm font-medium text-gray-700 mb-2">Quote Request Details:</h5>
+              <div className="bg-gray-50 p-3 rounded text-sm">
+                <pre className="whitespace-pre-wrap text-xs text-gray-800 font-mono">
+                  {booking.additionalInfo}
+                </pre>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+              <div className="flex items-center text-xs text-gray-500">
+                <Calendar className="h-3.5 w-3.5 mr-1" />
+                Created: {new Date(booking.createdAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </div>
+              <div className="flex items-center text-xs text-gray-600">
+                <MapPin className="h-3.5 w-3.5 mr-1" />
+                {booking.location}
+              </div>
+            </div>
           </div>
         ))}
       </div>

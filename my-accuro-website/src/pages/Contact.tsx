@@ -59,7 +59,15 @@ export function Contact() {
       })
       setTimeout(() => setSuccess(false), 5000)
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send message. Please try again.')
+      // Show detailed validation errors if available
+      if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+        const errorMessages = err.response.data.errors.map((e: any) =>
+          `${e.field}: ${e.message}`
+        ).join(', ');
+        setError(errorMessages);
+      } else {
+        setError(err.response?.data?.message || 'Failed to send message. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -234,9 +242,14 @@ export function Contact() {
                     value={formData.message}
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Your message"
+                    placeholder="Your message (minimum 20 characters)"
+                    minLength={20}
+                    maxLength={2000}
                     required
                   ></textarea>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {formData.message.length}/2000 characters (minimum 20)
+                  </p>
                 </div>
                 <div>
                   <button
