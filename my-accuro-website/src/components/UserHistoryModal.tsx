@@ -33,9 +33,14 @@ export function UserHistoryModal({
       setLoading(true);
       setError('');
       const response = await userService.getUserHistory(userId);
+      console.log('User history response:', response);
       setHistoryData(response.data);
     } catch (err: any) {
-      // Show friendly message instead of error
+      console.error('Failed to load user history:', err);
+      console.error('Error details:', err.response?.data);
+      // Set error message to show to user
+      setError(err.response?.data?.message || 'Failed to load user history. Please try again.');
+      // Still set empty data so the UI doesn't break
       setHistoryData({
         summary: {
           totalBookings: 0,
