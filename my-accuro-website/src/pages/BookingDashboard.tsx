@@ -1049,65 +1049,65 @@ export function BookingDashboard(): React.ReactElement {
         </div>
         {/* Filters and Actions - Only show for booking-related views */}
         {(viewMode === 'table' || viewMode === 'calendar' || viewMode === 'logs') && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-            <div className="md:col-span-4 relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+              <div className="md:col-span-4 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Search by company or contact"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Search by company or contact"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="md:col-span-3">
-              <select
-                className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="rescheduled">Rescheduled</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-            {viewMode === 'logs' && (
               <div className="md:col-span-3">
                 <select
                   className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                  value={completionFilter}
-                  onChange={(e) => setCompletionFilter(e.target.value)}
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
                 >
-                  <option value="all">All Meetings</option>
+                  <option value="all">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="rescheduled">Rescheduled</option>
+                  <option value="cancelled">Cancelled</option>
                   <option value="completed">Completed</option>
-                  <option value="pending">Pending Completion</option>
                 </select>
               </div>
-            )}
-            <div className={`${viewMode === 'logs' ? 'md:col-span-2' : 'md:col-span-5'} flex space-x-2 justify-end`}>
-              <button
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                onClick={fetchBookings}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Reset
-              </button>
-              <button
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                onClick={openCreateModal}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                New Booking
-              </button>
+              {viewMode === 'logs' && (
+                <div className="md:col-span-3">
+                  <select
+                    className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                    value={completionFilter}
+                    onChange={(e) => setCompletionFilter(e.target.value)}
+                  >
+                    <option value="all">All Meetings</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending Completion</option>
+                  </select>
+                </div>
+              )}
+              <div className={`${viewMode === 'logs' ? 'md:col-span-2' : 'md:col-span-5'} flex space-x-2 justify-end`}>
+                <button
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                  onClick={fetchBookings}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Reset
+                </button>
+                <button
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                  onClick={openCreateModal}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  New Booking
+                </button>
+              </div>
             </div>
           </div>
-        </div>
         )}
         {viewMode === 'table' && (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -1884,11 +1884,6 @@ export function BookingDashboard(): React.ReactElement {
               </>
             )}
 
-            {/* Reports View */}
-            {viewMode === 'reports' && (
-              <SimpleReportsTab />
-            )}
-
             {/* OLD reports View - DISABLED */}
             {false && viewMode === 'reports_old' && (
               <>
@@ -2187,6 +2182,11 @@ export function BookingDashboard(): React.ReactElement {
               </>
             )}
           </div>
+        )}
+
+        {/* Reports View */}
+        {viewMode === 'reports' && (
+          <SimpleReportsTab />
         )}
           </>
         )}
