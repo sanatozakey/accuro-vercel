@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { connectDB } from '../src/config/database';
 import { errorHandler } from '../src/middleware/errorHandler';
 import { seedAdminUser } from '../src/utils/seedAdmin';
+import { createIndexes } from '../src/config/indexes';
 
 // Load env vars
 dotenv.config();
@@ -18,6 +19,10 @@ import analyticsRoutes from '../src/routes/analyticsRoutes';
 import reviewRoutes from '../src/routes/reviewRoutes';
 import activityLogRoutes from '../src/routes/activityLogRoutes';
 import recommendationRoutes from '../src/routes/recommendationRoutes';
+import purchaseHistoryRoutes from '../src/routes/purchaseHistoryRoutes';
+import userHistoryRoutes from '../src/routes/userHistoryRoutes';
+import reportRoutes from '../src/routes/reportRoutes';
+import activeSessionRoutes from '../src/routes/activeSessionRoutes';
 
 // Initialize app
 const app: Application = express();
@@ -28,6 +33,7 @@ const initDB = async () => {
   if (!isConnected) {
     await connectDB();
     await seedAdminUser();
+    await createIndexes();
     isConnected = true;
   }
 };
@@ -75,6 +81,10 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/recommendations', recommendationRoutes);
+app.use('/api/purchases', purchaseHistoryRoutes);
+app.use('/api/user-history', userHistoryRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/sessions', activeSessionRoutes);
 
 // Health check route
 app.get('/api/health', (req: Request, res: Response) => {
