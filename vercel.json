@@ -2,10 +2,6 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
-    },
-    {
       "src": "my-accuro-website/package.json",
       "use": "@vercel/static-build",
       "config": {
@@ -13,14 +9,10 @@
       }
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/index.ts"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/my-accuro-website/$1"
+      "source": "/api/:path*",
+      "destination": "https://backend-7epk6rhgz-iynubauhsoj-gmailcoms-projects.vercel.app/api/:path*"
     }
   ],
   "env": {
