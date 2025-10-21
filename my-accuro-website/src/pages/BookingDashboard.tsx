@@ -47,6 +47,7 @@ import reviewService, { Review } from '../services/reviewService'
 import activityLogService, { ActivityLog } from '../services/activityLogService'
 import recommendationAdminService, { RecommendationStats, UserInteraction } from '../services/recommendationAdminService'
 import EnhancedAnalytics from '../components/EnhancedAnalytics'
+import RealTimeAnalytics from '../components/RealTimeAnalytics'
 import { SimpleReportsTab } from '../components/SimpleReportsTab'
 import { UserHistoryModal } from '../components/UserHistoryModal'
 // Define types for our booking data
@@ -1572,7 +1573,19 @@ export function BookingDashboard(): React.ReactElement {
           </div>
         )}
         {viewMode === 'analytics' && (
-          <EnhancedAnalytics />
+          <div className="space-y-6">
+            {/* Real-Time Analytics Section */}
+            <RealTimeAnalytics />
+
+            {/* Divider */}
+            <div className="border-t border-gray-200 my-8"></div>
+
+            {/* Historical Analytics Section */}
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Historical Analytics</h2>
+              <EnhancedAnalytics />
+            </div>
+          </div>
         )}
 
         {/* Activity Logs View */}

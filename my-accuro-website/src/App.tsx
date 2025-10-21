@@ -3,6 +3,7 @@ import { AppRouter } from './AppRouter';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { SplashScreen } from './components/SplashScreen';
+import './services/sessionTrackingService'; // Initialize session tracking
 
 // Force fresh deployment - build timestamp
 export function App() {
