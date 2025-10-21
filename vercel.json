@@ -12,7 +12,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://backend-7epk6rhgz-iynubauhsoj-gmailcoms-projects.vercel.app/api/:path*"
+      "destination": "https://backend-98kohxmyv-iynubauhsoj-gmailcoms-projects.vercel.app/api/:path*"
     }
   ],
   "env": {
