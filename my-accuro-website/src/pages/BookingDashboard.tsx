@@ -45,6 +45,7 @@ import userService, { User as UserType } from '../services/userService'
 import analyticsService from '../services/analyticsService'
 import reviewService, { Review } from '../services/reviewService'
 import activityLogService, { ActivityLog } from '../services/activityLogService'
+import recommendationAdminService, { RecommendationStats, UserInteraction } from '../services/recommendationAdminService'
 import EnhancedAnalytics from '../components/EnhancedAnalytics'
 import { SimpleReportsTab } from '../components/SimpleReportsTab'
 import { UserHistoryModal } from '../components/UserHistoryModal'
@@ -197,7 +198,7 @@ export function BookingDashboard(): React.ReactElement {
   }>({})
 
   // reports state
-  const [reportsStats, setreportsStats] = useState<reportstats | null>(null)
+  const [reportsStats, setreportsStats] = useState<RecommendationStats | null>(null)
   const [userInteractions, setUserInteractions] = useState<UserInteraction[]>([])
   const [reportsLoading, setreportsLoading] = useState<boolean>(false)
 
@@ -339,8 +340,8 @@ export function BookingDashboard(): React.ReactElement {
     setreportsLoading(true)
     try {
       const [statsResponse, interactionsResponse] = await Promise.all([
-        reportService.getStats(),
-        reportService.getAllInteractions(),
+        recommendationAdminService.getStats(),
+        recommendationAdminService.getAllInteractions(),
       ])
       setreportsStats(statsResponse.data)
       setUserInteractions(interactionsResponse.data)

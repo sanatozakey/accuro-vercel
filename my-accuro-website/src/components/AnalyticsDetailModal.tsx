@@ -50,20 +50,27 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
         limit: 20,
       }
 
+      console.log('AnalyticsDetailModal: Fetching details for type:', type)
+      console.log('AnalyticsDetailModal: Filters:', filters)
+      console.log('AnalyticsDetailModal: Params:', params)
+
       let response
       switch (type) {
         case 'bookings':
+          console.log('AnalyticsDetailModal: Fetching bookings from API...')
           const bookingsResponse = await bookingService.getAll(filters)
+          console.log('AnalyticsDetailModal: Bookings response:', bookingsResponse)
           response = {
             success: bookingsResponse.success,
-            data: bookingsResponse.data,
+            data: bookingsResponse.data || [],
             pagination: {
-              total: bookingsResponse.count,
+              total: bookingsResponse.count || 0,
               page: currentPage,
-              pages: Math.ceil(bookingsResponse.count / 20),
+              pages: Math.ceil((bookingsResponse.count || 0) / 20) || 1,
               limit: 20,
             }
           }
+          console.log('AnalyticsDetailModal: Processed bookings response:', response)
           break
         case 'product-views':
           response = await analyticsService.getProductViewDetails(params)
@@ -88,18 +95,38 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
       }
 
       if (response.success) {
-        setDetails(response.data)
+        console.log('AnalyticsDetailModal: Setting details with', response.data?.length, 'items')
+        setDetails(response.data || [])
         if (response.pagination) {
-          setTotalPages(response.pagination.pages)
-          setTotal(response.pagination.total)
+          setTotalPages(response.pagination.pages || 1)
+          setTotal(response.pagination.total || 0)
         }
+      } else {
+        console.error('AnalyticsDetailModal: Response was not successful:', response)
+        setError('Failed to load data. Please try again.')
       }
     } catch (err: any) {
-      console.error('AnalyticsDetailModal error:', err)
-      console.error('Error response:', err.response?.data)
-      console.error('Error type:', type)
-      console.error('Error filters:', filters)
-      setError(err.response?.data?.message || err.message || 'Failed to load details')
+      console.error('=== AnalyticsDetailModal Error ===')
+      console.error('Type:', type)
+      console.error('Filters:', filters)
+      console.error('Error:', err)
+      console.error('Error response:', err.response)
+      console.error('Error response data:', err.response?.data)
+      console.error('Error message:', err.message)
+
+      let errorMessage = 'Failed to load details'
+
+      if (err.response?.status === 401) {
+        errorMessage = 'You must be logged in as an admin to view bookings'
+      } else if (err.response?.status === 403) {
+        errorMessage = 'You do not have permission to view this data. Admin access required.'
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message
+      } else if (err.message) {
+        errorMessage = err.message
+      }
+
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }

@@ -99,10 +99,17 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
   }
 
   const openModal = (type: any, title: string, filters: any = {}) => {
+    console.log('EnhancedAnalytics: Opening modal with type:', type)
+    console.log('EnhancedAnalytics: Modal title:', title)
+    console.log('EnhancedAnalytics: Filters:', filters)
+    console.log('EnhancedAnalytics: Date range:', { startDate, endDate })
+
     setModalType(type)
     setModalTitle(title)
     setModalFilters({ ...filters, startDate, endDate })
     setModalOpen(true)
+
+    console.log('EnhancedAnalytics: Modal state updated to open')
   }
 
   const MetricCard = ({
@@ -117,22 +124,33 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
     value: number | string;
     color: string;
     onClick?: () => void
-  }) => (
-    <div
-      onClick={onClick}
-      className={`bg-white rounded-lg shadow-md p-6 ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600 mb-1">{title}</p>
-          <p className="text-3xl font-bold text-gray-900">{value}</p>
-        </div>
-        <div className={`p-3 rounded-full ${color}`}>
-          <Icon className="h-8 w-8 text-white" />
+  }) => {
+    const handleClick = () => {
+      console.log('MetricCard clicked:', title)
+      if (onClick) {
+        onClick()
+      } else {
+        console.log('MetricCard: No onClick handler provided')
+      }
+    }
+
+    return (
+      <div
+        onClick={handleClick}
+        className={`bg-white rounded-lg shadow-md p-6 ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-600 mb-1">{title}</p>
+            <p className="text-3xl font-bold text-gray-900">{value}</p>
+          </div>
+          <div className={`p-3 rounded-full ${color}`}>
+            <Icon className="h-8 w-8 text-white" />
+          </div>
         </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   if (loading) {
     return (
