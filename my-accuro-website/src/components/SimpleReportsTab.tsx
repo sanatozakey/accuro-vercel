@@ -1,13 +1,25 @@
 import React, { useState } from 'react';
-import { FileText, Download, Calendar, Loader } from 'lucide-react';
+import { FileText, Download, Loader } from 'lucide-react';
 import bookingService from '../services/bookingService';
 import userService from '../services/userService';
 import quoteService from '../services/quoteService';
 import contactService from '../services/contactService';
+import activityLogService from '../services/activityLogService';
+import analyticsService from '../services/analyticsService';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-type ReportType = 'bookings' | 'users' | 'quotes' | 'contacts';
+type ReportType =
+  | 'bookings'
+  | 'users'
+  | 'quotes'
+  | 'contacts'
+  | 'activityLogs'
+  | 'productViews'
+  | 'cartAnalytics'
+  | 'searchAnalytics'
+  | 'registrations'
+  | 'dashboardSummary';
 
 interface ReportData {
   type: ReportType;
@@ -83,11 +95,93 @@ export function SimpleReportsTab() {
             responded: data.filter(c => c.status === 'responded').length,
           };
           break;
+
+        case 'activityLogs':
+          const activityLogsResponse = await activityLogService.getAllActivityLogs({ limit: 1000 });
+          data = activityLogsResponse.data || [];
+          // Filter by date range
+          data = data.filter(log => {
+            const logDate = new Date(log.createdAt);
+            return logDate >= new Date(startDate) && logDate <= new Date(endDate);
+          });
+          summary = {
+            totalRecords: data.length,
+            userActions: data.filter(l => l.resourceType === 'user').length,
+            bookingActions: data.filter(l => l.resourceType === 'booking').length,
+            reviewActions: data.filter(l => l.resourceType === 'review').length,
+            authActions: data.filter(l => l.resourceType === 'auth').length,
+            systemActions: data.filter(l => l.resourceType === 'system').length,
+          };
+          break;
+
+        case 'productViews':
+          const productViewsResponse = await analyticsService.getProductViewDetails({ startDate, endDate, limit: 1000 });
+          data = productViewsResponse.data || [];
+          summary = {
+            totalRecords: data.length,
+            totalViews: data.length,
+            uniqueProducts: new Set(data.map(v => v.productId)).size,
+          };
+          break;
+
+        case 'cartAnalytics':
+          const cartResponse = await analyticsService.getCartDetails({ startDate, endDate, limit: 1000 });
+          data = cartResponse.data || [];
+          summary = {
+            totalRecords: data.length,
+            addedToCart: data.filter(c => c.eventType === 'add_to_cart').length,
+            removedFromCart: data.filter(c => c.eventType === 'remove_from_cart').length,
+          };
+          break;
+
+        case 'searchAnalytics':
+          const searchResponse = await analyticsService.getSearchDetails({ startDate, endDate, limit: 1000 });
+          data = searchResponse.data || [];
+          summary = {
+            totalRecords: data.length,
+            totalSearches: data.length,
+            uniqueSearchTerms: new Set(data.map(s => s.searchTerm)).size,
+          };
+          break;
+
+        case 'registrations':
+          const registrationsResponse = await analyticsService.getRegistrationDetails({ startDate, endDate, limit: 1000 });
+          data = registrationsResponse.data || [];
+          summary = {
+            totalRecords: data.length,
+            totalRegistrations: data.length,
+          };
+          break;
+
+        case 'dashboardSummary':
+          const dashboardResponse = await analyticsService.getDashboardAnalytics({ startDate, endDate });
+          data = [dashboardResponse]; // Dashboard is a single summary object
+          summary = {
+            totalBookings: dashboardResponse.totalBookings || 0,
+            totalUsers: dashboardResponse.totalUsers || 0,
+            totalQuotes: dashboardResponse.totalQuotes || 0,
+            totalContacts: dashboardResponse.totalContacts || 0,
+          };
+          break;
       }
+
+      // Generate user-friendly title
+      const titleMap: Record<ReportType, string> = {
+        bookings: 'Bookings Report',
+        users: 'Users Report',
+        quotes: 'Quotes Report',
+        contacts: 'Contacts Report',
+        activityLogs: 'Activity Logs Report',
+        productViews: 'Product Views Analytics Report',
+        cartAnalytics: 'Cart Analytics Report',
+        searchAnalytics: 'Search Analytics Report',
+        registrations: 'Registration Analytics Report',
+        dashboardSummary: 'Dashboard Summary Report',
+      };
 
       setReportData({
         type: reportType,
-        title: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report`,
+        title: titleMap[reportType],
         dateRange: { start: startDate, end: endDate },
         data,
         summary,
@@ -171,6 +265,53 @@ export function SimpleReportsTab() {
             item.subject,
             item.status,
           ];
+        case 'activityLogs':
+          return [
+            new Date(item.createdAt).toLocaleDateString(),
+            item.userName,
+            item.action,
+            item.resourceType,
+            item.details || 'N/A',
+          ];
+        case 'productViews':
+          return [
+            new Date(item.timestamp || item.createdAt).toLocaleDateString(),
+            item.productName || item.productId || 'N/A',
+            item.category || 'N/A',
+            item.userName || 'Guest',
+          ];
+        case 'cartAnalytics':
+          return [
+            new Date(item.timestamp || item.createdAt).toLocaleDateString(),
+            item.eventType,
+            item.productName || item.productId || 'N/A',
+            item.userName || 'Guest',
+          ];
+        case 'searchAnalytics':
+          return [
+            new Date(item.timestamp || item.createdAt).toLocaleDateString(),
+            item.searchTerm || 'N/A',
+            item.resultsCount?.toString() || '0',
+            item.userName || 'Guest',
+          ];
+        case 'registrations':
+          return [
+            new Date(item.timestamp || item.createdAt).toLocaleDateString(),
+            item.userName || item.name || 'N/A',
+            item.userEmail || item.email || 'N/A',
+            item.role || 'user',
+          ];
+        case 'dashboardSummary':
+          return [
+            'Total Bookings',
+            'Total Users',
+            'Total Quotes',
+            'Total Contacts',
+            item.totalBookings?.toString() || '0',
+            item.totalUsers?.toString() || '0',
+            item.totalQuotes?.toString() || '0',
+            item.totalContacts?.toString() || '0',
+          ];
         default:
           return [];
       }
@@ -183,7 +324,21 @@ export function SimpleReportsTab() {
         ? ['Joined', 'Name', 'Email', 'Role']
         : reportData.type === 'quotes'
         ? ['Date', 'Name', 'Email', 'Status']
-        : ['Date', 'Name', 'Email', 'Subject', 'Status'];
+        : reportData.type === 'contacts'
+        ? ['Date', 'Name', 'Email', 'Subject', 'Status']
+        : reportData.type === 'activityLogs'
+        ? ['Date', 'User', 'Action', 'Resource', 'Details']
+        : reportData.type === 'productViews'
+        ? ['Date', 'Product', 'Category', 'User']
+        : reportData.type === 'cartAnalytics'
+        ? ['Date', 'Event', 'Product', 'User']
+        : reportData.type === 'searchAnalytics'
+        ? ['Date', 'Search Term', 'Results', 'User']
+        : reportData.type === 'registrations'
+        ? ['Date', 'Name', 'Email', 'Role']
+        : reportData.type === 'dashboardSummary'
+        ? ['Metric', '', '', '', 'Value', '', '', '']
+        : ['Data'];
 
     autoTable(doc, {
       head: [tableHeaders],
@@ -231,10 +386,22 @@ export function SimpleReportsTab() {
               onChange={(e) => setReportType(e.target.value as ReportType)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="bookings">Bookings Report</option>
-              <option value="users">Users Report</option>
-              <option value="quotes">Quotes Report</option>
-              <option value="contacts">Contacts Report</option>
+              <optgroup label="Core Reports">
+                <option value="bookings">Bookings Report</option>
+                <option value="users">Users Report</option>
+                <option value="quotes">Quotes Report</option>
+                <option value="contacts">Contacts Report</option>
+              </optgroup>
+              <optgroup label="Transaction & Activity Reports">
+                <option value="activityLogs">Activity Logs Report</option>
+                <option value="productViews">Product Views Report</option>
+                <option value="cartAnalytics">Cart Analytics Report</option>
+                <option value="searchAnalytics">Search Analytics Report</option>
+                <option value="registrations">Registration Analytics Report</option>
+              </optgroup>
+              <optgroup label="Summary Reports">
+                <option value="dashboardSummary">Dashboard Summary Report</option>
+              </optgroup>
             </select>
           </div>
 
@@ -329,72 +496,83 @@ export function SimpleReportsTab() {
                 <tr>
                   {reportData.type === 'bookings' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Company
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Contact
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Product
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Status
-                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     </>
                   )}
                   {reportData.type === 'users' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Joined
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Email
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Role
-                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
                     </>
                   )}
                   {reportData.type === 'quotes' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Email
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Status
-                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     </>
                   )}
                   {reportData.type === 'contacts' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Email
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Subject
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Status
-                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    </>
+                  )}
+                  {reportData.type === 'activityLogs' && (
+                    <>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Resource</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
+                    </>
+                  )}
+                  {reportData.type === 'productViews' && (
+                    <>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                    </>
+                  )}
+                  {reportData.type === 'cartAnalytics' && (
+                    <>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Event</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                    </>
+                  )}
+                  {reportData.type === 'searchAnalytics' && (
+                    <>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Search Term</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Results</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                    </>
+                  )}
+                  {reportData.type === 'registrations' && (
+                    <>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                    </>
+                  )}
+                  {reportData.type === 'dashboardSummary' && (
+                    <>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metric</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
                     </>
                   )}
                 </tr>
@@ -453,6 +631,87 @@ export function SimpleReportsTab() {
                         <td className="px-6 py-4 text-sm text-gray-900">{item.email}</td>
                         <td className="px-6 py-4 text-sm text-gray-900">{item.subject}</td>
                         <td className="px-6 py-4 text-sm text-gray-900 capitalize">{item.status}</td>
+                      </>
+                    )}
+                    {reportData.type === 'activityLogs' && (
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(item.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.userName}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.action}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <span className="px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+                            {item.resourceType}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.details || 'N/A'}</td>
+                      </>
+                    )}
+                    {reportData.type === 'productViews' && (
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(item.timestamp || item.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.productName || item.productId || 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.category || 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.userName || 'Guest'}</td>
+                      </>
+                    )}
+                    {reportData.type === 'cartAnalytics' && (
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(item.timestamp || item.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            item.eventType === 'add_to_cart' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {item.eventType}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.productName || item.productId || 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.userName || 'Guest'}</td>
+                      </>
+                    )}
+                    {reportData.type === 'searchAnalytics' && (
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(item.timestamp || item.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.searchTerm || 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.resultsCount || 0}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.userName || 'Guest'}</td>
+                      </>
+                    )}
+                    {reportData.type === 'registrations' && (
+                      <>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(item.timestamp || item.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.userName || item.name || 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">{item.userEmail || item.email || 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900 capitalize">{item.role || 'user'}</td>
+                      </>
+                    )}
+                    {reportData.type === 'dashboardSummary' && (
+                      <>
+                        <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                          <div className="space-y-2">
+                            <div>Total Bookings</div>
+                            <div>Total Users</div>
+                            <div>Total Quotes</div>
+                            <div>Total Contacts</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <div className="space-y-2">
+                            <div className="font-bold text-blue-600">{item.totalBookings || 0}</div>
+                            <div className="font-bold text-green-600">{item.totalUsers || 0}</div>
+                            <div className="font-bold text-purple-600">{item.totalQuotes || 0}</div>
+                            <div className="font-bold text-orange-600">{item.totalContacts || 0}</div>
+                          </div>
+                        </td>
                       </>
                     )}
                   </tr>
