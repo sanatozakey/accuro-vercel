@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FileText, Download, Loader } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FileText, Download, Loader, Calendar, Clock } from 'lucide-react';
 import bookingService from '../services/bookingService';
 import userService from '../services/userService';
 import quoteService from '../services/quoteService';
@@ -21,6 +21,8 @@ type ReportType =
   | 'registrations'
   | 'dashboardSummary';
 
+type DateRangePreset = 'today' | 'last7days' | 'last30days' | 'last3months' | 'last6months' | 'lastYear' | 'custom';
+
 interface ReportData {
   type: ReportType;
   title: string;
@@ -32,13 +34,76 @@ interface ReportData {
   };
 }
 
+// Accuro logo as base64 (simplified version - you can replace with actual logo)
+const ACCURO_LOGO_BASE64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0ZXh0IHg9IjUiIHk9IjI1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjMkQ3MkIyIj5BQ0NVUk88L3RleHQ+PC9zdmc+';
+
 export function SimpleReportsTab() {
   const [reportType, setReportType] = useState<ReportType>('bookings');
+  const [datePreset, setDatePreset] = useState<DateRangePreset>('last30days');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [error, setError] = useState('');
+
+  // Calculate date range based on preset
+  const calculateDateRange = (preset: DateRangePreset): { start: string; end: string } => {
+    const today = new Date();
+    const end = today.toISOString().split('T')[0]; // Always set end date to today
+    let start = '';
+
+    switch (preset) {
+      case 'today':
+        start = end;
+        break;
+      case 'last7days':
+        const last7 = new Date(today);
+        last7.setDate(today.getDate() - 7);
+        start = last7.toISOString().split('T')[0];
+        break;
+      case 'last30days':
+        const last30 = new Date(today);
+        last30.setDate(today.getDate() - 30);
+        start = last30.toISOString().split('T')[0];
+        break;
+      case 'last3months':
+        const last3m = new Date(today);
+        last3m.setMonth(today.getMonth() - 3);
+        start = last3m.toISOString().split('T')[0];
+        break;
+      case 'last6months':
+        const last6m = new Date(today);
+        last6m.setMonth(today.getMonth() - 6);
+        start = last6m.toISOString().split('T')[0];
+        break;
+      case 'lastYear':
+        const lastYear = new Date(today);
+        lastYear.setFullYear(today.getFullYear() - 1);
+        start = lastYear.toISOString().split('T')[0];
+        break;
+      case 'custom':
+        // Don't auto-calculate for custom
+        return { start: startDate, end: endDate };
+    }
+
+    return { start, end };
+  };
+
+  // Update dates when preset changes
+  useEffect(() => {
+    if (datePreset !== 'custom') {
+      const range = calculateDateRange(datePreset);
+      setStartDate(range.start);
+      setEndDate(range.end);
+    }
+  }, [datePreset]);
+
+  // Initialize with default preset
+  useEffect(() => {
+    const range = calculateDateRange('last30days');
+    setStartDate(range.start);
+    setEndDate(range.end);
+  }, []);
 
   const generateReport = async () => {
     if (!startDate || !endDate) {
@@ -198,46 +263,132 @@ export function SimpleReportsTab() {
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Header
-    doc.setFontSize(20);
-    doc.text(reportData.title, pageWidth / 2, 20, { align: 'center' });
+    // Add Accuro logo
+    try {
+      doc.addImage(ACCURO_LOGO_BASE64, 'SVG', 14, 10, 40, 16);
+    } catch (e) {
+      // Fallback if logo fails to load
+      doc.setFontSize(16);
+      doc.setTextColor(45, 114, 178);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ACCURO', 14, 20);
+    }
 
-    doc.setFontSize(10);
+    // Company info
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Instrumentation & Calibration Solutions', 14, 30);
+    doc.text('www.accuro.com.ph | info@accuro.com.ph', 14, 34);
+
+    // Report title
+    doc.setFontSize(18);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.text(reportData.title, pageWidth / 2, 45, { align: 'center' });
+
+    // Report metadata
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.setFont('helvetica', 'normal');
     doc.text(
-      `Generated: ${new Date().toLocaleDateString()}`,
+      `Generated: ${new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`,
       pageWidth / 2,
-      28,
+      52,
       { align: 'center' }
     );
     doc.text(
-      `Period: ${new Date(reportData.dateRange.start).toLocaleDateString()} - ${new Date(reportData.dateRange.end).toLocaleDateString()}`,
+      `Report Period: ${new Date(reportData.dateRange.start).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      })} - ${new Date(reportData.dateRange.end).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      })}`,
       pageWidth / 2,
-      34,
+      58,
       { align: 'center' }
     );
 
-    // Summary
-    doc.setFontSize(14);
-    doc.text('Summary', 14, 45);
-    doc.setFontSize(10);
-    let yPos = 52;
-    Object.entries(reportData.summary).forEach(([key, value]) => {
+    // Divider line
+    doc.setDrawColor(45, 114, 178);
+    doc.setLineWidth(0.5);
+    doc.line(14, 63, pageWidth - 14, 63);
+
+    // Summary section with professional styling
+    doc.setFontSize(12);
+    doc.setTextColor(45, 114, 178);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Executive Summary', 14, 72);
+
+    // Summary cards
+    doc.setFontSize(9);
+    let yPos = 80;
+    let xPos = 14;
+    const cardWidth = (pageWidth - 28 - 15) / 4; // 4 columns with gaps
+    const cardHeight = 20;
+
+    const summaryEntries = Object.entries(reportData.summary);
+    summaryEntries.forEach(([key, value], index) => {
+      if (index > 0 && index % 4 === 0) {
+        yPos += cardHeight + 5;
+        xPos = 14;
+      }
+
+      // Card background
+      doc.setFillColor(240, 247, 255);
+      doc.roundedRect(xPos, yPos, cardWidth, cardHeight, 2, 2, 'F');
+
+      // Card content
+      doc.setTextColor(100, 100, 100);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      const label = key.replace(/([A-Z])/g, ' $1').trim();
       doc.text(
-        `${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`,
-        14,
-        yPos
+        label.charAt(0).toUpperCase() + label.slice(1),
+        xPos + cardWidth / 2,
+        yPos + 7,
+        { align: 'center' }
       );
-      yPos += 6;
+
+      doc.setTextColor(45, 114, 178);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text(
+        value.toString(),
+        xPos + cardWidth / 2,
+        yPos + 15,
+        { align: 'center' }
+      );
+
+      xPos += cardWidth + 5;
     });
 
-    // Table
-    yPos += 5;
+    // Data table
+    yPos = Math.max(yPos + cardHeight + 15, 110);
+
+    doc.setFontSize(12);
+    doc.setTextColor(45, 114, 178);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Detailed Data', 14, yPos);
+
+    yPos += 8;
+
     const tableData = reportData.data.map((item) => {
       switch (reportData.type) {
         case 'bookings':
           return [
-            new Date(item.date).toLocaleDateString(),
+            new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             item.company,
             item.contactName,
             item.product,
@@ -245,21 +396,21 @@ export function SimpleReportsTab() {
           ];
         case 'users':
           return [
-            new Date(item.createdAt).toLocaleDateString(),
+            new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             item.name,
             item.email,
             item.role,
           ];
         case 'quotes':
           return [
-            new Date(item.createdAt).toLocaleDateString(),
+            new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             item.userId?.name || 'N/A',
             item.userId?.email || 'N/A',
             item.status,
           ];
         case 'contacts':
           return [
-            new Date(item.createdAt).toLocaleDateString(),
+            new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             `${item.firstName} ${item.lastName}`,
             item.email,
             item.subject,
@@ -267,7 +418,7 @@ export function SimpleReportsTab() {
           ];
         case 'activityLogs':
           return [
-            new Date(item.createdAt).toLocaleDateString(),
+            new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             item.userName,
             item.action,
             item.resourceType,
@@ -275,28 +426,28 @@ export function SimpleReportsTab() {
           ];
         case 'productViews':
           return [
-            new Date(item.timestamp || item.createdAt).toLocaleDateString(),
+            new Date(item.timestamp || item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             item.productName || item.productId || 'N/A',
             item.category || 'N/A',
             item.userName || 'Guest',
           ];
         case 'cartAnalytics':
           return [
-            new Date(item.timestamp || item.createdAt).toLocaleDateString(),
+            new Date(item.timestamp || item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             item.eventType,
             item.productName || item.productId || 'N/A',
             item.userName || 'Guest',
           ];
         case 'searchAnalytics':
           return [
-            new Date(item.timestamp || item.createdAt).toLocaleDateString(),
+            new Date(item.timestamp || item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             item.searchTerm || 'N/A',
             item.resultsCount?.toString() || '0',
             item.userName || 'Guest',
           ];
         case 'registrations':
           return [
-            new Date(item.timestamp || item.createdAt).toLocaleDateString(),
+            new Date(item.timestamp || item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             item.userName || item.name || 'N/A',
             item.userEmail || item.email || 'N/A',
             item.role || 'user',
@@ -344,25 +495,63 @@ export function SimpleReportsTab() {
       head: [tableHeaders],
       body: tableData,
       startY: yPos,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [59, 130, 246] },
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+        lineColor: [220, 220, 220],
+        lineWidth: 0.1,
+      },
+      headStyles: {
+        fillColor: [45, 114, 178],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9,
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      margin: { left: 14, right: 14 },
     });
 
-    // Footer
+    // Professional footer with branding
     const pageCount = (doc as any).internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.setFontSize(8);
+
+      // Footer line
+      doc.setDrawColor(45, 114, 178);
+      doc.setLineWidth(0.3);
+      doc.line(14, pageHeight - 20, pageWidth - 14, pageHeight - 20);
+
+      // Footer text
+      doc.setFontSize(7);
+      doc.setTextColor(100, 100, 100);
+      doc.setFont('helvetica', 'normal');
+      doc.text(
+        'Accuro - Instrumentation & Calibration Solutions',
+        14,
+        pageHeight - 13
+      );
       doc.text(
         `Page ${i} of ${pageCount}`,
+        pageWidth - 14,
+        pageHeight - 13,
+        { align: 'right' }
+      );
+
+      // Confidentiality notice
+      doc.setFontSize(6);
+      doc.setTextColor(120, 120, 120);
+      doc.text(
+        'This report is confidential and intended solely for the use of Accuro authorized personnel.',
         pageWidth / 2,
-        doc.internal.pageSize.getHeight() - 10,
+        pageHeight - 8,
         { align: 'center' }
       );
     }
 
     doc.save(
-      `${reportData.type}-report-${new Date().toISOString().split('T')[0]}.pdf`
+      `Accuro-${reportData.type}-report-${new Date().toISOString().split('T')[0]}.pdf`
     );
   };
 
@@ -375,45 +564,131 @@ export function SimpleReportsTab() {
           <h2 className="text-xl font-bold text-gray-900">Generate Report</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {/* Report Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Report Type
-            </label>
-            <select
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value as ReportType)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <optgroup label="Core Reports">
-                <option value="bookings">Bookings Report</option>
-                <option value="users">Users Report</option>
-                <option value="quotes">Quotes Report</option>
-                <option value="contacts">Contacts Report</option>
-              </optgroup>
-              <optgroup label="Transaction & Activity Reports">
-                <option value="activityLogs">Activity Logs Report</option>
-                <option value="productViews">Product Views Report</option>
-                <option value="cartAnalytics">Cart Analytics Report</option>
-                <option value="searchAnalytics">Search Analytics Report</option>
-                <option value="registrations">Registration Analytics Report</option>
-              </optgroup>
-              <optgroup label="Summary Reports">
-                <option value="dashboardSummary">Dashboard Summary Report</option>
-              </optgroup>
-            </select>
-          </div>
+        {/* Report Type */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Report Type
+          </label>
+          <select
+            value={reportType}
+            onChange={(e) => setReportType(e.target.value as ReportType)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <optgroup label="Core Reports">
+              <option value="bookings">Bookings Report</option>
+              <option value="users">Users Report</option>
+              <option value="quotes">Quotes Report</option>
+              <option value="contacts">Contacts Report</option>
+            </optgroup>
+            <optgroup label="Transaction & Activity Reports">
+              <option value="activityLogs">Activity Logs Report</option>
+              <option value="productViews">Product Views Report</option>
+              <option value="cartAnalytics">Cart Analytics Report</option>
+              <option value="searchAnalytics">Search Analytics Report</option>
+              <option value="registrations">Registration Analytics Report</option>
+            </optgroup>
+            <optgroup label="Summary Reports">
+              <option value="dashboardSummary">Dashboard Summary Report</option>
+            </optgroup>
+          </select>
+        </div>
 
+        {/* Date Range Presets */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            <Clock className="inline-block h-4 w-4 mr-1" />
+            Quick Date Range
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+            <button
+              onClick={() => setDatePreset('today')}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+                datePreset === 'today'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Today
+            </button>
+            <button
+              onClick={() => setDatePreset('last7days')}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+                datePreset === 'last7days'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Last 7 Days
+            </button>
+            <button
+              onClick={() => setDatePreset('last30days')}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+                datePreset === 'last30days'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Last 30 Days
+            </button>
+            <button
+              onClick={() => setDatePreset('last3months')}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+                datePreset === 'last3months'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Last 3 Months
+            </button>
+            <button
+              onClick={() => setDatePreset('last6months')}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+                datePreset === 'last6months'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Last 6 Months
+            </button>
+            <button
+              onClick={() => setDatePreset('lastYear')}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+                datePreset === 'lastYear'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Last Year
+            </button>
+            <button
+              onClick={() => setDatePreset('custom')}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition ${
+                datePreset === 'custom'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Custom Range
+            </button>
+          </div>
+        </div>
+
+        {/* Custom Date Range */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {/* Start Date */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Calendar className="inline-block h-4 w-4 mr-1" />
               Start Date
             </label>
             <input
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => {
+                setStartDate(e.target.value);
+                setDatePreset('custom');
+              }}
+              max={endDate || new Date().toISOString().split('T')[0]}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -421,30 +696,39 @@ export function SimpleReportsTab() {
           {/* End Date */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              End Date
+              <Calendar className="inline-block h-4 w-4 mr-1" />
+              End Date (Auto: Today)
             </label>
             <input
               type="date"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setDatePreset('custom');
+              }}
+              min={startDate}
+              max={new Date().toISOString().split('T')[0]}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              End date automatically set to today. You can adjust if needed.
+            </p>
           </div>
         </div>
 
         <button
           onClick={generateReport}
           disabled={loading}
-          className="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           {loading ? (
             <>
-              <Loader className="h-4 w-4 mr-2 animate-spin" />
-              Generating...
+              <Loader className="h-5 w-5 mr-2 animate-spin" />
+              Generating Report...
             </>
           ) : (
             <>
-              <FileText className="h-4 w-4 mr-2" />
+              <FileText className="h-5 w-5 mr-2" />
               Generate Report
             </>
           )}
@@ -464,13 +748,21 @@ export function SimpleReportsTab() {
             <div>
               <h3 className="text-xl font-bold text-gray-900">{reportData.title}</h3>
               <p className="text-sm text-gray-600">
-                {new Date(reportData.dateRange.start).toLocaleDateString()} -{' '}
-                {new Date(reportData.dateRange.end).toLocaleDateString()}
+                {new Date(reportData.dateRange.start).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })} -{' '}
+                {new Date(reportData.dateRange.end).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
               </p>
             </div>
             <button
               onClick={downloadPDF}
-              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition font-medium"
             >
               <Download className="h-4 w-4 mr-2" />
               Download PDF
@@ -480,11 +772,11 @@ export function SimpleReportsTab() {
           {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {Object.entries(reportData.summary).map(([key, value]) => (
-              <div key={key} className="bg-blue-50 rounded-lg p-4">
-                <p className="text-sm text-blue-600 font-medium capitalize">
+              <div key={key} className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                <p className="text-sm text-blue-700 font-medium capitalize">
                   {key.replace(/([A-Z])/g, ' $1').trim()}
                 </p>
-                <p className="text-2xl font-bold text-blue-900">{value}</p>
+                <p className="text-2xl font-bold text-blue-900 mt-1">{value}</p>
               </div>
             ))}
           </div>
