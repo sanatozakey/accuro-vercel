@@ -1047,7 +1047,8 @@ export function BookingDashboard(): React.ReactElement {
             </button>
           </div>
         </div>
-        {/* Filters and Actions */}
+        {/* Filters and Actions - Only show for booking-related views */}
+        {(viewMode === 'table' || viewMode === 'calendar' || viewMode === 'logs') && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
             <div className="md:col-span-4 relative">
@@ -1107,6 +1108,7 @@ export function BookingDashboard(): React.ReactElement {
             </div>
           </div>
         </div>
+        )}
         {viewMode === 'table' && (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="overflow-x-auto">
