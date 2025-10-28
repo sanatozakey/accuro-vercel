@@ -174,7 +174,7 @@ export function BookingDashboard(): React.ReactElement {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
 
   // UI state
-  const [darkMode, setDarkMode] = useState<boolean>(true) // Default to dark mode
+  const [darkMode, setDarkMode] = useState<boolean>(false) // Default to light mode
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false) // Mobile sidebar state
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false) // Desktop sidebar collapsed state
 
@@ -569,6 +569,15 @@ export function BookingDashboard(): React.ReactElement {
       ...booking,
     })
     setIsEditMode(false)
+    setIsDetailModalOpen(true)
+  }
+  // Open edit modal
+  const openEditModal = (booking: Booking): void => {
+    setSelectedBooking(booking)
+    setEditedBooking({
+      ...booking,
+    })
+    setIsEditMode(true)
     setIsDetailModalOpen(true)
   }
   // Open reschedule modal

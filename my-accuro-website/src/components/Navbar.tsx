@@ -26,7 +26,7 @@ export function Navbar() {
   }
 
   return (
-    <header className="bg-white dark:bg-gray-900 shadow-sm transition-colors">
+    <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 shadow-sm transition-colors">
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center">
