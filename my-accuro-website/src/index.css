@@ -123,6 +123,27 @@ html {
   background: #555;
 }
 
+/* Mobile Touch Improvements */
+@media (hover: none) and (pointer: coarse) {
+  /* Improve touch scrolling on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Better touch target sizes */
+  button, a {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Smooth momentum scrolling */
+  .overflow-y-auto,
+  .overscroll-contain {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
 /* FullCalendar Dark Mode Styling */
 .dark .fc {
   /* Main calendar background */

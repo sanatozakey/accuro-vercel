@@ -198,8 +198,8 @@ export function Navbar() {
                 <MenuIcon size={24} />
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[350px] p-0">
-              <SheetHeader className="px-6 py-5 bg-gradient-to-r from-blue-600 to-blue-700">
+            <SheetContent side="left" className="w-[300px] sm:w-[350px] p-0 flex flex-col">
+              <SheetHeader className="px-6 py-5 bg-gradient-to-r from-blue-600 to-blue-700 flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <img
                     src="https://uploadthingy.s3.us-west-1.amazonaws.com/hm7mtaNdbWyZ81qScpSM5S/accuro_logo.png"
@@ -236,8 +236,8 @@ export function Navbar() {
                 )}
               </SheetHeader>
 
-              <nav className="flex flex-col h-[calc(100vh-140px)] overflow-y-auto">
-                <div className="flex-1 py-4">
+              <nav className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <div className="py-4 pb-6">
                   {/* Main Navigation */}
                   <div className="space-y-1 px-3">
                     <Link
@@ -327,7 +327,7 @@ export function Navbar() {
                 </div>
 
                 {/* Bottom Section */}
-                <div className="border-t border-gray-200 dark:border-gray-700 p-3 space-y-2">
+                <div className="border-t border-gray-200 dark:border-gray-700 p-3 pb-6 space-y-2">
                   <button
                     onClick={() => {
                       toggleTheme()
