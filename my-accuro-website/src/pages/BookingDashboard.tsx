@@ -37,7 +37,16 @@ import {
   Eye,
   MessageSquare,
   ShoppingCart,
+  LogOut,
+  Home,
+  Menu,
+  X,
+  Sun,
+  Moon,
 } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Button } from '../components/ui/button'
+import { Badge } from '../components/ui/badge'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import bookingService from '../services/bookingService'
@@ -163,6 +172,11 @@ export function BookingDashboard(): React.ReactElement {
     'table',
   )
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
+
+  // UI state
+  const [darkMode, setDarkMode] = useState<boolean>(true) // Default to dark mode
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false) // Mobile sidebar state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false) // Desktop sidebar collapsed state
 
   // User management state
   const [users, setUsers] = useState<UserType[]>([])
@@ -927,138 +941,362 @@ export function BookingDashboard(): React.ReactElement {
     )
   }
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Dashboard Header */}
-      <div className="bg-white shadow">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center">
+    <div className={`flex min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`fixed lg:sticky inset-y-0 lg:top-0 left-0 z-50 ${sidebarCollapsed ? 'w-16' : 'w-64'} ${darkMode ? 'bg-navy-900 border-gray-800' : 'bg-white border-gray-200'} border-r flex flex-col transition-all duration-300 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } lg:translate-x-0 lg:h-screen`}>
+        {/* Logo and Close Button (Mobile) */}
+        <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} h-16 ${sidebarCollapsed ? 'px-2' : 'px-6'} border-b ${darkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+          {sidebarCollapsed ? (
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-600 text-white font-bold text-xl">
+              A
+            </div>
+          ) : (
+            <>
               <img
                 src="https://uploadthingy.s3.us-west-1.amazonaws.com/hm7mtaNdbWyZ81qScpSM5S/accuro_logo.png"
                 alt="Accuro Logo"
-                className="h-10 mr-4"
+                className="h-8"
               />
-              <h1 className="text-2xl font-bold text-gray-900">
-                Admin Dashboard
-              </h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <a
-                href="/"
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              <Button
+                onClick={() => setSidebarOpen(false)}
+                variant="ghost"
+                size="sm"
+                className="lg:hidden"
               >
-                Back to Website
-              </a>
-              <button
-                onClick={logout}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
+                <X className="h-5 w-5" />
+              </Button>
+            </>
+          )}
+        </div>
+
+        {/* Navigation */}
+        <nav className={`flex-1 px-4 py-6 space-y-2 ${!sidebarCollapsed && 'overflow-y-auto'}`}>
+          <Button
+            onClick={() => {
+              setViewMode('table')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'table' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'table'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="List View"
+          >
+            <List className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'List View'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('calendar')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'calendar'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Calendar"
+          >
+            <CalendarDays className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Calendar'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('logs')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'logs' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'logs'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Logs"
+          >
+            <ClipboardList className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Logs'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('activityLogs')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'activityLogs' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'activityLogs'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Activity"
+          >
+            <Shield className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Activity'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('reviews')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'reviews' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'reviews'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Reviews"
+          >
+            <Award className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Reviews'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('users')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'users' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'users'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Users"
+          >
+            <Users className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Users'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('analytics')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'analytics' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'analytics'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Analytics"
+          >
+            <BarChart3 className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Analytics'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('reports')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'reports' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'reports'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Reports"
+          >
+            <TrendingUp className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Reports'}
+          </Button>
+        </nav>
+
+        {/* Bottom Actions */}
+        <div className={`p-4 border-t ${darkMode ? 'border-gray-800' : 'border-gray-200'} space-y-2`}>
+          {/* Dark Mode Toggle */}
+          <Button
+            onClick={() => setDarkMode(!darkMode)}
+            variant="ghost"
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {darkMode ? <Sun className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} /> : <Moon className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />}
+            {!sidebarCollapsed && (darkMode ? 'Light Mode' : 'Dark Mode')}
+          </Button>
+
+          {/* Collapse Sidebar (Desktop Only) */}
+          <Button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            variant="ghost"
+            className={`hidden lg:flex w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+          >
+            <Menu className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Collapse'}
+          </Button>
+
+          {/* Back to Website */}
+          <Button
+            asChild
+            variant="ghost"
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Back to Website"
+          >
+            <a href="/">
+              <Home className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+              {!sidebarCollapsed && 'Back to Website'}
+            </a>
+          </Button>
+
+          {/* Logout */}
+          <Button
+            onClick={logout}
+            variant="ghost"
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              darkMode
+                ? 'text-red-400 hover:text-red-300 hover:bg-red-950'
+                : 'text-red-600 hover:text-red-700 hover:bg-red-100'
+            }`}
+            title="Logout"
+          >
+            <LogOut className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Logout'}
+          </Button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main
+        className="flex-1 transition-all duration-300 overflow-hidden min-w-0"
+        onClick={() => {
+          // Auto-close sidebar on mobile when clicking main content
+          if (sidebarOpen) {
+            setSidebarOpen(false)
+          }
+        }}
+      >
+        {/* Header */}
+        <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} shadow-sm border-b`}>
+          <div className="px-4 sm:px-8 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Mobile Hamburger Menu */}
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation() // Prevent closing when opening
+                  setSidebarOpen(true)
+                }}
+                variant="ghost"
+                size="sm"
+                className="lg:hidden"
               >
-                Logout
-              </button>
+                <Menu className="h-6 w-6" />
+              </Button>
+
+              <div>
+                <h1 className={`text-xl sm:text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Admin Dashboard</h1>
+                {currentUser && (
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
+                    Welcome back, {currentUser.name}
+                    {isSuperAdmin && (
+                      <Badge className="ml-2 bg-blue-600 hover:bg-blue-700">Super Admin</Badge>
+                    )}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      {/* Dashboard Content */}
-      <div className="container mx-auto px-4 py-8">
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 mr-2" />
-              <span>{error}</span>
+
+        {/* Content */}
+        <div className="p-4 sm:p-8 overflow-y-auto h-[calc(100vh-5rem)]">
+          {/* Error Message */}
+          {error && (
+            <Card className="mb-6 border-red-200 bg-red-50">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center text-red-700">
+                    <AlertCircle className="h-5 w-5 mr-2" />
+                    <span>{error}</span>
+                  </div>
+                  <Button
+                    onClick={() => setError('')}
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-700 hover:text-red-900 hover:bg-red-100"
+                  >
+                    <XCircle className="h-5 w-5" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="flex items-center justify-center py-12">
+              <Card className="border-2">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600">Loading bookings...</p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-            <button
-              onClick={() => setError('')}
-              className="text-red-700 hover:text-red-900"
-            >
-              <XCircle className="h-5 w-5" />
-            </button>
-          </div>
-        )}
-        {/* Loading State */}
-        {loading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-              <p className="text-gray-600">Loading bookings...</p>
-            </div>
-          </div>
-        )}
-        {!loading && (
-          <>
-        {/* View Toggles */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setViewMode('table')}
-              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'table' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
-            >
-              <List className="h-4 w-4 mr-2" />
-              List View
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'calendar' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
-            >
-              <CalendarDays className="h-4 w-4 mr-2" />
-              Calendar View
-            </button>
-            <button
-              onClick={() => setViewMode('logs')}
-              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'logs' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
-            >
-              <ClipboardList className="h-4 w-4 mr-2" />
-              Transaction Logs
-            </button>
-            <button
-              onClick={() => setViewMode('activityLogs')}
-              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'activityLogs' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
-            >
-              <Shield className="h-4 w-4 mr-2" />
-              Activity Logs
-            </button>
-            <button
-              onClick={() => setViewMode('reviews')}
-              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'reviews' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
-            >
-              <Award className="h-4 w-4 mr-2" />
-              Reviews
-            </button>
-            <button
-              onClick={() => setViewMode('users')}
-              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'users' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
-            >
-              <Users className="h-4 w-4 mr-2" />
-              Users
-            </button>
-            <button
-              onClick={() => setViewMode('analytics')}
-              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'analytics' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
-            >
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Analytics
-            </button>
-            <button
-              onClick={() => setViewMode('reports')}
-              className={`inline-flex items-center px-4 py-2 border ${viewMode === 'reports' ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'} text-sm font-medium rounded-md`}
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Reports
-            </button>
-          </div>
-        </div>
+          )}
+
+          {!loading && (
+            <>
         {/* Filters and Actions - Only show for booking-related views */}
         {(viewMode === 'table' || viewMode === 'calendar' || viewMode === 'logs') && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6 mb-6`}>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
               <div className="md:col-span-4 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
+                  <Search className={`h-5 w-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                 </div>
                 <input
                   type="text"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className={`block w-full pl-10 pr-3 py-2 border ${
+                    darkMode
+                      ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-400'
+                      : 'border-gray-300 bg-white placeholder-gray-500'
+                  } rounded-md leading-5 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                   placeholder="Search by company or contact"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -1066,7 +1304,11 @@ export function BookingDashboard(): React.ReactElement {
               </div>
               <div className="md:col-span-3">
                 <select
-                  className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                  className={`block w-full pl-3 pr-10 py-2 text-base border ${
+                    darkMode
+                      ? 'border-gray-600 bg-gray-700 text-white'
+                      : 'border-gray-300 bg-white text-gray-900'
+                  } focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md`}
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
@@ -1081,7 +1323,11 @@ export function BookingDashboard(): React.ReactElement {
               {viewMode === 'logs' && (
                 <div className="md:col-span-3">
                   <select
-                    className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                    className={`block w-full pl-3 pr-10 py-2 text-base border ${
+                      darkMode
+                        ? 'border-gray-600 bg-gray-700 text-white'
+                        : 'border-gray-300 bg-white'
+                    } focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md`}
                     value={completionFilter}
                     onChange={(e) => setCompletionFilter(e.target.value)}
                   >
@@ -1093,7 +1339,11 @@ export function BookingDashboard(): React.ReactElement {
               )}
               <div className={`${viewMode === 'logs' ? 'md:col-span-2' : 'md:col-span-5'} flex space-x-2 justify-end`}>
                 <button
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                  className={`inline-flex items-center px-4 py-2 border ${
+                    darkMode
+                      ? 'border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                  } text-sm font-medium rounded-md`}
                   onClick={fetchBookings}
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
@@ -1111,73 +1361,75 @@ export function BookingDashboard(): React.ReactElement {
           </div>
         )}
         {viewMode === 'table' && (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+          <>
+            {/* Desktop Table View */}
+            <div className={`hidden lg:block ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
+              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-18rem)]">
+                <table className="min-w-full divide-y divide-gray-200">
+                <thead className={`sticky top-0 z-10 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                   <tr>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       ID
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       Date & Time
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       Company
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       Contact
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       Purpose
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       Status
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className={`${darkMode ? 'bg-gray-800' : 'bg-white'} divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                   {filteredBookings.length > 0 ? (
                     filteredBookings.map((booking) => (
-                      <tr key={booking._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <tr key={booking._id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
                           {booking._id}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                           <div className="flex items-center">
-                            <Calendar className="h-4 w-4 text-gray-400 mr-1" />
+                            <Calendar className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-400'} mr-1`} />
                             {new Date(booking.date).toLocaleDateString()}
                           </div>
                           <div className="flex items-center mt-1">
-                            <Clock className="h-4 w-4 text-gray-400 mr-1" />
+                            <Clock className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-400'} mr-1`} />
                             {booking.time}
                           </div>
                           {booking.status === 'rescheduled' && (
-                            <div className="text-xs text-gray-400 mt-1 italic">
+                            <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-1 italic`}>
                               Originally:{' '}
                               {new Date(
                                 booking.originalDate || '',
@@ -1186,19 +1438,19 @@ export function BookingDashboard(): React.ReactElement {
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                           <div className="font-medium">{booking.company}</div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                           <div>{booking.contactName}</div>
-                          <div className="text-xs text-gray-400">
+                          <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                             {booking.contactEmail}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                           {booking.purpose}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                           {getStatusBadge(booking.status)}
                           {booking.isCompleted !== undefined && (
                             <div className="mt-1">
@@ -1210,7 +1462,7 @@ export function BookingDashboard(): React.ReactElement {
                           <div className="flex space-x-2">
                             <button
                               onClick={() => viewBookingDetails(booking)}
-                              className="text-blue-600 hover:text-blue-900"
+                              className="text-blue-600 hover:text-blue-800"
                             >
                               View
                             </button>
@@ -1223,13 +1475,13 @@ export function BookingDashboard(): React.ReactElement {
                                 setIsEditMode(true)
                                 setIsDetailModalOpen(true)
                               }}
-                              className="text-indigo-600 hover:text-indigo-900"
+                              className="text-indigo-600 hover:text-indigo-800"
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => deleteBooking(booking._id)}
-                              className="text-red-600 hover:text-red-900"
+                              className="text-red-600 hover:text-red-800"
                             >
                               Delete
                             </button>
@@ -1241,7 +1493,7 @@ export function BookingDashboard(): React.ReactElement {
                     <tr>
                       <td
                         colSpan={7}
-                        className="px-6 py-4 text-center text-sm text-gray-500"
+                        className={`px-6 py-4 text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
                       >
                         No bookings found matching your criteria
                       </td>
@@ -1251,22 +1503,98 @@ export function BookingDashboard(): React.ReactElement {
               </table>
             </div>
           </div>
+
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-3">
+              {filteredBookings.length > 0 ? (
+                filteredBookings.map((booking) => (
+                  <div
+                    key={booking._id}
+                    className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg p-4 shadow-sm`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Calendar className="h-4 w-4 text-blue-500" />
+                          <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                            {new Date(booking.date).toLocaleDateString()}
+                          </span>
+                          <Clock className="h-4 w-4 text-blue-500 ml-2" />
+                          <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                            {booking.time}
+                          </span>
+                        </div>
+                        <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
+                          {booking.company}
+                        </h3>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {booking.contactName}
+                        </p>
+                        <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'} mb-2`}>
+                          {booking.contactEmail}
+                        </p>
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="h-4 w-4 text-gray-400" />
+                          <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                            {booking.purpose}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {getStatusBadge(booking.status)}
+                          {booking.isCompleted !== undefined && getCompletionBadge(booking.isCompleted)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`flex gap-2 mt-3 pt-3 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                      <button
+                        onClick={() => viewBookingDetails(booking)}
+                        className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-medium"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => openEditModal(booking)}
+                        className={`flex-1 px-3 py-2 text-sm ${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} rounded-md transition font-medium`}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => deleteBooking(booking._id)}
+                        className="flex-1 px-3 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition font-medium"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-8 text-center`}>
+                  <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    No bookings found
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
         )}
         {viewMode === 'calendar' && (
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-3 sm:p-6`}>
             <FullCalendar
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
               headerToolbar={{
-                left: 'prev,next today',
+                left: 'prev,next',
                 center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay',
+                right: window.innerWidth < 640 ? '' : 'dayGridMonth,timeGridWeek,timeGridDay',
               }}
+              footerToolbar={window.innerWidth < 640 ? {
+                center: 'dayGridMonth,timeGridWeek'
+              } : undefined}
               events={calendarEvents}
               eventClick={handleEventClick}
               height="auto"
-              contentHeight={600}
-              dayMaxEventRows={3}
+              contentHeight={window.innerWidth < 640 ? 400 : 600}
+              dayMaxEventRows={window.innerWidth < 640 ? 2 : 3}
               moreLinkClick="popover"
               eventDisplay="block"
               displayEventTime={true}
@@ -1292,73 +1620,75 @@ export function BookingDashboard(): React.ReactElement {
           </div>
         )}
         {viewMode === 'logs' && (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+          <>
+            {/* Desktop Table View */}
+            <div className={`hidden lg:block ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
+              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-18rem)]">
+                <table className={`min-w-full divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                <thead className={`sticky top-0 z-10 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
                   <tr>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       ID
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       Date & Time
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       Company
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       Status
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       Completion
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       Conclusion / Notes
                     </th>
                     <th
                       scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
                     >
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className={`${darkMode ? 'bg-gray-800' : 'bg-white'} divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                   {filteredBookings.length > 0 ? (
                     filteredBookings.map((booking) => (
-                      <tr key={booking._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <tr key={booking._id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
                           {booking._id}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                           <div className="flex items-center">
-                            <Calendar className="h-4 w-4 text-gray-400 mr-1" />
+                            <Calendar className={`h-4 w-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'} mr-1`} />
                             {new Date(booking.date).toLocaleDateString()}
                           </div>
                           <div className="flex items-center mt-1">
-                            <Clock className="h-4 w-4 text-gray-400 mr-1" />
+                            <Clock className={`h-4 w-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'} mr-1`} />
                             {booking.time}
                           </div>
                           {booking.status === 'rescheduled' && (
-                            <div className="text-xs text-gray-400 mt-1 italic">
+                            <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-1 italic`}>
                               Originally:{' '}
                               {new Date(
                                 booking.originalDate || '',
@@ -1367,32 +1697,32 @@ export function BookingDashboard(): React.ReactElement {
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                           <div className="font-medium">{booking.company}</div>
-                          <div className="text-xs text-gray-400">
+                          <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
                             {booking.contactName}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                           {getStatusBadge(booking.status)}
                           {booking.status === 'rescheduled' &&
                             booking.rescheduleReason && (
-                              <div className="mt-1 text-xs text-gray-500 max-w-xs">
+                              <div className={`mt-1 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} max-w-xs`}>
                                 <span className="font-medium">Reason:</span>{' '}
                                 {booking.rescheduleReason}
                               </div>
                             )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                           {getCompletionBadge(booking.isCompleted)}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500 max-w-md">
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'} max-w-md`}>
                           {booking.conclusion ? (
                             <div className="line-clamp-2">
                               {booking.conclusion}
                             </div>
                           ) : (
-                            <span className="text-gray-400 italic">
+                            <span className={`${darkMode ? 'text-gray-500' : 'text-gray-400'} italic`}>
                               No conclusion recorded
                             </span>
                           )}
@@ -1400,7 +1730,7 @@ export function BookingDashboard(): React.ReactElement {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button
                             onClick={() => viewBookingDetails(booking)}
-                            className="text-blue-600 hover:text-blue-900"
+                            className={darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-900'}
                           >
                             View Details
                           </button>
@@ -1411,7 +1741,7 @@ export function BookingDashboard(): React.ReactElement {
                     <tr>
                       <td
                         colSpan={7}
-                        className="px-6 py-4 text-center text-sm text-gray-500"
+                        className={`px-6 py-4 text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
                       >
                         No meeting logs found matching your criteria
                       </td>
@@ -1421,60 +1751,154 @@ export function BookingDashboard(): React.ReactElement {
               </table>
             </div>
           </div>
+
+          {/* Mobile Card View */}
+          <div className="lg:hidden space-y-3">
+            {filteredBookings.length > 0 ? (
+              filteredBookings.map((booking) => (
+                <div
+                  key={booking._id}
+                  className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg p-4 shadow-sm`}
+                >
+                  <div className="space-y-3">
+                    {/* Date & Time */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Calendar className="h-4 w-4 text-blue-500" />
+                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                          {new Date(booking.date).toLocaleDateString()}
+                        </span>
+                        <Clock className="h-4 w-4 text-blue-500 ml-2" />
+                        <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                          {booking.time}
+                        </span>
+                      </div>
+                      {booking.status === 'rescheduled' && (
+                        <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} italic ml-6`}>
+                          Originally: {new Date(booking.originalDate || '').toLocaleDateString()} at {booking.originalTime}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Company & Contact */}
+                    <div>
+                      <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
+                        {booking.company}
+                      </h3>
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {booking.contactName}
+                      </p>
+                    </div>
+
+                    {/* Status & Completion Badges */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {getStatusBadge(booking.status)}
+                      {booking.isCompleted !== undefined && getCompletionBadge(booking.isCompleted)}
+                    </div>
+
+                    {/* Reschedule Reason */}
+                    {booking.status === 'rescheduled' && booking.rescheduleReason && (
+                      <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} p-2 rounded ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+                        <span className="font-medium">Reschedule Reason:</span> {booking.rescheduleReason}
+                      </div>
+                    )}
+
+                    {/* Conclusion / Notes */}
+                    {booking.conclusion ? (
+                      <div className={`p-2 rounded ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+                        <p className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                          Conclusion:
+                        </p>
+                        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'} line-clamp-3`}>
+                          {booking.conclusion}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'} italic`}>
+                        No conclusion recorded
+                      </p>
+                    )}
+
+                    {/* ID (small, at bottom) */}
+                    <p className={`text-xs ${darkMode ? 'text-gray-600' : 'text-gray-400'} font-mono`}>
+                      ID: {booking._id}
+                    </p>
+
+                    {/* Action Button */}
+                    <button
+                      onClick={() => viewBookingDetails(booking)}
+                      className="w-full px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-medium"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-8 text-center`}>
+                <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  No meeting logs found matching your criteria
+                </p>
+              </div>
+            )}
+          </div>
+        </>
         )}
         {viewMode === 'users' && (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">User Management</h2>
-              </div>
+          <>
+            {/* Search Bar - Shared */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4 sm:p-6 mb-4`}>
+              <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'} mb-4`}>User Management</h2>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-gray-400" />
+                  <Search className={`h-5 w-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                 </div>
                 <input
                   type="text"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className={`block w-full pl-10 pr-3 py-2 border ${darkMode ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-500' : 'border-gray-300 bg-white placeholder-gray-500'} rounded-md leading-5 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                   placeholder="Search users by name, email, or company"
                   value={userSearchTerm}
                   onChange={(e) => setUserSearchTerm(e.target.value)}
                 />
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+
+            {/* Desktop Table View */}
+            <div className={`hidden lg:block ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
+              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-18rem)]">
+                <table className={`min-w-full divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                <thead className={`sticky top-0 z-10 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                       User
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                       Email
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                       Company
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                       Phone
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                       Role
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                       Status
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                       Created
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className={`${darkMode ? 'bg-gray-800' : 'bg-white'} divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                   {filteredUsers.length > 0 ? (
                     filteredUsers.map((user) => (
-                      <tr key={user._id} className="hover:bg-gray-50">
+                      <tr key={user._id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             {user.profilePicture ? (
@@ -1491,18 +1915,18 @@ export function BookingDashboard(): React.ReactElement {
                               </div>
                             )}
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                              <div className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{user.name}</div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{user.email}</div>
+                          <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{user.email}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{user.company || 'N/A'}</div>
+                          <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{user.company || 'N/A'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{user.phone || 'N/A'}</div>
+                          <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{user.phone || 'N/A'}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {user.role === 'superadmin' ? (
@@ -1532,27 +1956,27 @@ export function BookingDashboard(): React.ReactElement {
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           {new Date(user.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
                             <button
                               onClick={() => openUserHistoryModal(user)}
-                              className="text-blue-600 hover:text-blue-900"
+                              className={darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-900'}
                               title="View user history"
                             >
                               History
                             </button>
                             <button
                               onClick={() => openUserModal(user)}
-                              className="text-indigo-600 hover:text-indigo-900"
+                              className={darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-900'}
                             >
                               Edit
                             </button>
                             <button
                               onClick={() => deleteUserHandler(user._id, user.name)}
-                              className="text-red-600 hover:text-red-900"
+                              className={darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-900'}
                             >
                               Delete
                             </button>
@@ -1562,7 +1986,7 @@ export function BookingDashboard(): React.ReactElement {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={8} className={`px-6 py-4 text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                         No users found matching your criteria
                       </td>
                     </tr>
@@ -1571,44 +1995,157 @@ export function BookingDashboard(): React.ReactElement {
               </table>
             </div>
           </div>
+
+          {/* Mobile Card View */}
+          <div className="lg:hidden space-y-3">
+            {filteredUsers.length > 0 ? (
+              filteredUsers.map((user) => (
+                <div
+                  key={user._id}
+                  className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg p-4 shadow-sm`}
+                >
+                  <div className="space-y-3">
+                    {/* User Info with Avatar */}
+                    <div className="flex items-start gap-3">
+                      {user.profilePicture ? (
+                        <img
+                          src={user.profilePicture}
+                          alt={user.name}
+                          className="h-12 w-12 rounded-full object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-bold text-white">
+                            {user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} truncate`}>
+                          {user.name}
+                        </h3>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} truncate`}>
+                          {user.email}
+                        </p>
+                        {user.company && (
+                          <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>
+                            {user.company}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Contact Info */}
+                    {user.phone && (
+                      <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        <span className="font-medium">Phone:</span> {user.phone}
+                      </div>
+                    )}
+
+                    {/* Role & Status Badges */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {user.role === 'superadmin' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <Shield className="w-3 h-3 mr-1" />
+                          Super Admin
+                        </span>
+                      ) : user.role === 'admin' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          <Shield className="w-3 h-3 mr-1" />
+                          Admin
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          User
+                        </span>
+                      )}
+                      {user.isEmailVerified ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Verified
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          Unverified
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Created Date */}
+                    <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                      Joined: {new Date(user.createdAt).toLocaleDateString()}
+                    </p>
+
+                    {/* Action Buttons */}
+                    <div className={`flex gap-2 pt-2 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                      <button
+                        onClick={() => openUserHistoryModal(user)}
+                        className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-medium"
+                      >
+                        History
+                      </button>
+                      <button
+                        onClick={() => openUserModal(user)}
+                        className={`flex-1 px-3 py-2 text-sm ${darkMode ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'} rounded-md transition font-medium`}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => deleteUserHandler(user._id, user.name)}
+                        className="flex-1 px-3 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition font-medium"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-8 text-center`}>
+                <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  No users found matching your criteria
+                </p>
+              </div>
+            )}
+          </div>
+        </>
         )}
         {viewMode === 'analytics' && (
           <div className="space-y-6">
             {/* Real-Time Analytics Section */}
-            <RealTimeAnalytics />
+            <RealTimeAnalytics darkMode={darkMode} />
 
             {/* Divider */}
-            <div className="border-t border-gray-200 my-8"></div>
+            <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'} my-8`}></div>
 
             {/* Historical Analytics Section */}
             <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Historical Analytics</h2>
-              <EnhancedAnalytics />
+              <h2 className={`text-2xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'} mb-4`}>Historical Analytics</h2>
+              <EnhancedAnalytics darkMode={darkMode} />
             </div>
           </div>
         )}
 
         {/* Activity Logs View */}
         {viewMode === 'activityLogs' && (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
             {activityLogsLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
                   <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-600">Loading activity logs...</p>
+                  <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Loading activity logs...</p>
                 </div>
               </div>
             ) : (
               <>
                 {/* Filter Section */}
-                <div className="p-4 border-b bg-gray-50">
+                <div className={`p-4 border-b ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50'}`}>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Resource Type
                       </label>
                       <select
-                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"
+                        className={`block w-full border ${darkMode ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300'} rounded-md py-2 px-3 text-sm`}
                         value={activityLogsFilter.resourceType || ''}
                         onChange={(e) => {
                           const newResourceType = e.target.value || undefined;
@@ -1630,11 +2167,11 @@ export function BookingDashboard(): React.ReactElement {
                     </div>
                     {showProductCategoryFilter && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                           Product Category
                         </label>
                         <select
-                          className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"
+                          className={`block w-full border ${darkMode ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300'} rounded-md py-2 px-3 text-sm`}
                           value={activityLogsFilter.productCategory || ''}
                           onChange={(e) => setActivityLogsFilter({
                             ...activityLogsFilter,
@@ -1654,12 +2191,12 @@ export function BookingDashboard(): React.ReactElement {
                       </div>
                     )}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Action
                       </label>
                       <input
                         type="text"
-                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"
+                        className={`block w-full border ${darkMode ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-500' : 'border-gray-300'} rounded-md py-2 px-3 text-sm`}
                         placeholder="Filter by action (e.g. LOGIN, USER_CREATED)"
                         value={activityLogsFilter.action || ''}
                         onChange={(e) => setActivityLogsFilter({
@@ -1671,72 +2208,146 @@ export function BookingDashboard(): React.ReactElement {
                   </div>
                 </div>
 
-                {/* Table */}
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                {/* Desktop Table */}
+                <div className="hidden lg:block overflow-x-auto overflow-y-auto max-h-[calc(100vh-20rem)]">
+                  <table className={`min-w-full divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                    <thead className={`sticky top-0 z-10 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                           Timestamp
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                           User
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                           Action
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                           Resource
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                           Details
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                           IP Address
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className={`${darkMode ? 'bg-gray-800' : 'bg-white'} divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                       {activityLogs.length > 0 ? (
                         activityLogs.map((log) => (
-                          <tr key={log._id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <tr key={log._id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                               {new Date(log.createdAt).toLocaleString()}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
                               <div>{log.userName}</div>
-                              <div className="text-xs text-gray-500">{log.userEmail}</div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{log.userEmail}</div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
                               {log.action}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                 {log.resourceType}
                               </span>
                               {log.resourceId && (
-                                <div className="text-xs text-gray-400 mt-1">
+                                <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-1`}>
                                   ID: {log.resourceId.substring(0, 8)}...
                                 </div>
                               )}
                             </td>
-                            <td className="px-6 py-4 text-sm text-gray-500 max-w-md">
-                              {log.details || <span className="text-gray-400 italic">No details</span>}
+                            <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'} max-w-md`}>
+                              {log.details || <span className={`${darkMode ? 'text-gray-500' : 'text-gray-400'} italic`}>No details</span>}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
                               {log.ipAddress || '-'}
                             </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
+                          <td colSpan={6} className={`px-6 py-8 text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                             No activity logs found
                           </td>
                         </tr>
                       )}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="lg:hidden p-3 overflow-y-auto max-h-[calc(100vh-20rem)]">
+                  {activityLogs.length > 0 ? (
+                    <div className="space-y-3">
+                      {activityLogs.map((log) => (
+                        <div
+                          key={log._id}
+                          className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg p-4 shadow-sm`}
+                        >
+                          <div className="space-y-2">
+                            {/* Timestamp */}
+                            <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                              {new Date(log.createdAt).toLocaleString()}
+                            </div>
+
+                            {/* User */}
+                            <div>
+                              <p className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {log.userName}
+                              </p>
+                              <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {log.userEmail}
+                              </p>
+                            </div>
+
+                            {/* Action & Resource */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium ${darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'}`}>
+                                {log.action}
+                              </span>
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {log.resourceType}
+                              </span>
+                            </div>
+
+                            {/* Resource ID */}
+                            {log.resourceId && (
+                              <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} font-mono`}>
+                                ID: {log.resourceId.substring(0, 8)}...
+                              </div>
+                            )}
+
+                            {/* Details */}
+                            {log.details ? (
+                              <div className={`p-2 rounded ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                                <p className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                  {log.details}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className={`text-xs ${darkMode ? 'text-gray-600' : 'text-gray-400'} italic`}>
+                                No details
+                              </p>
+                            )}
+
+                            {/* IP Address */}
+                            {log.ipAddress && (
+                              <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                                IP: {log.ipAddress}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        No activity logs found
+                      </p>
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -1745,25 +2356,25 @@ export function BookingDashboard(): React.ReactElement {
 
         {/* Reviews Management View */}
         {viewMode === 'reviews' && (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
             {reviewsLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
                   <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-600">Loading reviews...</p>
+                  <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Loading reviews...</p>
                 </div>
               </div>
             ) : (
               <>
                 {/* Filter Section */}
-                <div className="p-4 border-b bg-gray-50">
+                <div className={`p-4 border-b ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50'}`}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Approval Status
                       </label>
                       <select
-                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"
+                        className={`block w-full border ${darkMode ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300'} rounded-md py-2 px-3 text-sm`}
                         value={reviewsFilter.isApproved === undefined ? '' : reviewsFilter.isApproved.toString()}
                         onChange={(e) => setReviewsFilter({
                           ...reviewsFilter,
@@ -1776,11 +2387,11 @@ export function BookingDashboard(): React.ReactElement {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                         Rating
                       </label>
                       <select
-                        className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm"
+                        className={`block w-full border ${darkMode ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300'} rounded-md py-2 px-3 text-sm`}
                         value={reviewsFilter.rating || ''}
                         onChange={(e) => setReviewsFilter({
                           ...reviewsFilter,
@@ -1799,31 +2410,31 @@ export function BookingDashboard(): React.ReactElement {
                 </div>
 
                 {/* Reviews Grid */}
-                <div className="p-6">
+                <div className="p-3 sm:p-6 overflow-y-auto max-h-[calc(100vh-20rem)]">
                   {reviews.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-6">
+                    <div className="grid grid-cols-1 gap-4 sm:gap-6">
                       {reviews.map((review) => (
-                        <div key={review._id} className="border rounded-lg p-6 hover:shadow-md transition">
+                        <div key={review._id} className={`border ${darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-200'} rounded-lg p-4 sm:p-6 hover:shadow-md transition`}>
                           {/* Header */}
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-start sm:justify-between gap-3 mb-4">
+                            <div className="flex-1 w-full">
+                              <div className="flex items-center gap-1 sm:gap-2 mb-2">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                   <Star
                                     key={star}
                                     className={`h-5 w-5 ${
                                       star <= review.rating
                                         ? 'text-yellow-400 fill-yellow-400'
-                                        : 'text-gray-300'
+                                        : darkMode ? 'text-gray-600' : 'text-gray-300'
                                     }`}
                                   />
                                 ))}
                               </div>
-                              <h3 className="font-semibold text-gray-900">{review.userName}</h3>
+                              <h3 className={`font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{review.userName}</h3>
                               {review.company && (
-                                <p className="text-sm text-gray-600">{review.company}</p>
+                                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{review.company}</p>
                               )}
-                              <p className="text-xs text-gray-500 mt-1">
+                              <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>
                                 {new Date(review.createdAt).toLocaleDateString('en-US', {
                                   year: 'numeric',
                                   month: 'long',
@@ -1844,24 +2455,24 @@ export function BookingDashboard(): React.ReactElement {
                                 </span>
                               )}
                               {review.isPublic ? (
-                                <span className="text-xs text-gray-500">Public</span>
+                                <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>Public</span>
                               ) : (
-                                <span className="text-xs text-gray-500">Private</span>
+                                <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>Private</span>
                               )}
                             </div>
                           </div>
 
                           {/* Comment */}
-                          <p className="text-gray-700 mb-4 leading-relaxed">
+                          <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-4 leading-relaxed`}>
                             "{review.comment}"
                           </p>
 
                           {/* Actions */}
-                          <div className="flex items-center gap-2 pt-4 border-t">
+                          <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                             {!review.isApproved && (
                               <button
                                 onClick={() => handleApproveReview(review._id, true)}
-                                className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition"
+                                className="inline-flex items-center justify-center px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition"
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />
                                 Approve
@@ -1870,7 +2481,7 @@ export function BookingDashboard(): React.ReactElement {
                             {review.isApproved && (
                               <button
                                 onClick={() => handleApproveReview(review._id, false)}
-                                className="inline-flex items-center px-3 py-1.5 bg-yellow-600 text-white text-sm font-medium rounded-md hover:bg-yellow-700 transition"
+                                className="inline-flex items-center justify-center px-3 py-2 bg-yellow-600 text-white text-sm font-medium rounded-md hover:bg-yellow-700 transition"
                               >
                                 <XCircle className="h-4 w-4 mr-1" />
                                 Unapprove
@@ -1878,7 +2489,7 @@ export function BookingDashboard(): React.ReactElement {
                             )}
                             <button
                               onClick={() => handleDeleteReview(review._id, review.userName)}
-                              className="inline-flex items-center px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition"
+                              className="inline-flex items-center justify-center px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition"
                             >
                               <Trash2 className="h-4 w-4 mr-1" />
                               Delete
@@ -2199,7 +2810,7 @@ export function BookingDashboard(): React.ReactElement {
 
         {/* Reports View */}
         {viewMode === 'reports' && (
-          <SimpleReportsTab />
+          <SimpleReportsTab darkMode={darkMode} />
         )}
           </>
         )}
@@ -3211,7 +3822,8 @@ export function BookingDashboard(): React.ReactElement {
           onClose={() => setUserHistoryModalOpen(false)}
         />
       )}
-    </div>
+    </main>
+  </div>
   )
 }
 

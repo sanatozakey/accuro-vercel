@@ -33,9 +33,10 @@ import AnalyticsDetailModal from './AnalyticsDetailModal'
 interface EnhancedAnalyticsProps {
   startDate?: string
   endDate?: string
+  darkMode?: boolean
 }
 
-const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDate }) => {
+const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDate, darkMode = false }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [dashboardData, setDashboardData] = useState<any>(null)
@@ -137,12 +138,12 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
     return (
       <div
         onClick={handleClick}
-        className={`bg-white rounded-lg shadow-md p-6 ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+        className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6 ${onClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
       >
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-600 mb-1">{title}</p>
-            <p className="text-3xl font-bold text-gray-900">{value}</p>
+            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>{title}</p>
+            <p className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{value}</p>
           </div>
           <div className={`p-3 rounded-full ${color}`}>
             <Icon className="h-8 w-8 text-white" />
@@ -157,7 +158,7 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading analytics...</p>
+          <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Loading analytics...</p>
         </div>
       </div>
     )
@@ -165,12 +166,12 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+      <div className={`${darkMode ? 'bg-red-900 border-red-700' : 'bg-red-50 border-red-200'} border rounded-lg p-6`}>
         <div className="flex items-start">
-          <AlertCircle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
+          <AlertCircle className={`h-5 w-5 ${darkMode ? 'text-red-400' : 'text-red-500'} mr-3 mt-0.5`} />
           <div className="flex-1">
-            <h3 className="text-lg font-medium text-red-800 mb-2">Failed to Load Analytics</h3>
-            <p className="text-sm text-red-700 mb-4">{error}</p>
+            <h3 className={`text-lg font-medium ${darkMode ? 'text-red-200' : 'text-red-800'} mb-2`}>Failed to Load Analytics</h3>
+            <p className={`text-sm ${darkMode ? 'text-red-300' : 'text-red-700'} mb-4`}>{error}</p>
             <button
               onClick={fetchAllAnalytics}
               className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
@@ -188,11 +189,11 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
     <div className="space-y-6">
       {/* Sample Data Warning */}
       {isSampleData && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+        <div className={`${darkMode ? 'bg-yellow-900 border-yellow-700' : 'bg-yellow-50 border-yellow-400'} border-l-4 p-4`}>
           <div className="flex">
-            <AlertCircle className="h-5 w-5 text-yellow-400 mr-3" />
+            <AlertCircle className={`h-5 w-5 ${darkMode ? 'text-yellow-500' : 'text-yellow-400'} mr-3`} />
             <div>
-              <p className="text-sm text-yellow-700">
+              <p className={`text-sm ${darkMode ? 'text-yellow-200' : 'text-yellow-700'}`}>
                 <strong>Sample Data:</strong> The analytics below display sample data for demonstration.
                 Once real user interactions occur, this will be replaced with actual data.
               </p>
@@ -237,11 +238,11 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
 
       {/* Product Views Analytics */}
       {productViews && productViews.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Product Views</h2>
-              <p className="text-sm text-gray-600">Most viewed products</p>
+              <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Product Views</h2>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Most viewed products</p>
             </div>
             <button
               onClick={() => openModal('product-views', 'Product View Details')}
@@ -276,11 +277,11 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
       {/* Cart Analytics */}
       {cartData && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Cart Additions</h2>
-                <p className="text-sm text-gray-600">Products added to cart</p>
+                <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Cart Additions</h2>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Products added to cart</p>
               </div>
               <button
                 onClick={() => openModal('cart', 'Cart Addition Details', { eventType: 'cart_add' })}
@@ -292,23 +293,23 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
             {cartData.additions && cartData.additions.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={cartData.additions.slice(0, 5)}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="productName" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10 }} />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                  <XAxis dataKey="productName" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10, fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                  <YAxis tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                  <Tooltip contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#ffffff', border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`, color: darkMode ? '#f3f4f6' : '#111827' }} />
                   <Bar dataKey="count" fill="#10b981" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-gray-500 text-center py-8">No cart additions yet</p>
+              <p className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No cart additions yet</p>
             )}
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Cart Removals</h2>
-                <p className="text-sm text-gray-600">Products removed from cart</p>
+                <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Cart Removals</h2>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Products removed from cart</p>
               </div>
               <button
                 onClick={() => openModal('cart', 'Cart Removal Details', { eventType: 'cart_remove' })}
@@ -320,15 +321,15 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
             {cartData.removals && cartData.removals.length > 0 ? (
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={cartData.removals.slice(0, 5)}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="productName" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10 }} />
-                  <YAxis />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                  <XAxis dataKey="productName" angle={-45} textAnchor="end" height={100} tick={{ fontSize: 10, fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                  <YAxis tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                  <Tooltip contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#ffffff', border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`, color: darkMode ? '#f3f4f6' : '#111827' }} />
                   <Bar dataKey="count" fill="#ef4444" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-gray-500 text-center py-8">No cart removals yet</p>
+              <p className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No cart removals yet</p>
             )}
           </div>
         </div>
@@ -336,11 +337,11 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
 
       {/* Quote Analytics */}
       {quoteData && (
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Quote Requests by Status</h2>
-              <p className="text-sm text-gray-600">Total: {quoteData.total}</p>
+              <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Quote Requests by Status</h2>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total: {quoteData.total}</p>
             </div>
             <button
               onClick={() => openModal('quotes', 'All Quote Requests')}
@@ -360,7 +361,7 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
-                    label
+                    label={{ fill: darkMode ? '#e5e7eb' : '#111827' }}
                   >
                     {quoteData.byStatus.map((entry: any, index: number) => (
                       <Cell
@@ -377,36 +378,36 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
                       />
                     ))}
                   </Pie>
-                  <Tooltip />
-                  <Legend />
+                  <Tooltip contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#ffffff', border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`, color: darkMode ? '#f3f4f6' : '#111827' }} />
+                  <Legend wrapperStyle={{ color: darkMode ? '#e5e7eb' : '#111827' }} />
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex flex-col justify-center space-y-3">
                 {quoteData.byStatus.map((item: any, index: number) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+                    className={`flex items-center justify-between p-3 ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'} rounded-lg cursor-pointer`}
                     onClick={() => openModal('quotes', `${item._id} Quotes`, { status: item._id })}
                   >
-                    <span className="font-medium capitalize">{item._id}</span>
-                    <span className="text-xl font-bold">{item.count}</span>
+                    <span className={`font-medium capitalize ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{item._id}</span>
+                    <span className={`text-xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{item.count}</span>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-8">No quote requests yet</p>
+            <p className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No quote requests yet</p>
           )}
         </div>
       )}
 
       {/* Contact Form Analytics */}
       {contactData && (
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Contact Form Submissions</h2>
-              <p className="text-sm text-gray-600">Total: {contactData.total}</p>
+              <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Contact Form Submissions</h2>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total: {contactData.total}</p>
             </div>
             <button
               onClick={() => openModal('contacts', 'All Contact Submissions')}
@@ -420,27 +421,27 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
               {contactData.byStatus.map((item: any, index: number) => (
                 <div
                   key={index}
-                  className="p-4 border rounded-lg cursor-pointer hover:shadow-md transition-shadow"
+                  className={`p-4 border ${darkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-gray-200 hover:shadow-md'} rounded-lg cursor-pointer transition-shadow`}
                   onClick={() => openModal('contacts', `${item._id} Contacts`, { status: item._id })}
                 >
-                  <p className="text-sm text-gray-600 capitalize mb-1">{item._id}</p>
-                  <p className="text-2xl font-bold text-gray-900">{item.count}</p>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} capitalize mb-1`}>{item._id}</p>
+                  <p className={`text-2xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{item.count}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-8">No contact submissions yet</p>
+            <p className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No contact submissions yet</p>
           )}
         </div>
       )}
 
       {/* User Registration Analytics */}
       {registrationData && (
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">User Registrations</h2>
-              <p className="text-sm text-gray-600">Total: {registrationData.total}</p>
+              <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>User Registrations</h2>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total: {registrationData.total}</p>
             </div>
             <button
               onClick={() => openModal('registrations', 'All User Registrations')}
@@ -452,16 +453,16 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {registrationData.byRole && registrationData.byRole.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-3">By Role</h3>
+                <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-3`}>By Role</h3>
                 <div className="space-y-2">
                   {registrationData.byRole.map((item: any, index: number) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+                      className={`flex items-center justify-between p-3 ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'} rounded-lg cursor-pointer`}
                       onClick={() => openModal('registrations', `${item._id} Users`, { role: item._id })}
                     >
-                      <span className="font-medium capitalize">{item._id}</span>
-                      <span className="text-xl font-bold">{item.count}</span>
+                      <span className={`font-medium capitalize ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{item._id}</span>
+                      <span className={`text-xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{item.count}</span>
                     </div>
                   ))}
                 </div>
@@ -469,16 +470,17 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
             )}
             {registrationData.trend && registrationData.trend.length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-3">Registration Trend</h3>
+                <h3 className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-3`}>Registration Trend</h3>
                 <ResponsiveContainer width="100%" height={200}>
                   <LineChart data={registrationData.trend}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
                     <XAxis
                       dataKey="_id"
                       tickFormatter={(value) => `${value.month}/${value.year}`}
+                      tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }}
                     />
-                    <YAxis />
-                    <Tooltip />
+                    <YAxis tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                    <Tooltip contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#ffffff', border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`, color: darkMode ? '#f3f4f6' : '#111827' }} />
                     <Line type="monotone" dataKey="count" stroke="#10b981" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -490,11 +492,11 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
 
       {/* Search Analytics */}
       {searchData && searchData.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Popular Search Terms</h2>
-              <p className="text-sm text-gray-600">Top {searchData.length} searches</p>
+              <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Popular Search Terms</h2>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Top {searchData.length} searches</p>
             </div>
             <button
               onClick={() => openModal('searches', 'All Search Queries')}
@@ -507,11 +509,11 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
             {searchData.slice(0, 12).map((item: any, index: number) => (
               <div
                 key={index}
-                className="p-3 bg-gray-50 rounded-lg flex items-center justify-between cursor-pointer hover:bg-gray-100"
+                className={`p-3 ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'} rounded-lg flex items-center justify-between cursor-pointer`}
                 onClick={() => openModal('searches', `Searches for "${item._id}"`, { searchTerm: item._id })}
               >
-                <span className="text-sm font-medium truncate mr-2">{item._id}</span>
-                <span className="text-sm font-bold text-indigo-600">{item.count}</span>
+                <span className={`text-sm font-medium truncate mr-2 ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{item._id}</span>
+                <span className={`text-sm font-bold ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>{item.count}</span>
               </div>
             ))}
           </div>
@@ -521,24 +523,24 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
       {/* Booking Analytics (existing) */}
       {dashboardData && (
         <>
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Product Analytics</h2>
-            <p className="text-sm text-gray-600 mb-6">Most requested products in bookings</p>
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
+            <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'} mb-4`}>Product Analytics</h2>
+            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-6`}>Most requested products in bookings</p>
             {dashboardData.products && dashboardData.products.length > 0 ? (
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={dashboardData.products}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
                   <XAxis
                     dataKey="_id"
                     angle={-45}
                     textAnchor="end"
                     height={150}
                     interval={0}
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 12, fill: darkMode ? '#9ca3af' : '#6b7280' }}
                   />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
+                  <YAxis tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                  <Tooltip contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#ffffff', border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`, color: darkMode ? '#f3f4f6' : '#111827' }} />
+                  <Legend wrapperStyle={{ color: darkMode ? '#e5e7eb' : '#111827' }} />
                   <Bar dataKey="count" fill="#3b82f6" name="Number of Bookings">
                     {dashboardData.products.map((_: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={`hsl(${(index * 30) % 360}, 70%, 50%)`} />
@@ -547,21 +549,21 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-gray-500 text-center py-8">No product data available</p>
+              <p className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No product data available</p>
             )}
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Location Analytics</h2>
-            <p className="text-sm text-gray-600 mb-6">Most selected meeting locations</p>
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
+            <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'} mb-4`}>Location Analytics</h2>
+            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-6`}>Most selected meeting locations</p>
             {dashboardData.locations && dashboardData.locations.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={dashboardData.locations}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="_id" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
+                  <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                  <XAxis dataKey="_id" tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                  <YAxis tick={{ fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                  <Tooltip contentStyle={{ backgroundColor: darkMode ? '#1f2937' : '#ffffff', border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`, color: darkMode ? '#f3f4f6' : '#111827' }} />
+                  <Legend wrapperStyle={{ color: darkMode ? '#e5e7eb' : '#111827' }} />
                   <Bar dataKey="count" fill="#10b981" name="Number of Bookings">
                     {dashboardData.locations.map((_: any, index: number) => (
                       <Cell
@@ -573,7 +575,7 @@ const EnhancedAnalytics: React.FC<EnhancedAnalyticsProps> = ({ startDate, endDat
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-gray-500 text-center py-8">No location data available</p>
+              <p className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No location data available</p>
             )}
           </div>
         </>

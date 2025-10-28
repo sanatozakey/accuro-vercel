@@ -370,7 +370,7 @@ export function ReportsTab({ className = '' }: ReportsTabProps) {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                         {Object.entries(report.summary.keyMetrics)
                           .filter(([_, value]) => typeof value === 'number' || typeof value === 'string')
-                          .slice(0, 4)
+                          .slice(0, 8)
                           .map(([key, value]) => (
                             <div key={key} className="text-xs">
                               <span className="text-gray-600 capitalize">

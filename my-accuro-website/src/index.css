@@ -4,6 +4,72 @@
 @import 'tailwindcss/utilities';
 /* DO NOT DELETE THESE TAILWIND IMPORTS, OTHERWISE THE STYLING WILL NOT RENDER AT ALL */
 
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 217.2 91.2% 59.8%;
+    --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
 /* Custom animations */
 @keyframes slide-in {
   from {
@@ -55,4 +121,201 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* FullCalendar Dark Mode Styling */
+.dark .fc {
+  /* Main calendar background */
+  --fc-bg-event-opacity: 1;
+  --fc-border-color: #374151;
+  --fc-neutral-bg-color: #1f2937;
+  --fc-page-bg-color: #1f2937;
+}
+
+.dark .fc-theme-standard {
+  /* Calendar table and borders */
+  background-color: #1f2937;
+}
+
+.dark .fc-theme-standard td,
+.dark .fc-theme-standard th {
+  border-color: #374151;
+}
+
+.dark .fc-theme-standard .fc-scrollgrid {
+  border-color: #374151;
+}
+
+/* Header toolbar styling */
+.dark .fc .fc-toolbar-title {
+  color: #f3f4f6;
+  font-weight: 600;
+}
+
+.dark .fc .fc-button-primary {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+.dark .fc .fc-button-primary:hover:not(:disabled) {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.dark .fc .fc-button-primary:disabled {
+  background-color: #374151;
+  border-color: #374151;
+  opacity: 0.6;
+}
+
+.dark .fc .fc-button-primary:not(:disabled):active,
+.dark .fc .fc-button-primary:not(:disabled).fc-button-active {
+  background-color: #1e40af;
+  border-color: #1e40af;
+}
+
+/* Day headers (Mon, Tue, etc.) */
+.dark .fc .fc-col-header-cell {
+  background-color: #111827;
+  color: #9ca3af;
+  font-weight: 600;
+  border-color: #374151;
+}
+
+/* Day cells */
+.dark .fc .fc-daygrid-day {
+  background-color: #1f2937;
+}
+
+.dark .fc .fc-daygrid-day:hover {
+  background-color: #374151;
+}
+
+.dark .fc .fc-daygrid-day-number {
+  color: #e5e7eb;
+  padding: 8px;
+}
+
+/* Today's date highlighting */
+.dark .fc .fc-day-today {
+  background-color: #1e3a5f !important;
+}
+
+.dark .fc .fc-day-today .fc-daygrid-day-number {
+  color: #60a5fa;
+  font-weight: bold;
+}
+
+/* Weekend days - slightly different shade */
+.dark .fc .fc-day-sat,
+.dark .fc .fc-day-sun {
+  background-color: #1a1f2e;
+}
+
+/* Days from other months */
+.dark .fc .fc-day-other {
+  background-color: #111827;
+}
+
+.dark .fc .fc-day-other .fc-daygrid-day-number {
+  color: #6b7280;
+}
+
+/* Events */
+.dark .fc-event {
+  background-color: #3b82f6;
+  border-color: #2563eb;
+  color: white;
+}
+
+.dark .fc-event:hover {
+  background-color: #2563eb;
+}
+
+.dark .fc-event-title {
+  color: white;
+  font-weight: 500;
+}
+
+/* Event dots in day grid */
+.dark .fc .fc-daygrid-event-dot {
+  border-color: #60a5fa;
+}
+
+/* More events link */
+.dark .fc .fc-daygrid-more-link {
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.dark .fc .fc-daygrid-more-link:hover {
+  color: #93c5fd;
+  background-color: #374151;
+}
+
+/* Time grid (week/day view) */
+.dark .fc .fc-timegrid-slot {
+  border-color: #374151;
+}
+
+.dark .fc .fc-timegrid-slot-label {
+  color: #9ca3af;
+  border-color: #374151;
+}
+
+.dark .fc .fc-timegrid-axis {
+  background-color: #1f2937;
+}
+
+.dark .fc .fc-timegrid-divider {
+  border-color: #374151;
+}
+
+/* Time grid current time indicator */
+.dark .fc .fc-timegrid-now-indicator-line {
+  border-color: #ef4444;
+}
+
+.dark .fc .fc-timegrid-now-indicator-arrow {
+  border-color: #ef4444;
+}
+
+/* Scrollbars within calendar */
+.dark .fc-scroller::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark .fc-scroller::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.dark .fc-scroller::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+.dark .fc-scroller::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Popover for event details */
+.dark .fc .fc-popover {
+  background-color: #1f2937;
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+.dark .fc .fc-popover-header {
+  background-color: #111827;
+  color: #f3f4f6;
+}
+
+.dark .fc .fc-popover-close {
+  color: #9ca3af;
+}
+
+.dark .fc .fc-popover-close:hover {
+  color: #e5e7eb;
 }

@@ -19,6 +19,8 @@ class SessionTrackingService {
   private sessionId: string;
   private trackingEnabled: boolean = true;
   private heartbeatInterval: NodeJS.Timeout | null = null;
+  private browserLocation: { latitude: number; longitude: number } | null = null;
+  private locationRequested: boolean = false;
 
   constructor() {
     this.sessionId = getSessionId();
@@ -27,6 +29,9 @@ class SessionTrackingService {
 
   private initializeTracking() {
     if (!this.trackingEnabled) return;
+
+    // Subtly request browser location (no pop-up if denied)
+    this.requestBrowserLocation();
 
     // Track session on page load
     this.trackSession();
@@ -54,6 +59,40 @@ class SessionTrackingService {
     });
   }
 
+  private requestBrowserLocation() {
+    // Only request once per session
+    if (this.locationRequested) return;
+    this.locationRequested = true;
+
+    // Check if geolocation is supported
+    if (!navigator.geolocation) {
+      console.debug('Geolocation not supported');
+      return;
+    }
+
+    // Request location silently - if denied, we just fall back to IP location
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.browserLocation = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+        console.debug('Browser location obtained');
+        // Update session with accurate location
+        this.trackSession();
+      },
+      (error) => {
+        // Silently handle denial - user won't see any error
+        console.debug('Browser location denied or unavailable:', error.message);
+      },
+      {
+        enableHighAccuracy: false, // Don't use GPS to save battery
+        timeout: 5000, // 5 second timeout
+        maximumAge: 300000, // Cache for 5 minutes
+      }
+    );
+  }
+
   async trackSession() {
     try {
       const currentPage = window.location.pathname;
@@ -72,14 +111,22 @@ class SessionTrackingService {
         }
       }
 
-      await api.post('/sessions/track', {
+      const payload: any = {
         sessionId: this.sessionId,
         userId,
         userEmail,
         userName,
         currentPage,
         referrer,
-      });
+      };
+
+      // Include browser location if available
+      if (this.browserLocation) {
+        payload.browserLatitude = this.browserLocation.latitude;
+        payload.browserLongitude = this.browserLocation.longitude;
+      }
+
+      await api.post('/sessions/track', payload);
     } catch (error) {
       // Silently fail to not disrupt user experience
       console.debug('Session tracking failed:', error);

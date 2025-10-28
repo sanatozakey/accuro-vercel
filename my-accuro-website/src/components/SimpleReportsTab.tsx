@@ -37,7 +37,11 @@ interface ReportData {
 // Accuro logo as base64 (simplified version - you can replace with actual logo)
 const ACCURO_LOGO_BASE64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0ZXh0IHg9IjUiIHk9IjI1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjMkQ3MkIyIj5BQ0NVUk88L3RleHQ+PC9zdmc+';
 
-export function SimpleReportsTab() {
+interface SimpleReportsTabProps {
+  darkMode?: boolean;
+}
+
+export function SimpleReportsTab({ darkMode = false }: SimpleReportsTabProps) {
   const [reportType, setReportType] = useState<ReportType>('bookings');
   const [datePreset, setDatePreset] = useState<DateRangePreset>('last30days');
   const [startDate, setStartDate] = useState('');
@@ -558,21 +562,21 @@ export function SimpleReportsTab() {
   return (
     <div className="space-y-6">
       {/* Generate Report Form */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
         <div className="flex items-center gap-3 mb-6">
-          <FileText className="h-6 w-6 text-blue-600" />
-          <h2 className="text-xl font-bold text-gray-900">Generate Report</h2>
+          <FileText className={`h-6 w-6 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+          <h2 className={`text-xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>Generate Report</h2>
         </div>
 
         {/* Report Type */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
             Report Type
           </label>
           <select
             value={reportType}
             onChange={(e) => setReportType(e.target.value as ReportType)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full px-3 py-2 border ${darkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white text-gray-900'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
           >
             <optgroup label="Core Reports">
               <option value="bookings">Bookings Report</option>
@@ -595,7 +599,7 @@ export function SimpleReportsTab() {
 
         {/* Date Range Presets */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+          <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-3`}>
             <Clock className="inline-block h-4 w-4 mr-1" />
             Quick Date Range
           </label>
@@ -605,7 +609,7 @@ export function SimpleReportsTab() {
               className={`px-3 py-2 rounded-md text-sm font-medium transition ${
                 datePreset === 'today'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               Today
@@ -615,7 +619,7 @@ export function SimpleReportsTab() {
               className={`px-3 py-2 rounded-md text-sm font-medium transition ${
                 datePreset === 'last7days'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               Last 7 Days
@@ -625,7 +629,7 @@ export function SimpleReportsTab() {
               className={`px-3 py-2 rounded-md text-sm font-medium transition ${
                 datePreset === 'last30days'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               Last 30 Days
@@ -635,7 +639,7 @@ export function SimpleReportsTab() {
               className={`px-3 py-2 rounded-md text-sm font-medium transition ${
                 datePreset === 'last3months'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               Last 3 Months
@@ -645,7 +649,7 @@ export function SimpleReportsTab() {
               className={`px-3 py-2 rounded-md text-sm font-medium transition ${
                 datePreset === 'last6months'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               Last 6 Months
@@ -655,7 +659,7 @@ export function SimpleReportsTab() {
               className={`px-3 py-2 rounded-md text-sm font-medium transition ${
                 datePreset === 'lastYear'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               Last Year
@@ -665,7 +669,7 @@ export function SimpleReportsTab() {
               className={`px-3 py-2 rounded-md text-sm font-medium transition ${
                 datePreset === 'custom'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               Custom Range
@@ -677,7 +681,7 @@ export function SimpleReportsTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {/* Start Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
               <Calendar className="inline-block h-4 w-4 mr-1" />
               Start Date
             </label>
@@ -689,13 +693,13 @@ export function SimpleReportsTab() {
                 setDatePreset('custom');
               }}
               max={endDate || new Date().toISOString().split('T')[0]}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 border ${darkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-white text-gray-900'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
           </div>
 
           {/* End Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
               <Calendar className="inline-block h-4 w-4 mr-1" />
               End Date (Auto: Today)
             </label>
@@ -708,9 +712,9 @@ export function SimpleReportsTab() {
               }}
               min={startDate}
               max={new Date().toISOString().split('T')[0]}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
+              className={`w-full px-3 py-2 border ${darkMode ? 'border-gray-600 bg-gray-700 text-gray-200' : 'border-gray-300 bg-blue-50 text-gray-900'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
               End date automatically set to today. You can adjust if needed.
             </p>
           </div>
@@ -743,11 +747,11 @@ export function SimpleReportsTab() {
 
       {/* Report Preview */}
       {reportData && (
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-bold text-gray-900">{reportData.title}</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className={`text-xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{reportData.title}</h3>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 {new Date(reportData.dateRange.start).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
@@ -772,114 +776,114 @@ export function SimpleReportsTab() {
           {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {Object.entries(reportData.summary).map(([key, value]) => (
-              <div key={key} className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-                <p className="text-sm text-blue-700 font-medium capitalize">
+              <div key={key} className={`rounded-lg p-4 border ${darkMode ? 'bg-gradient-to-br from-blue-900 to-blue-800 border-blue-700' : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200'}`}>
+                <p className={`text-sm font-medium capitalize ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
                   {key.replace(/([A-Z])/g, ' $1').trim()}
                 </p>
-                <p className="text-2xl font-bold text-blue-900 mt-1">{value}</p>
+                <p className={`text-2xl font-bold mt-1 ${darkMode ? 'text-blue-100' : 'text-blue-900'}`}>{value}</p>
               </div>
             ))}
           </div>
 
           {/* Data Table */}
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className={`min-w-full divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+              <thead className={`${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
                 <tr>
                   {reportData.type === 'bookings' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Date</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Company</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Contact</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Product</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Status</th>
                     </>
                   )}
                   {reportData.type === 'users' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Joined</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Name</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Email</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Role</th>
                     </>
                   )}
                   {reportData.type === 'quotes' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Date</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Name</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Email</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Status</th>
                     </>
                   )}
                   {reportData.type === 'contacts' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Date</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Name</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Email</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Subject</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Status</th>
                     </>
                   )}
                   {reportData.type === 'activityLogs' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Resource</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Date</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>User</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Action</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Resource</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Details</th>
                     </>
                   )}
                   {reportData.type === 'productViews' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Date</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Product</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Category</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>User</th>
                     </>
                   )}
                   {reportData.type === 'cartAnalytics' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Event</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Date</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Event</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Product</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>User</th>
                     </>
                   )}
                   {reportData.type === 'searchAnalytics' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Search Term</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Results</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Date</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Search Term</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Results</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>User</th>
                     </>
                   )}
                   {reportData.type === 'registrations' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Date</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Name</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Email</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Role</th>
                     </>
                   )}
                   {reportData.type === 'dashboardSummary' && (
                     <>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metric</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Metric</th>
+                      <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase`}>Value</th>
                     </>
                   )}
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className={`${darkMode ? 'bg-gray-800' : 'bg-white'} divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                 {reportData.data.map((item, index) => (
-                  <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <tr key={index} className={index % 2 === 0 ? (darkMode ? 'bg-gray-800' : 'bg-white') : (darkMode ? 'bg-gray-750' : 'bg-gray-50')}>
                     {reportData.type === 'bookings' && (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           {new Date(item.date).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.company}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.contactName}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.product}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.company}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.contactName}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.product}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             item.status === 'confirmed' ? 'bg-green-100 text-green-800' :
@@ -894,101 +898,101 @@ export function SimpleReportsTab() {
                     )}
                     {reportData.type === 'users' && (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           {new Date(item.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.name}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.email}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900 capitalize">{item.role}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.name}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.email}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'} capitalize`}>{item.role}</td>
                       </>
                     )}
                     {reportData.type === 'quotes' && (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           {new Date(item.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.userId?.name || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.userId?.email || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900 capitalize">{item.status}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.userId?.name || 'N/A'}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.userId?.email || 'N/A'}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'} capitalize`}>{item.status}</td>
                       </>
                     )}
                     {reportData.type === 'contacts' && (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           {new Date(item.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           {item.firstName} {item.lastName}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.email}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.subject}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900 capitalize">{item.status}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.email}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.subject}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'} capitalize`}>{item.status}</td>
                       </>
                     )}
                     {reportData.type === 'activityLogs' && (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           {new Date(item.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.userName}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.action}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.userName}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.action}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           <span className="px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
                             {item.resourceType}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.details || 'N/A'}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.details || 'N/A'}</td>
                       </>
                     )}
                     {reportData.type === 'productViews' && (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           {new Date(item.timestamp || item.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.productName || item.productId || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.category || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.userName || 'Guest'}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.productName || item.productId || 'N/A'}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.category || 'N/A'}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.userName || 'Guest'}</td>
                       </>
                     )}
                     {reportData.type === 'cartAnalytics' && (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           {new Date(item.timestamp || item.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             item.eventType === 'add_to_cart' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                           }`}>
                             {item.eventType}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.productName || item.productId || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.userName || 'Guest'}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.productName || item.productId || 'N/A'}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.userName || 'Guest'}</td>
                       </>
                     )}
                     {reportData.type === 'searchAnalytics' && (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           {new Date(item.timestamp || item.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.searchTerm || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.resultsCount || 0}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.userName || 'Guest'}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.searchTerm || 'N/A'}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.resultsCount || 0}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.userName || 'Guest'}</td>
                       </>
                     )}
                     {reportData.type === 'registrations' && (
                       <>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           {new Date(item.timestamp || item.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.userName || item.name || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{item.userEmail || item.email || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900 capitalize">{item.role || 'user'}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.userName || item.name || 'N/A'}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{item.userEmail || item.email || 'N/A'}</td>
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'} capitalize`}>{item.role || 'user'}</td>
                       </>
                     )}
                     {reportData.type === 'dashboardSummary' && (
                       <>
-                        <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                        <td className={`px-6 py-4 text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           <div className="space-y-2">
                             <div>Total Bookings</div>
                             <div>Total Users</div>
@@ -996,7 +1000,7 @@ export function SimpleReportsTab() {
                             <div>Total Contacts</div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
+                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
                           <div className="space-y-2">
                             <div className="font-bold text-blue-600">{item.totalBookings || 0}</div>
                             <div className="font-bold text-green-600">{item.totalUsers || 0}</div>
@@ -1013,7 +1017,7 @@ export function SimpleReportsTab() {
           </div>
 
           {reportData.data.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               No data found for the selected date range
             </div>
           )}

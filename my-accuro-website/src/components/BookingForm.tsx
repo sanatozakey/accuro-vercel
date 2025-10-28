@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import bookingService from '../services/bookingService'
 import { TimeSlotPicker } from './TimeSlotPicker'
+import { CalendarDatePicker } from './CalendarDatePicker'
 import { useLocation } from 'react-router-dom'
 import { CartItem, useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
@@ -169,18 +170,12 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
         <p className="text-gray-700 mb-6">
           You need to be logged in to schedule a meeting. This allows you to view and manage your bookings from your dashboard.
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex justify-center">
           <Link
             to="/login?redirect=/booking"
             className="inline-block bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition font-medium"
           >
             Login to Continue
-          </Link>
-          <Link
-            to="/register?redirect=/booking"
-            className="inline-block bg-white text-blue-600 border-2 border-blue-600 px-6 py-3 rounded-md hover:bg-blue-50 transition font-medium"
-          >
-            Create Account
           </Link>
         </div>
       </div>
@@ -189,38 +184,61 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Date Selection */}
+      {/* Date and Time Selection - Side by Side Layout */}
       <div>
-        <label
-          htmlFor="date"
-          className="flex items-center text-gray-700 font-medium mb-2"
-        >
+        <label className="flex items-center text-gray-700 font-medium mb-4">
           <Calendar className="h-4 w-4 mr-2 text-blue-600" />
-          Preferred Date
+          Select Date and Time
         </label>
-        <input
-          type="date"
-          id="date"
-          name="date"
-          required
-          value={formData.date}
-          onChange={handleChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          min={new Date().toISOString().split('T')[0]}
-        />
-      </div>
 
-      {/* Time Slot Picker */}
-      <div>
-        <label className="flex items-center text-gray-700 font-medium mb-2">
-          <Clock className="h-4 w-4 mr-2 text-blue-600" />
-          Select Time Slot
-        </label>
-        <TimeSlotPicker
-          selectedDate={formData.date}
-          selectedTime={formData.time}
-          onTimeSelect={(time) => setFormData({ ...formData, time })}
-        />
+        <div className="border-2 border-gray-200 rounded-lg overflow-hidden">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+            {/* Left side - Calendar */}
+            <div className="border-b md:border-b-0 md:border-r border-gray-200 p-4">
+              <CalendarDatePicker
+                selectedDate={formData.date}
+                onDateSelect={(date) => setFormData({ ...formData, date })}
+              />
+            </div>
+
+            {/* Right side - Time Slots */}
+            <div className="p-4">
+              <div className="mb-3">
+                <label className="flex items-center text-gray-700 font-medium text-sm">
+                  <Clock className="h-4 w-4 mr-2 text-blue-600" />
+                  Available Time Slots
+                </label>
+              </div>
+
+              <div className="max-h-[400px] overflow-y-auto pr-2">
+                <TimeSlotPicker
+                  selectedDate={formData.date}
+                  selectedTime={formData.time}
+                  onTimeSelect={(time) => setFormData({ ...formData, time })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Footer - Booking Summary */}
+          {formData.date && formData.time && (
+            <div className="border-t border-gray-200 bg-blue-50 p-4">
+              <p className="text-sm text-blue-900 font-medium">
+                Your meeting is scheduled for{' '}
+                <span className="font-bold">
+                  {new Date(formData.date).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </span>
+                {' '}at{' '}
+                <span className="font-bold">{formData.time}</span>
+              </p>
+            </div>
+          )}
+        </div>
       </div>
       {/* Company Information */}
       <div>

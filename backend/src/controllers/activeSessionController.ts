@@ -89,6 +89,8 @@ export const createOrUpdateSession = async (req: Request, res: Response) => {
       userName,
       currentPage,
       referrer,
+      browserLatitude,
+      browserLongitude,
     } = req.body;
 
     if (!sessionId || !currentPage) {
@@ -115,6 +117,13 @@ export const createOrUpdateSession = async (req: Request, res: Response) => {
       if (userEmail) session.userEmail = userEmail;
       if (userName) session.userName = userName;
 
+      // Update location if browser geolocation is provided (more accurate)
+      if (browserLatitude !== undefined && browserLongitude !== undefined) {
+        session.latitude = browserLatitude;
+        session.longitude = browserLongitude;
+        // Keep city/region/country from IP location as browser geolocation doesn't provide these
+      }
+
       // Add page view
       session.pageViews.push({
         page: currentPage,
@@ -123,8 +132,12 @@ export const createOrUpdateSession = async (req: Request, res: Response) => {
 
       await session.save();
     } else {
-      // Get location from IP
+      // Get location from IP first
       const location = await getLocationFromIP(ipAddress);
+
+      // Prioritize browser geolocation if available (more accurate)
+      const latitude = browserLatitude !== undefined ? browserLatitude : location.latitude;
+      const longitude = browserLongitude !== undefined ? browserLongitude : location.longitude;
 
       // Create new session
       session = new ActiveSession({
@@ -139,7 +152,11 @@ export const createOrUpdateSession = async (req: Request, res: Response) => {
         browserVersion,
         os,
         device,
-        ...location,
+        country: location.country,
+        region: location.region,
+        city: location.city,
+        latitude,
+        longitude,
         currentPage,
         referrer: referrer || undefined,
         lastActivity: new Date(),

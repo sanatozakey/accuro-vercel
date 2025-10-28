@@ -35,3 +35,9 @@ yarn-error.log*
 # Testing
 coverage/
 .nyc_output/
+
+.vercel
+
+# Windows reserved filenames
+nul
+backend/nul
