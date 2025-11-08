@@ -46,6 +46,10 @@ const CATEGORIES = [
 
 const STATUSES = ['active', 'inactive', 'archived'] as const;
 
+// Exchange rate: 1 USD = 56 PHP (approximate, can be updated)
+const PHP_TO_USD_RATE = 0.018; // 1 PHP = 0.018 USD
+const USD_TO_PHP_RATE = 56; // 1 USD = 56 PHP
+
 interface ProductManagementProps {
   isInline?: boolean;
   darkMode?: boolean;
@@ -88,6 +92,10 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [customCategory, setCustomCategory] = useState('');
+  const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (user?.role !== 'admin') {
@@ -160,6 +168,9 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
     setImageFile(null);
     setImagePreview('');
     setFormErrors({});
+    setCustomCategory('');
+    setIsAddingNewCategory(false);
+    setSubmitting(false);
   };
 
   const openAddDialog = () => {
@@ -203,18 +214,21 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       errors.description = 'Description is required';
     }
 
-    if (!formData.category) {
-      errors.category = 'Category is required';
+    if (isAddingNewCategory) {
+      if (!customCategory.trim()) {
+        errors.category = 'Custom category name is required';
+      }
+    } else {
+      if (!formData.category) {
+        errors.category = 'Category is required';
+      }
     }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processImageFile = (file: File) => {
     // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
       setFormErrors({ ...formErrors, image: 'Image size must be less than 2MB' });
@@ -236,6 +250,61 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       setImagePreview(reader.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processImageFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      processImageFile(files[0]);
+    }
+  };
+
+  const convertPHPToUSD = (php: number): number => {
+    return Math.round(php * PHP_TO_USD_RATE * 100) / 100;
+  };
+
+  const convertUSDToPHP = (usd: number): number => {
+    return Math.round(usd * USD_TO_PHP_RATE);
+  };
+
+  const handleEstimatedPriceChange = (value: string) => {
+    const numValue = value ? Number(value) : undefined;
+    setFormData({
+      ...formData,
+      estimatedPrice: numValue,
+      estimatedPriceUSD: numValue ? convertPHPToUSD(numValue) : undefined,
+    });
+  };
+
+  const handleEstimatedPriceUSDChange = (value: string) => {
+    const numValue = value ? Number(value) : undefined;
+    setFormData({
+      ...formData,
+      estimatedPriceUSD: numValue,
+      estimatedPrice: numValue ? convertUSDToPHP(numValue) : undefined,
+    });
   };
 
   const uploadImage = async (): Promise<string | undefined> => {
@@ -264,7 +333,7 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
     }
 
     try {
-      setLoading(true);
+      setSubmitting(true);
       setError('');
 
       // Upload image if a new one was selected
@@ -272,14 +341,20 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       if (imageFile) {
         const uploadedUrl = await uploadImage();
         if (!uploadedUrl) {
-          setLoading(false);
+          setSubmitting(false);
           return;
         }
         imageUrl = uploadedUrl;
       }
 
+      // Use custom category if adding new one
+      const finalCategory = isAddingNewCategory && customCategory
+        ? customCategory
+        : formData.category;
+
       const productData = {
         ...formData,
+        category: finalCategory,
         image: imageUrl,
       };
 
@@ -298,7 +373,7 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       setError(err.response?.data?.message || 'Failed to save product');
       console.error('Error saving product:', err);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -662,21 +737,61 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                   <Label htmlFor="category">
                     Category <span className="text-red-500">*</span>
                   </Label>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(value) => setFormData({ ...formData, category: value })}
-                  >
-                    <SelectTrigger className={formErrors.category ? 'border-red-500' : ''}>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {isAddingNewCategory ? (
+                    <div className="space-y-2">
+                      <Input
+                        id="customCategory"
+                        value={customCategory}
+                        onChange={(e) => setCustomCategory(e.target.value)}
+                        placeholder="Enter new category name"
+                        className={formErrors.category ? 'border-red-500' : ''}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setIsAddingNewCategory(false);
+                          setCustomCategory('');
+                        }}
+                        className="text-xs"
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Select
+                        value={formData.category}
+                        onValueChange={(value) => {
+                          if (value === '__add_new__') {
+                            setIsAddingNewCategory(true);
+                            setFormData({ ...formData, category: '' });
+                          } else {
+                            setFormData({ ...formData, category: value });
+                          }
+                        }}
+                      >
+                        <SelectTrigger className={formErrors.category ? 'border-red-500' : ''}>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CATEGORIES.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="__add_new__" className="text-blue-600 font-medium">
+                            <div className="flex items-center">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add New Category
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   {formErrors.category && (
                     <p className="text-sm text-red-500 mt-1">{formErrors.category}</p>
                   )}
@@ -707,20 +822,44 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                 </div>
               </div>
 
-              {/* Image Upload */}
+              {/* Image Upload with Drag & Drop */}
               <div>
                 <Label htmlFor="image">Product Image</Label>
                 <div className="mt-2 space-y-4">
-                  <div className="flex items-center gap-4">
+                  {/* Drag & Drop Zone */}
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                      isDragging
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    <Upload className={`h-12 w-12 mx-auto mb-4 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
+                    <p className="text-sm text-gray-600 mb-2">
+                      {isDragging ? 'Drop image here' : 'Drag and drop an image here, or click to browse'}
+                    </p>
                     <Input
                       id="image"
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
-                      className="flex-1"
+                      className="hidden"
                     />
-                    <Upload className="h-5 w-5 text-gray-400" />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById('image')?.click()}
+                    >
+                      Choose File
+                    </Button>
+                    <p className="text-xs text-gray-500 mt-2">Max file size: 2MB</p>
                   </div>
+
+                  {/* Image Preview */}
                   {imagePreview && (
                     <div className="relative w-32 h-32 border rounded-md overflow-hidden">
                       <img
@@ -728,9 +867,22 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                         alt="Preview"
                         className="w-full h-full object-cover"
                       />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-1 right-1 h-6 w-6 p-0"
+                        onClick={() => {
+                          setImageFile(null);
+                          setImagePreview('');
+                          setFormData({ ...formData, image: '' });
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   )}
-                  <p className="text-xs text-gray-500">Max file size: 2MB</p>
+
                   {formErrors.image && (
                     <p className="text-sm text-red-500">{formErrors.image}</p>
                   )}
@@ -773,7 +925,7 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                 </div>
               </div>
 
-              {/* Estimated Prices */}
+              {/* Estimated Prices with Auto-Conversion */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="estimatedPrice">Estimated Price (PHP)</Label>
@@ -781,14 +933,10 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                     id="estimatedPrice"
                     type="number"
                     value={formData.estimatedPrice || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        estimatedPrice: e.target.value ? Number(e.target.value) : undefined,
-                      })
-                    }
+                    onChange={(e) => handleEstimatedPriceChange(e.target.value)}
                     placeholder="75000"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Auto-converts to USD</p>
                 </div>
 
                 <div>
@@ -797,14 +945,10 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                     id="estimatedPriceUSD"
                     type="number"
                     value={formData.estimatedPriceUSD || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        estimatedPriceUSD: e.target.value ? Number(e.target.value) : undefined,
-                      })
-                    }
+                    onChange={(e) => handleEstimatedPriceUSDChange(e.target.value)}
                     placeholder="1500"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Auto-converts to PHP</p>
                 </div>
               </div>
 
@@ -862,14 +1006,15 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                   setShowAddEditDialog(false);
                   resetForm();
                 }}
+                disabled={submitting}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading || uploadingImage}>
-                {loading || uploadingImage ? (
+              <Button type="submit" disabled={submitting || uploadingImage}>
+                {submitting || uploadingImage ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    {uploadingImage ? 'Uploading...' : 'Saving...'}
+                    {uploadingImage ? 'Uploading Image...' : submitting ? 'Saving Product...' : 'Processing...'}
                   </>
                 ) : (
                   <>{editingProduct ? 'Update Product' : 'Create Product'}</>
