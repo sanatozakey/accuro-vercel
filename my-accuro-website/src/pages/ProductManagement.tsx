@@ -312,14 +312,28 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
 
     try {
       setUploadingImage(true);
-      const response = await productService.uploadImage(imageFile);
+
+      // Set a timeout for image upload (10 seconds)
+      const uploadPromise = productService.uploadImage(imageFile);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Upload timeout')), 10000)
+      );
+
+      const response: any = await Promise.race([uploadPromise, timeoutPromise]);
       return response.data.url;
     } catch (err: any) {
+      console.error('Image upload error:', err);
+      // If upload fails, just use the preview (base64) or skip image
+      if (imagePreview && imagePreview.startsWith('data:')) {
+        return imagePreview; // Use base64 preview as fallback
+      }
       setFormErrors({
         ...formErrors,
-        image: err.response?.data?.message || 'Failed to upload image',
+        image: err.message === 'Upload timeout'
+          ? 'Image upload timed out. Product will be created without image.'
+          : err.response?.data?.message || 'Image upload failed. Product will be created without image.',
       });
-      return undefined;
+      return ''; // Return empty string to skip image
     } finally {
       setUploadingImage(false);
     }
@@ -340,11 +354,11 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       let imageUrl = formData.image;
       if (imageFile) {
         const uploadedUrl = await uploadImage();
-        if (!uploadedUrl) {
-          setSubmitting(false);
-          return;
+        // Even if upload fails, continue with product creation
+        // uploadedUrl will be empty string or undefined if it fails
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
         }
-        imageUrl = uploadedUrl;
       }
 
       // Use custom category if adding new one
@@ -355,7 +369,7 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       const productData = {
         ...formData,
         category: finalCategory,
-        image: imageUrl,
+        image: imageUrl || '', // Ensure image is never undefined
       };
 
       if (editingProduct) {
