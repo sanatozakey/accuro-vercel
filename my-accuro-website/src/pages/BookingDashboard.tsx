@@ -59,6 +59,7 @@ import EnhancedAnalytics from '../components/EnhancedAnalytics'
 import RealTimeAnalytics from '../components/RealTimeAnalytics'
 import { SimpleReportsTab } from '../components/SimpleReportsTab'
 import { UserHistoryModal } from '../components/UserHistoryModal'
+import { ProductManagement } from './ProductManagement'
 // Define types for our booking data
 interface Booking {
   _id: string
@@ -168,7 +169,7 @@ export function BookingDashboard(): React.ReactElement {
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [conclusion, setConclusion] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
-  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'logs' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports'>(
+  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'products' | 'logs' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports'>(
     'table',
   )
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
@@ -1026,6 +1027,25 @@ export function BookingDashboard(): React.ReactElement {
           >
             <CalendarDays className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
             {!sidebarCollapsed && 'Calendar'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('products')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'products' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'products'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Products"
+          >
+            <Package className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Products'}
           </Button>
 
           <Button
@@ -2820,6 +2840,11 @@ export function BookingDashboard(): React.ReactElement {
         {/* Reports View */}
         {viewMode === 'reports' && (
           <SimpleReportsTab darkMode={darkMode} />
+        )}
+
+        {/* Products View */}
+        {viewMode === 'products' && (
+          <ProductManagement isInline={true} darkMode={darkMode} />
         )}
           </>
         )}

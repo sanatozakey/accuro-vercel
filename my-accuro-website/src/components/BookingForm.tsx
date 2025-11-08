@@ -20,7 +20,7 @@ interface BookingFormProps {
   onSubmit: (success: boolean, error?: string, bookingData?: any) => void
 }
 export function BookingForm({ onSubmit }: BookingFormProps) {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const { clearCart } = useCart()
   const location = useLocation()
   const [formData, setFormData] = useState({
@@ -37,6 +37,19 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
   })
   const [loading, setLoading] = useState(false)
   const [isQuoteRequest, setIsQuoteRequest] = useState(false)
+
+  // Auto-fill form with user data when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        contactName: user.name || prev.contactName,
+        contactEmail: user.email || prev.contactEmail,
+        company: user.company || prev.company,
+        contactPhone: user.phone || prev.contactPhone,
+      }))
+    }
+  }, [user])
 
   // Check if coming from cart quote request
   useEffect(() => {

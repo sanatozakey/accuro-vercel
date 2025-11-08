@@ -6,6 +6,7 @@ export interface RegisterData {
   password: string;
   phone?: string;
   company?: string;
+  profilePicture?: string;
 }
 
 export interface LoginData {
@@ -22,6 +23,8 @@ export interface AuthResponse {
     role: string;
     phone?: string;
     company?: string;
+    profilePicture?: string;
+    isEmailVerified?: boolean;
     token: string;
   };
 }
@@ -35,6 +38,8 @@ export interface UserResponse {
     role: string;
     phone?: string;
     company?: string;
+    profilePicture?: string;
+    isEmailVerified?: boolean;
     createdAt: string;
     updatedAt: string;
   };

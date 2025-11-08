@@ -1,6 +1,7 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import { connectDB } from './config/database';
 import { errorHandler } from './middleware/errorHandler';
 import { seedAdminUser } from './utils/seedAdmin';
@@ -24,6 +25,7 @@ import purchaseHistoryRoutes from './routes/purchaseHistoryRoutes';
 import userHistoryRoutes from './routes/userHistoryRoutes';
 import reportRoutes from './routes/reportRoutes';
 import activeSessionRoutes from './routes/activeSessionRoutes';
+import productRoutes from './routes/productRoutes';
 
 // Initialize app
 const app: Application = express();
@@ -44,6 +46,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // CORS middleware
 app.use(cors(corsConfig));
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Mount routes
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
@@ -58,6 +63,7 @@ app.use('/api/purchases', purchaseHistoryRoutes);
 app.use('/api/user-history', userHistoryRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/sessions', activeSessionRoutes);
+app.use('/api/products', productRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

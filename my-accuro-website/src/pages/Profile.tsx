@@ -115,7 +115,7 @@ export function Profile() {
       const response = await authService.updateDetails(updateData);
 
       // Update user in context
-      updateUser(response.data);
+      updateUser(response.data.data);
 
       setSuccess('Profile updated successfully!');
 

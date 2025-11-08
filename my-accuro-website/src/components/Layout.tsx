@@ -3,13 +3,14 @@ import { Navbar } from './Navbar'
 import { Footer } from './Footer'
 interface LayoutProps {
   children: React.ReactNode
+  showSplash?: boolean
 }
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, showSplash = false }: LayoutProps) {
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
+      {!showSplash && <Navbar />}
       <main className="flex-grow">{children}</main>
-      <Footer />
+      {!showSplash && <Footer />}
     </div>
   )
 }

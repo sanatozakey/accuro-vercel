@@ -20,8 +20,13 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword').then(module => 
 const Testimonials = lazy(() => import('./pages/Testimonials').then(module => ({ default: module.Testimonials })))
 const UserDashboard = lazy(() => import('./pages/UserDashboard').then(module => ({ default: module.UserDashboard })))
 const RecommendationsMonitor = lazy(() => import('./pages/RecommendationsMonitor').then(module => ({ default: module.RecommendationsMonitor })))
+const ProductManagement = lazy(() => import('./pages/ProductManagement').then(module => ({ default: module.ProductManagement })))
 
-export function AppRouter() {
+interface AppRouterProps {
+  showSplash: boolean;
+}
+
+export function AppRouter({ showSplash }: AppRouterProps) {
   return (
     <BrowserRouter>
       <Suspense fallback={<LoadingSpinner size="lg" text="Loading..." />}>
@@ -29,7 +34,7 @@ export function AppRouter() {
           <Route
             path="/"
             element={
-              <Layout>
+              <Layout showSplash={showSplash}>
                 <Home />
               </Layout>
             }
@@ -37,7 +42,7 @@ export function AppRouter() {
           <Route
             path="/products"
             element={
-              <Layout>
+              <Layout showSplash={showSplash}>
                 <Products />
               </Layout>
             }
@@ -45,7 +50,7 @@ export function AppRouter() {
           <Route
             path="/about"
             element={
-              <Layout>
+              <Layout showSplash={showSplash}>
                 <About />
               </Layout>
             }
@@ -53,7 +58,7 @@ export function AppRouter() {
           <Route
             path="/contact"
             element={
-              <Layout>
+              <Layout showSplash={showSplash}>
                 <Contact />
               </Layout>
             }
@@ -61,7 +66,7 @@ export function AppRouter() {
           <Route
             path="/testimonials"
             element={
-              <Layout>
+              <Layout showSplash={showSplash}>
                 <Testimonials />
               </Layout>
             }
@@ -69,7 +74,7 @@ export function AppRouter() {
           <Route
             path="/booking"
             element={
-              <Layout>
+              <Layout showSplash={showSplash}>
                 <Booking />
               </Layout>
             }
@@ -81,7 +86,7 @@ export function AppRouter() {
           <Route
             path="/login"
             element={
-              <Layout>
+              <Layout showSplash={showSplash}>
                 <Login />
               </Layout>
             }
@@ -89,7 +94,7 @@ export function AppRouter() {
           <Route
             path="/signup"
             element={
-              <Layout>
+              <Layout showSplash={showSplash}>
                 <Signup />
               </Layout>
             }
@@ -97,7 +102,7 @@ export function AppRouter() {
           <Route
             path="/verify-email"
             element={
-              <Layout>
+              <Layout showSplash={showSplash}>
                 <VerifyEmail />
               </Layout>
             }
@@ -114,7 +119,7 @@ export function AppRouter() {
             path="/profile"
             element={
               <ProtectedRoute>
-                <Layout>
+                <Layout showSplash={showSplash}>
                   <Profile />
                 </Layout>
               </ProtectedRoute>
@@ -124,7 +129,7 @@ export function AppRouter() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Layout>
+                <Layout showSplash={showSplash}>
                   <UserDashboard />
                 </Layout>
               </ProtectedRoute>
@@ -143,6 +148,14 @@ export function AppRouter() {
             element={
               <ProtectedRoute adminOnly={true}>
                 <RecommendationsMonitor />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/products"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <ProductManagement />
               </ProtectedRoute>
             }
           />

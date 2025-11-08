@@ -194,7 +194,7 @@ export function Navbar() {
           {/* Mobile menu button with Sheet */}
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <SheetTrigger asChild>
-              <button className="md:hidden text-gray-800 dark:text-gray-200 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">
+              <button className="md:hidden text-gray-900 dark:text-white p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">
                 <MenuIcon size={24} />
               </button>
             </SheetTrigger>

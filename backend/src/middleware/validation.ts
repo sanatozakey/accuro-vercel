@@ -231,32 +231,69 @@ export const validateCreateProduct: ValidationChain[] = [
     .trim()
     .notEmpty()
     .withMessage('Description is required')
-    .isLength({ min: 10, max: 2000 })
-    .withMessage('Description must be between 10 and 2000 characters'),
+    .isLength({ min: 10, max: 5000 })
+    .withMessage('Description must be between 10 and 5000 characters'),
   body('category')
     .trim()
     .notEmpty()
     .withMessage('Category is required')
-    .isIn(['calibration', 'consulting', 'training', 'inspection'])
+    .isIn([
+      'Calibration Software',
+      'Field Calibrators',
+      'Workshop Calibrators',
+      'Temperature Calibration',
+      'Pressure Generation',
+      'Accessories',
+    ])
     .withMessage('Invalid category'),
-  body('price')
-    .optional()
-    .isFloat({ min: 0 })
-    .withMessage('Price must be a positive number'),
-  body('duration')
-    .optional()
-    .trim()
-    .isLength({ max: 100 })
-    .withMessage('Duration must not exceed 100 characters'),
   body('image')
     .optional()
     .trim()
+    .custom((value) => {
+      if (!value) return true;
+      // Allow either URL or base64 data URI
+      const isUrl = /^https?:\/\/.+/.test(value);
+      const isBase64 = /^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(value);
+      if (!isUrl && !isBase64) {
+        throw new Error('Image must be a valid URL or base64 data URI');
+      }
+      // Check base64 size (max 5MB)
+      if (isBase64 && value.length > 5 * 1024 * 1024) {
+        throw new Error('Image size too large (max 5MB)');
+      }
+      return true;
+    }),
+  body('beamexUrl')
+    .optional()
+    .trim()
     .isURL()
-    .withMessage('Image must be a valid URL'),
+    .withMessage('Beamex URL must be a valid URL'),
   body('features')
     .optional()
     .isArray()
     .withMessage('Features must be an array'),
+  body('priceRange')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Price range must not exceed 100 characters'),
+  body('priceRangeUSD')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Price range USD must not exceed 100 characters'),
+  body('estimatedPrice')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Estimated price must be a positive number'),
+  body('estimatedPriceUSD')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Estimated price USD must be a positive number'),
+  body('specifications')
+    .optional()
+    .isObject()
+    .withMessage('Specifications must be an object'),
   body('status')
     .optional()
     .isIn(['active', 'inactive', 'archived'])
@@ -272,31 +309,68 @@ export const validateUpdateProduct: ValidationChain[] = [
   body('description')
     .optional()
     .trim()
-    .isLength({ min: 10, max: 2000 })
-    .withMessage('Description must be between 10 and 2000 characters'),
+    .isLength({ min: 10, max: 5000 })
+    .withMessage('Description must be between 10 and 5000 characters'),
   body('category')
     .optional()
     .trim()
-    .isIn(['calibration', 'consulting', 'training', 'inspection'])
+    .isIn([
+      'Calibration Software',
+      'Field Calibrators',
+      'Workshop Calibrators',
+      'Temperature Calibration',
+      'Pressure Generation',
+      'Accessories',
+    ])
     .withMessage('Invalid category'),
-  body('price')
-    .optional()
-    .isFloat({ min: 0 })
-    .withMessage('Price must be a positive number'),
-  body('duration')
-    .optional()
-    .trim()
-    .isLength({ max: 100 })
-    .withMessage('Duration must not exceed 100 characters'),
   body('image')
     .optional()
     .trim()
+    .custom((value) => {
+      if (!value) return true;
+      // Allow either URL or base64 data URI
+      const isUrl = /^https?:\/\/.+/.test(value);
+      const isBase64 = /^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(value);
+      if (!isUrl && !isBase64) {
+        throw new Error('Image must be a valid URL or base64 data URI');
+      }
+      // Check base64 size (max 5MB)
+      if (isBase64 && value.length > 5 * 1024 * 1024) {
+        throw new Error('Image size too large (max 5MB)');
+      }
+      return true;
+    }),
+  body('beamexUrl')
+    .optional()
+    .trim()
     .isURL()
-    .withMessage('Image must be a valid URL'),
+    .withMessage('Beamex URL must be a valid URL'),
   body('features')
     .optional()
     .isArray()
     .withMessage('Features must be an array'),
+  body('priceRange')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Price range must not exceed 100 characters'),
+  body('priceRangeUSD')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Price range USD must not exceed 100 characters'),
+  body('estimatedPrice')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Estimated price must be a positive number'),
+  body('estimatedPriceUSD')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Estimated price USD must be a positive number'),
+  body('specifications')
+    .optional()
+    .isObject()
+    .withMessage('Specifications must be an object'),
   body('status')
     .optional()
     .isIn(['active', 'inactive', 'archived'])
