@@ -240,10 +240,11 @@ export const validateCreateProduct: ValidationChain[] = [
     .isLength({ min: 2, max: 100 })
     .withMessage('Category must be between 2 and 100 characters'),
   body('image')
-    .optional()
+    .optional({ values: 'falsy' })
     .trim()
     .custom((value) => {
-      if (!value) return true;
+      // Allow empty strings, undefined, or null
+      if (!value || value === '') return true;
       // Allow either URL or base64 data URI
       const isUrl = /^https?:\/\/.+/.test(value);
       const isBase64 = /^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(value);
@@ -310,10 +311,11 @@ export const validateUpdateProduct: ValidationChain[] = [
     .isLength({ min: 2, max: 100 })
     .withMessage('Category must be between 2 and 100 characters'),
   body('image')
-    .optional()
+    .optional({ values: 'falsy' })
     .trim()
     .custom((value) => {
-      if (!value) return true;
+      // Allow empty strings, undefined, or null
+      if (!value || value === '') return true;
       // Allow either URL or base64 data URI
       const isUrl = /^https?:\/\/.+/.test(value);
       const isBase64 = /^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(value);
