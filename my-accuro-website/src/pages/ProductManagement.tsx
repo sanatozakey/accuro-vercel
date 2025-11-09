@@ -70,8 +70,10 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
   // Dialog states
   const [showAddEditDialog, setShowAddEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showViewDialog, setShowViewDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
 
   // Form states
   const [formData, setFormData] = useState<CreateProductData>({
@@ -202,6 +204,11 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
   const openDeleteDialog = (product: Product) => {
     setDeletingProduct(product);
     setShowDeleteDialog(true);
+  };
+
+  const openViewDialog = (product: Product) => {
+    setViewingProduct(product);
+    setShowViewDialog(true);
   };
 
   const validateForm = (): boolean => {
@@ -614,7 +621,8 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
             filteredProducts.map((product) => (
               <div
                 key={product._id}
-                className={`${isInline && darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}
+                onClick={() => openViewDialog(product)}
+                className={`${isInline && darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow`}
               >
                 <div className="flex items-start gap-3 mb-3">
                   {product.image && (
@@ -661,7 +669,10 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => openEditDialog(product)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditDialog(product);
+                    }}
                     className="flex-1"
                   >
                     <Edit className="h-4 w-4 mr-1" />
@@ -670,7 +681,10 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => openDeleteDialog(product)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDeleteDialog(product);
+                    }}
                     className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
@@ -712,7 +726,11 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
               <tbody className={`${isInline && darkMode ? 'bg-gray-800' : 'bg-white'} divide-y ${isInline && darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                 {filteredProducts.length > 0 ? (
                   filteredProducts.map((product) => (
-                    <tr key={product._id} className={isInline && darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                    <tr
+                      key={product._id}
+                      onClick={() => openViewDialog(product)}
+                      className={`cursor-pointer ${isInline && darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           {product.image && (
@@ -754,7 +772,10 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => openEditDialog(product)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditDialog(product);
+                            }}
                           >
                             <Edit className="h-4 w-4 mr-1" />
                             Edit
@@ -762,7 +783,10 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => openDeleteDialog(product)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDeleteDialog(product);
+                            }}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           >
                             <Trash2 className="h-4 w-4 mr-1" />
@@ -1168,6 +1192,152 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Product Dialog */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Product Details</DialogTitle>
+          </DialogHeader>
+
+          {viewingProduct && (
+            <div className="space-y-6">
+              {/* Product Image */}
+              {viewingProduct.image && (
+                <div className="flex justify-center">
+                  <img
+                    src={viewingProduct.image}
+                    alt={viewingProduct.name}
+                    className="max-h-64 w-auto rounded-lg object-contain border border-gray-200"
+                  />
+                </div>
+              )}
+
+              {/* Product Name and Status */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {viewingProduct.name}
+                  </h3>
+                  <Badge
+                    variant={
+                      viewingProduct.status === 'active'
+                        ? 'default'
+                        : viewingProduct.status === 'inactive'
+                        ? 'secondary'
+                        : 'outline'
+                    }
+                  >
+                    {viewingProduct.status}
+                  </Badge>
+                </div>
+                <Badge variant="outline">{viewingProduct.category}</Badge>
+              </div>
+
+              {/* Description */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
+                <p className="text-gray-700 whitespace-pre-wrap">{viewingProduct.description}</p>
+              </div>
+
+              {/* Pricing Information */}
+              {(viewingProduct.priceRange || viewingProduct.estimatedPrice) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                  {viewingProduct.priceRange && (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Price Range (PHP)</h4>
+                      <p className="text-gray-700">{viewingProduct.priceRange}</p>
+                    </div>
+                  )}
+                  {viewingProduct.priceRangeUSD && (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Price Range (USD)</h4>
+                      <p className="text-gray-700">{viewingProduct.priceRangeUSD}</p>
+                    </div>
+                  )}
+                  {viewingProduct.estimatedPrice && (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Estimated Price (PHP)</h4>
+                      <p className="text-gray-700">₱{viewingProduct.estimatedPrice.toLocaleString()}</p>
+                    </div>
+                  )}
+                  {viewingProduct.estimatedPriceUSD && (
+                    <div>
+                      <h4 className="font-semibold text-gray-900 mb-1">Estimated Price (USD)</h4>
+                      <p className="text-gray-700">${viewingProduct.estimatedPriceUSD.toLocaleString()}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Features */}
+              {viewingProduct.features && viewingProduct.features.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Features</h4>
+                  <ul className="list-disc list-inside space-y-1">
+                    {viewingProduct.features.map((feature, index) => (
+                      <li key={index} className="text-gray-700">{feature}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Specifications */}
+              {viewingProduct.specifications && Object.keys(viewingProduct.specifications).length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Specifications</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {Object.entries(viewingProduct.specifications).map(([key, value]) => (
+                      <div key={key} className="flex justify-between p-2 bg-gray-50 rounded">
+                        <span className="font-medium text-gray-700">{key}:</span>
+                        <span className="text-gray-600">{String(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Beamex URL */}
+              {viewingProduct.beamexUrl && (
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">More Information</h4>
+                  <a
+                    href={viewingProduct.beamexUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline inline-flex items-center gap-1"
+                  >
+                    View on Beamex Website
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <DialogFooter className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowViewDialog(false)}
+                >
+                  Close
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={() => {
+                    setShowViewDialog(false);
+                    openEditDialog(viewingProduct);
+                  }}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Product
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
