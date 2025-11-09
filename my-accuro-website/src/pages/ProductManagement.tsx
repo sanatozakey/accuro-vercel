@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import {
   Package,
   Plus,
@@ -383,9 +384,11 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       if (editingProduct) {
         await productService.updateProduct(editingProduct._id, productData);
         showSuccessMessage('Product updated successfully');
+        toast.success('Product updated successfully!');
       } else {
         await productService.createProduct(productData);
         showSuccessMessage('Product created successfully');
+        toast.success('Product created successfully!');
       }
 
       setShowAddEditDialog(false);
@@ -398,10 +401,13 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
 
       if (validationErrors && Array.isArray(validationErrors)) {
         const detailedErrors = validationErrors.map((e: any) => `${e.field}: ${e.message}`).join(', ');
-        setError(`${errorMessage}: ${detailedErrors}`);
+        const fullError = `${errorMessage}: ${detailedErrors}`;
+        setError(fullError);
+        toast.error(fullError);
         console.error('Validation errors:', validationErrors);
       } else {
         setError(errorMessage);
+        toast.error(errorMessage);
       }
 
       console.error('Error saving product:', err);
@@ -419,11 +425,14 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       setError('');
       await productService.deleteProduct(deletingProduct._id);
       showSuccessMessage('Product deleted successfully');
+      toast.success('Product deleted successfully!');
       setShowDeleteDialog(false);
       setDeletingProduct(null);
       fetchProducts();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete product');
+      const errorMessage = err.response?.data?.message || 'Failed to delete product';
+      setError(errorMessage);
+      toast.error(errorMessage);
       console.error('Error deleting product:', err);
     } finally {
       setLoading(false);

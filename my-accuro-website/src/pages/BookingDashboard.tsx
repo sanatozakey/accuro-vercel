@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, cloneElement } from 'react'
+import toast from 'react-hot-toast'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -523,8 +524,11 @@ export function BookingDashboard(): React.ReactElement {
           status: newStatus,
         })
       }
+      toast.success(`Booking status updated to "${newStatus}"`)
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update booking status')
+      const errorMessage = err.response?.data?.message || 'Failed to update booking status'
+      setError(errorMessage)
+      toast.error(errorMessage)
     }
   }
   // Handle completion status change
@@ -539,8 +543,11 @@ export function BookingDashboard(): React.ReactElement {
       await fetchBookings()
       setIsCompletionModalOpen(false)
       setIsDetailModalOpen(false)
+      toast.success('Booking marked as completed successfully!')
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to mark booking as completed')
+      const errorMessage = err.response?.data?.message || 'Failed to mark booking as completed'
+      setError(errorMessage)
+      toast.error(errorMessage)
     }
   }
   // Handle reschedule
@@ -559,8 +566,11 @@ export function BookingDashboard(): React.ReactElement {
       await fetchBookings()
       setIsRescheduleModalOpen(false)
       setIsDetailModalOpen(false)
+      toast.success('Booking rescheduled successfully!')
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to reschedule booking')
+      const errorMessage = err.response?.data?.message || 'Failed to reschedule booking'
+      setError(errorMessage)
+      toast.error(errorMessage)
     }
   }
   // View booking details
@@ -650,6 +660,7 @@ export function BookingDashboard(): React.ReactElement {
     const errors = validateBookingForm(editedBooking)
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors)
+      toast.error('Please fix the validation errors')
       return
     }
     // Clear any previous errors
@@ -660,8 +671,11 @@ export function BookingDashboard(): React.ReactElement {
       await fetchBookings()
       setIsEditMode(false)
       setIsDetailModalOpen(false)
+      toast.success('Booking updated successfully!')
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update booking')
+      const errorMessage = err.response?.data?.message || 'Failed to update booking'
+      setError(errorMessage)
+      toast.error(errorMessage)
     }
   }
   // Delete booking
@@ -674,8 +688,11 @@ export function BookingDashboard(): React.ReactElement {
         if (isDetailModalOpen) {
           setIsDetailModalOpen(false)
         }
+        toast.success('Booking deleted successfully!')
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to delete booking')
+        const errorMessage = err.response?.data?.message || 'Failed to delete booking'
+        setError(errorMessage)
+        toast.error(errorMessage)
       }
     }
   }
