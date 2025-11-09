@@ -133,16 +133,21 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
     });
 
     // Log activity
-    if (req.user) {
-      await ActivityLog.create({
-        userId: req.user._id,
-        action: 'create_product',
-        details: `Created product: ${name}`,
-        metadata: {
-          productId: product._id,
-          productName: name,
-        },
-      });
+    if (req.user && req.user._id) {
+      try {
+        await ActivityLog.create({
+          userId: req.user._id,
+          action: 'create_product',
+          details: `Created product: ${name}`,
+          metadata: {
+            productId: product._id,
+            productName: name,
+          },
+        });
+      } catch (logError) {
+        console.error('Activity log creation failed:', logError);
+        // Don't fail the request if activity log fails
+      }
     }
 
     res.status(201).json({
@@ -151,9 +156,11 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
       data: product,
     });
   } catch (error: any) {
+    console.error('Product creation error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     });
   }
 };
