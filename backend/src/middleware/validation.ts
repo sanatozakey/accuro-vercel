@@ -231,8 +231,8 @@ export const validateCreateProduct: ValidationChain[] = [
     .trim()
     .notEmpty()
     .withMessage('Description is required')
-    .isLength({ min: 10, max: 5000 })
-    .withMessage('Description must be between 10 and 5000 characters'),
+    .isLength({ min: 2, max: 5000 })
+    .withMessage('Description must be between 2 and 5000 characters'),
   body('category')
     .trim()
     .notEmpty()
