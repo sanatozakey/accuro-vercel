@@ -1,0 +1,31 @@
+import express from 'express';
+import {
+  createQuotation,
+  getQuotations,
+  getQuotationById,
+  updateQuotation,
+  approveQuotation,
+  rejectQuotation,
+  deleteQuotation,
+  getQuotationStats,
+} from '../controllers/quotationController';
+import { protect, adminOnly } from '../middleware/auth';
+
+const router = express.Router();
+
+// All routes require authentication
+router.use(protect);
+
+// Customer routes
+router.post('/', createQuotation);
+router.get('/', getQuotations);
+router.get('/:id', getQuotationById);
+
+// Admin-only routes
+router.put('/:id', adminOnly, updateQuotation);
+router.put('/:id/approve', adminOnly, approveQuotation);
+router.put('/:id/reject', adminOnly, rejectQuotation);
+router.delete('/:id', adminOnly, deleteQuotation);
+router.get('/stats/overview', adminOnly, getQuotationStats);
+
+export default router;

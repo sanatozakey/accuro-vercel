@@ -108,6 +108,10 @@ export class NotificationService {
     newStatus: string
   ) {
     const statusMessages: Record<string, { title: string; message: string }> = {
+      approved: {
+        title: 'Quotation Approved',
+        message: `Your quotation request #${quotationNumber} has been approved! Check your quotation details to proceed with the order.`,
+      },
       sent: {
         title: 'Quotation Sent',
         message: `Quotation #${quotationNumber} has been sent to you. Please review it at your convenience.`,
@@ -117,8 +121,8 @@ export class NotificationService {
         message: `Quotation #${quotationNumber} has been accepted. We will process your order shortly.`,
       },
       rejected: {
-        title: 'Quotation Rejected',
-        message: `Quotation #${quotationNumber} has been marked as rejected.`,
+        title: 'Quotation Request Declined',
+        message: `Unfortunately, your quotation request #${quotationNumber} could not be approved at this time. Please contact us for more information.`,
       },
       expired: {
         title: 'Quotation Expired',
