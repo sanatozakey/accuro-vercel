@@ -608,8 +608,86 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
           </div>
         </div>
 
-        {/* Products Table */}
-        <div className={`${isInline && darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
+        {/* Products List - Mobile Card View (hidden on md+) */}
+        <div className="md:hidden space-y-4">
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => (
+              <div
+                key={product._id}
+                className={`${isInline && darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}
+              >
+                <div className="flex items-start gap-3 mb-3">
+                  {product.image && (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="h-16 w-16 rounded object-cover flex-shrink-0"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className={`font-medium ${isInline && darkMode ? 'text-gray-200' : 'text-gray-900'} mb-1`}>
+                      {product.name}
+                    </h3>
+                    <p className={`text-sm ${isInline && darkMode ? 'text-gray-400' : 'text-gray-500'} line-clamp-2 mb-2`}>
+                      {product.description}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="outline" className={`text-xs ${isInline && darkMode ? 'border-gray-600 text-gray-300' : ''}`}>
+                        {product.category}
+                      </Badge>
+                      <Badge
+                        variant={
+                          product.status === 'active'
+                            ? 'default'
+                            : product.status === 'inactive'
+                            ? 'secondary'
+                            : 'outline'
+                        }
+                        className="text-xs"
+                      >
+                        {product.status}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {product.priceRange && (
+                  <div className={`text-sm ${isInline && darkMode ? 'text-gray-300' : 'text-gray-700'} mb-3`}>
+                    Price: {product.priceRange}
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEditDialog(product)}
+                    className="flex-1"
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openDeleteDialog(product)}
+                    className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className={`${isInline && darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-8 text-center ${isInline && darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              No products found
+            </div>
+          )}
+        </div>
+
+        {/* Products Table - Desktop View (hidden on mobile) */}
+        <div className={`hidden md:block ${isInline && darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
           <div className="overflow-x-auto">
             <table className={`min-w-full divide-y ${isInline && darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
               <thead className={isInline && darkMode ? 'bg-gray-900' : 'bg-gray-50'}>
