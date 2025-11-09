@@ -222,16 +222,21 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
     await product.save();
 
     // Log activity
-    if (req.user) {
-      await ActivityLog.create({
-        userId: req.user._id,
-        action: 'update_product',
-        details: `Updated product: ${product.name}`,
-        metadata: {
-          productId: product._id,
-          productName: product.name,
-        },
-      });
+    if (req.user && req.user._id) {
+      try {
+        await ActivityLog.create({
+          userId: req.user._id,
+          action: 'update_product',
+          details: `Updated product: ${product.name}`,
+          metadata: {
+            productId: product._id,
+            productName: product.name,
+          },
+        });
+      } catch (logError) {
+        console.error('Activity log creation failed:', logError);
+        // Don't fail the request if activity log fails
+      }
     }
 
     res.status(200).json({
@@ -240,6 +245,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
       data: product,
     });
   } catch (error: any) {
+    console.error('Product update error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
@@ -265,15 +271,20 @@ export const deleteProduct = async (req: AuthRequest, res: Response) => {
     await product.deleteOne();
 
     // Log activity
-    if (req.user) {
-      await ActivityLog.create({
-        userId: req.user._id,
-        action: 'delete_product',
-        details: `Deleted product: ${productName}`,
-        metadata: {
-          productName,
-        },
-      });
+    if (req.user && req.user._id) {
+      try {
+        await ActivityLog.create({
+          userId: req.user._id,
+          action: 'delete_product',
+          details: `Deleted product: ${productName}`,
+          metadata: {
+            productName,
+          },
+        });
+      } catch (logError) {
+        console.error('Activity log creation failed:', logError);
+        // Don't fail the request if activity log fails
+      }
     }
 
     res.status(200).json({
@@ -281,6 +292,7 @@ export const deleteProduct = async (req: AuthRequest, res: Response) => {
       message: 'Product deleted successfully',
     });
   } catch (error: any) {
+    console.error('Product deletion error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
