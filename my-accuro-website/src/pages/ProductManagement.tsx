@@ -113,7 +113,8 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
     try {
       setLoading(true);
       setError('');
-      const response = await productService.getProducts();
+      // Pass empty string for status to get ALL products (admin view)
+      const response = await productService.getProducts({ status: '' });
       setProducts(response.data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load products');
