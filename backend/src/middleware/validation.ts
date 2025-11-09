@@ -241,10 +241,13 @@ export const validateCreateProduct: ValidationChain[] = [
     .withMessage('Category must be between 2 and 100 characters'),
   body('image')
     .optional({ values: 'falsy' })
-    .trim()
+    .customSanitizer((value) => {
+      // Convert empty strings to undefined so .optional() can skip them
+      return value === '' ? undefined : value;
+    })
     .custom((value) => {
-      // Allow empty strings, undefined, or null
-      if (!value || value === '') return true;
+      // At this point, value is either undefined or has content
+      if (!value) return true;
       // Allow either URL or base64 data URI
       const isUrl = /^https?:\/\/.+/.test(value);
       const isBase64 = /^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(value);
@@ -312,10 +315,13 @@ export const validateUpdateProduct: ValidationChain[] = [
     .withMessage('Category must be between 2 and 100 characters'),
   body('image')
     .optional({ values: 'falsy' })
-    .trim()
+    .customSanitizer((value) => {
+      // Convert empty strings to undefined so .optional() can skip them
+      return value === '' ? undefined : value;
+    })
     .custom((value) => {
-      // Allow empty strings, undefined, or null
-      if (!value || value === '') return true;
+      // At this point, value is either undefined or has content
+      if (!value) return true;
       // Allow either URL or base64 data URI
       const isUrl = /^https?:\/\/.+/.test(value);
       const isBase64 = /^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(value);
