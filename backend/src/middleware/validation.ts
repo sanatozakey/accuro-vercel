@@ -261,10 +261,19 @@ export const validateCreateProduct: ValidationChain[] = [
       return true;
     }),
   body('beamexUrl')
-    .optional()
-    .trim()
-    .isURL()
-    .withMessage('Beamex URL must be a valid URL'),
+    .optional({ values: 'falsy' })
+    .customSanitizer((value) => {
+      return value === '' ? undefined : value;
+    })
+    .custom((value) => {
+      if (!value) return true;
+      // Validate URL only if value exists
+      const urlPattern = /^https?:\/\/.+/;
+      if (!urlPattern.test(value)) {
+        throw new Error('Beamex URL must be a valid URL');
+      }
+      return true;
+    }),
   body('features')
     .optional()
     .isArray()
@@ -335,10 +344,19 @@ export const validateUpdateProduct: ValidationChain[] = [
       return true;
     }),
   body('beamexUrl')
-    .optional()
-    .trim()
-    .isURL()
-    .withMessage('Beamex URL must be a valid URL'),
+    .optional({ values: 'falsy' })
+    .customSanitizer((value) => {
+      return value === '' ? undefined : value;
+    })
+    .custom((value) => {
+      if (!value) return true;
+      // Validate URL only if value exists
+      const urlPattern = /^https?:\/\/.+/;
+      if (!urlPattern.test(value)) {
+        throw new Error('Beamex URL must be a valid URL');
+      }
+      return true;
+    }),
   body('features')
     .optional()
     .isArray()
