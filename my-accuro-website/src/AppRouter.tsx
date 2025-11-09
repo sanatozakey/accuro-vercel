@@ -22,6 +22,8 @@ const UserDashboard = lazy(() => import('./pages/UserDashboard').then(module => 
 const Notifications = lazy(() => import('./pages/Notifications'))
 const RecommendationsMonitor = lazy(() => import('./pages/RecommendationsMonitor').then(module => ({ default: module.RecommendationsMonitor })))
 const ProductManagement = lazy(() => import('./pages/ProductManagement').then(module => ({ default: module.ProductManagement })))
+const QuotationDashboard = lazy(() => import('./pages/QuotationDashboard'))
+const CustomerQuotations = lazy(() => import('./pages/CustomerQuotations'))
 
 interface AppRouterProps {
   showSplash: boolean;
@@ -167,6 +169,24 @@ export function AppRouter({ showSplash }: AppRouterProps) {
             element={
               <ProtectedRoute adminOnly={true}>
                 <ProductManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/quotations"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <QuotationDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quotations"
+            element={
+              <ProtectedRoute>
+                <Layout showSplash={showSplash}>
+                  <CustomerQuotations />
+                </Layout>
               </ProtectedRoute>
             }
           />
