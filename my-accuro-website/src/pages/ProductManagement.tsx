@@ -384,8 +384,20 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       resetForm();
       fetchProducts();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save product');
+      // Show detailed validation errors if available
+      const errorMessage = err.response?.data?.message || 'Failed to save product';
+      const validationErrors = err.response?.data?.errors;
+
+      if (validationErrors && Array.isArray(validationErrors)) {
+        const detailedErrors = validationErrors.map((e: any) => `${e.field}: ${e.message}`).join(', ');
+        setError(`${errorMessage}: ${detailedErrors}`);
+        console.error('Validation errors:', validationErrors);
+      } else {
+        setError(errorMessage);
+      }
+
       console.error('Error saving product:', err);
+      console.error('Full error response:', err.response?.data);
     } finally {
       setSubmitting(false);
     }
