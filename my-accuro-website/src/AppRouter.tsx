@@ -19,6 +19,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword').then(module =
 const ResetPassword = lazy(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword })))
 const Testimonials = lazy(() => import('./pages/Testimonials').then(module => ({ default: module.Testimonials })))
 const UserDashboard = lazy(() => import('./pages/UserDashboard').then(module => ({ default: module.UserDashboard })))
+const Notifications = lazy(() => import('./pages/Notifications'))
 const RecommendationsMonitor = lazy(() => import('./pages/RecommendationsMonitor').then(module => ({ default: module.RecommendationsMonitor })))
 const ProductManagement = lazy(() => import('./pages/ProductManagement').then(module => ({ default: module.ProductManagement })))
 
@@ -131,6 +132,16 @@ export function AppRouter({ showSplash }: AppRouterProps) {
               <ProtectedRoute>
                 <Layout showSplash={showSplash}>
                   <UserDashboard />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <Layout showSplash={showSplash}>
+                  <Notifications />
                 </Layout>
               </ProtectedRoute>
             }

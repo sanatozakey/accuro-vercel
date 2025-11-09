@@ -24,6 +24,7 @@ import userHistoryRoutes from '../src/routes/userHistoryRoutes';
 import reportRoutes from '../src/routes/reportRoutes';
 import activeSessionRoutes from '../src/routes/activeSessionRoutes';
 import productRoutes from '../src/routes/productRoutes';
+import notificationRoutes from '../src/routes/notificationRoutes';
 
 // Initialize app
 const app: Application = express();
@@ -87,6 +88,7 @@ app.use('/api/user-history', userHistoryRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/sessions', activeSessionRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check route
 app.get('/api/health', (req: Request, res: Response) => {

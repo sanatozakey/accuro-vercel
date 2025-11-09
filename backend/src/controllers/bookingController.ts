@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 import emailService from '../utils/emailService';
 import ActivityLog from '../models/ActivityLog';
 import recommendationService from '../services/recommendationService';
+import { NotificationService } from '../services/notificationService';
 
 // Booking limits configuration
 const BOOKING_LIMITS = {
@@ -305,6 +306,34 @@ export const updateBooking = async (req: Request, res: Response) => {
       }
     }
 
+    // Send notification if status changed and user exists
+    if (
+      booking!.status !== originalStatus &&
+      booking!.userId &&
+      ['confirmed', 'in-progress', 'completed', 'cancelled'].includes(booking!.status)
+    ) {
+      try {
+        await NotificationService.notifyBookingStatusChange(
+          booking!.userId,
+          booking!._id,
+          originalStatus,
+          booking!.status,
+          {
+            company: booking!.company,
+            date: booking!.date.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }),
+            time: booking!.time,
+          }
+        );
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError);
+        // Don't fail the request if notification fails
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: booking,
@@ -449,6 +478,30 @@ export const cancelBooking = async (req: AuthRequest, res: Response) => {
       });
     } catch (logError) {
       console.error('Failed to log activity:', logError);
+    }
+
+    // Send notification if user exists
+    if (booking.userId) {
+      try {
+        await NotificationService.notifyBookingStatusChange(
+          booking.userId,
+          booking._id,
+          'pending',
+          'cancelled',
+          {
+            company: booking.company,
+            date: booking.date.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }),
+            time: booking.time,
+          }
+        );
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError);
+        // Don't fail the request if notification fails
+      }
     }
 
     res.status(200).json({
@@ -617,6 +670,30 @@ export const completeBooking = async (req: Request, res: Response) => {
         });
       } catch (logError) {
         console.error('Failed to log activity:', logError);
+      }
+    }
+
+    // Send notification if user exists
+    if (booking.userId) {
+      try {
+        await NotificationService.notifyBookingStatusChange(
+          booking.userId,
+          booking._id,
+          'in-progress',
+          'completed',
+          {
+            company: booking.company,
+            date: booking.date.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }),
+            time: booking.time,
+          }
+        );
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError);
+        // Don't fail the request if notification fails
       }
     }
 

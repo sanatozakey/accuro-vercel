@@ -11,6 +11,7 @@ import {
   SheetTrigger,
 } from './ui/sheet'
 import { Separator } from './ui/separator'
+import { NotificationBell } from './NotificationBell'
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -74,6 +75,9 @@ export function Navbar() {
             >
               Book Meeting
             </Link>
+
+            {/* Notification Bell */}
+            {isAuthenticated && <NotificationBell />}
 
             {/* Auth Links */}
             {isAuthenticated ? (
