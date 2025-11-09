@@ -237,15 +237,8 @@ export const validateCreateProduct: ValidationChain[] = [
     .trim()
     .notEmpty()
     .withMessage('Category is required')
-    .isIn([
-      'Calibration Software',
-      'Field Calibrators',
-      'Workshop Calibrators',
-      'Temperature Calibration',
-      'Pressure Generation',
-      'Accessories',
-    ])
-    .withMessage('Invalid category'),
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Category must be between 2 and 100 characters'),
   body('image')
     .optional()
     .trim()
@@ -314,15 +307,8 @@ export const validateUpdateProduct: ValidationChain[] = [
   body('category')
     .optional()
     .trim()
-    .isIn([
-      'Calibration Software',
-      'Field Calibrators',
-      'Workshop Calibrators',
-      'Temperature Calibration',
-      'Pressure Generation',
-      'Accessories',
-    ])
-    .withMessage('Invalid category'),
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Category must be between 2 and 100 characters'),
   body('image')
     .optional()
     .trim()

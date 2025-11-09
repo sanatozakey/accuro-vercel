@@ -37,17 +37,8 @@ const ProductSchema: Schema = new Schema(
       type: String,
       required: [true, 'Please provide a category'],
       trim: true,
-      enum: {
-        values: [
-          'Calibration Software',
-          'Field Calibrators',
-          'Workshop Calibrators',
-          'Temperature Calibration',
-          'Pressure Generation',
-          'Accessories',
-        ],
-        message: 'Invalid category selected',
-      },
+      minlength: [2, 'Category must be at least 2 characters'],
+      maxlength: [100, 'Category must not exceed 100 characters'],
     },
     image: {
       type: String,
