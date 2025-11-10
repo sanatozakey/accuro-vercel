@@ -51,14 +51,16 @@ export function NotificationBell() {
             const latestNotif = notifResponse.data.data[0];
             const icon = getNotificationIcon(latestNotif.type);
 
-            // Show toast notification
+            // Show toast notification with theme-aware colors
+            const isDarkMode = document.documentElement.classList.contains('dark');
+
             toast(
               (t) => (
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3 p-1">
                   <span className="text-2xl">{icon}</span>
                   <div className="flex-1">
-                    <p className="font-semibold text-sm text-gray-900">{latestNotif.title}</p>
-                    <p className="text-xs text-gray-600 mt-1">{latestNotif.message}</p>
+                    <p className="font-semibold text-sm text-gray-900 dark:text-white">{latestNotif.title}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{latestNotif.message}</p>
                   </div>
                 </div>
               ),
@@ -68,6 +70,12 @@ export function NotificationBell() {
                 icon: '🔔',
                 style: {
                   maxWidth: '400px',
+                  background: isDarkMode ? '#1f2937' : '#ffffff',
+                  color: isDarkMode ? '#f3f4f6' : '#111827',
+                  border: isDarkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+                  boxShadow: isDarkMode
+                    ? '0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)'
+                    : '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
                 },
               }
             );
