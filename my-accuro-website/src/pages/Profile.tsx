@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Building, Camera, Save, AlertCircle } from 'lucide-react';
+import { User, Mail, Phone, Building, Camera, Save, AlertCircle, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import authService from '../services/authService';
 
@@ -99,6 +99,11 @@ export function Profile() {
     }
   };
 
+  const handleRemoveImage = () => {
+    setProfilePicture('');
+    setError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -116,9 +121,14 @@ export function Profile() {
       if (formData.phone && formData.phone.trim()) updateData.phone = formData.phone.trim();
       if (formData.company && formData.company.trim()) updateData.company = formData.company.trim();
 
-      // Only add profilePicture if it's been changed to a new base64 image
+      // Handle profile picture changes
+      // If profilePicture is a new base64 image, send it
       if (profilePicture && profilePicture.startsWith('data:image/')) {
         updateData.profilePicture = profilePicture;
+      }
+      // If profilePicture was removed (empty string) and user had a picture before, send empty string to remove it
+      else if (profilePicture === '' && user?.profilePicture) {
+        updateData.profilePicture = '';
       }
 
       const response = await authService.updateDetails(updateData);
@@ -181,13 +191,25 @@ export function Profile() {
                     </div>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition"
-                >
-                  <Camera className="w-5 h-5 text-blue-600" />
-                </button>
+                <div className="absolute bottom-0 right-0 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition"
+                  >
+                    <Camera className="w-5 h-5 text-blue-600" />
+                  </button>
+                  {profilePicture && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="bg-white rounded-full p-2 shadow-lg hover:bg-red-50 transition"
+                      title="Remove profile picture"
+                    >
+                      <X className="w-5 h-5 text-red-600" />
+                    </button>
+                  )}
+                </div>
                 <input
                   ref={fileInputRef}
                   type="file"
