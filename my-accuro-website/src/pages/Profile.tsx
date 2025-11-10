@@ -107,10 +107,15 @@ export function Profile() {
 
     try {
       // Update profile details
-      const updateData = {
+      // Only include profilePicture if it's a new base64 image
+      const updateData: any = {
         ...formData,
-        profilePicture,
       };
+
+      // Only add profilePicture if it's been changed to a new base64 image
+      if (profilePicture && profilePicture.startsWith('data:image/')) {
+        updateData.profilePicture = profilePicture;
+      }
 
       const response = await authService.updateDetails(updateData);
 
