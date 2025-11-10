@@ -107,10 +107,14 @@ export function Profile() {
 
     try {
       // Update profile details
-      // Only include profilePicture if it's a new base64 image
-      const updateData: any = {
-        ...formData,
-      };
+      // Only include fields that have values to avoid validation errors
+      const updateData: any = {};
+
+      // Only add fields that have non-empty values
+      if (formData.name && formData.name.trim()) updateData.name = formData.name.trim();
+      if (formData.email && formData.email.trim()) updateData.email = formData.email.trim();
+      if (formData.phone && formData.phone.trim()) updateData.phone = formData.phone.trim();
+      if (formData.company && formData.company.trim()) updateData.company = formData.company.trim();
 
       // Only add profilePicture if it's been changed to a new base64 image
       if (profilePicture && profilePicture.startsWith('data:image/')) {
