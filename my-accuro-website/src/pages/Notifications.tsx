@@ -42,7 +42,7 @@ export default function Notifications() {
 
       const unreadOnlyParam = filter === 'unread' ? 'true' : 'false';
       const response = await axios.get(
-        `${API_URL}/api/notifications?page=${page}&limit=20&unreadOnly=${unreadOnlyParam}`,
+        `${API_URL}/notifications?page=${page}&limit=20&unreadOnly=${unreadOnlyParam}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -74,7 +74,7 @@ export default function Notifications() {
       if (!token) return;
 
       await axios.put(
-        `${API_URL}/api/notifications/${notificationId}/read`,
+        `${API_URL}/notifications/${notificationId}/read`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -100,7 +100,7 @@ export default function Notifications() {
       if (!token) return;
 
       await axios.put(
-        `${API_URL}/api/notifications/read-all`,
+        `${API_URL}/notifications/read-all`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -123,7 +123,7 @@ export default function Notifications() {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      await axios.delete(`${API_URL}/api/notifications/${notificationId}`, {
+      await axios.delete(`${API_URL}/notifications/${notificationId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

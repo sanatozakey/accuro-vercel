@@ -33,7 +33,7 @@ export function NotificationBell() {
       const token = localStorage.getItem('token');
       if (!token || !user) return;
 
-      const response = await axios.get(`${API_URL}/api/notifications/unread-count`, {
+      const response = await axios.get(`${API_URL}/notifications/unread-count`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -43,7 +43,7 @@ export function NotificationBell() {
         // Check if there are new notifications (count increased)
         if (!isInitialLoad.current && newCount > previousUnreadCount.current) {
           // Fetch the latest notification to show in toast
-          const notifResponse = await axios.get(`${API_URL}/api/notifications?limit=1`, {
+          const notifResponse = await axios.get(`${API_URL}/notifications?limit=1`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
@@ -94,7 +94,7 @@ export function NotificationBell() {
       const token = localStorage.getItem('token');
       if (!token || !user) return;
 
-      const response = await axios.get(`${API_URL}/api/notifications?limit=5`, {
+      const response = await axios.get(`${API_URL}/notifications?limit=5`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -116,7 +116,7 @@ export function NotificationBell() {
       if (!token) return;
 
       await axios.put(
-        `${API_URL}/api/notifications/${notificationId}/read`,
+        `${API_URL}/notifications/${notificationId}/read`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -142,7 +142,7 @@ export function NotificationBell() {
       if (!token) return;
 
       await axios.put(
-        `${API_URL}/api/notifications/read-all`,
+        `${API_URL}/notifications/read-all`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
