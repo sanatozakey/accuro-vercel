@@ -3,6 +3,7 @@ import { Bell } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -22,9 +23,11 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const previousUnreadCount = useRef<number>(0);
+  const isInitialLoad = useRef<boolean>(true);
   const { user } = useAuth();
 
-  // Fetch unread count
+  // Fetch unread count and show toast for new notifications
   const fetchUnreadCount = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -35,7 +38,49 @@ export function NotificationBell() {
       });
 
       if (response.data.success) {
-        setUnreadCount(response.data.count);
+        const newCount = response.data.count;
+
+        // Check if there are new notifications (count increased)
+        if (!isInitialLoad.current && newCount > previousUnreadCount.current) {
+          // Fetch the latest notification to show in toast
+          const notifResponse = await axios.get(`${API_URL}/api/notifications?limit=1`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (notifResponse.data.success && notifResponse.data.data.length > 0) {
+            const latestNotif = notifResponse.data.data[0];
+            const icon = getNotificationIcon(latestNotif.type);
+
+            // Show toast notification
+            toast(
+              (t) => (
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">{icon}</span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm text-gray-900">{latestNotif.title}</p>
+                    <p className="text-xs text-gray-600 mt-1">{latestNotif.message}</p>
+                  </div>
+                </div>
+              ),
+              {
+                duration: 5000,
+                position: 'top-right',
+                icon: '🔔',
+                style: {
+                  maxWidth: '400px',
+                },
+              }
+            );
+          }
+        }
+
+        previousUnreadCount.current = newCount;
+        setUnreadCount(newCount);
+
+        // Mark initial load as complete
+        if (isInitialLoad.current) {
+          isInitialLoad.current = false;
+        }
       }
     } catch (error) {
       console.error('Failed to fetch unread count:', error);
