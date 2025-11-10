@@ -315,7 +315,7 @@ export const updateBooking = async (req: Request, res: Response) => {
       try {
         await NotificationService.notifyBookingStatusChange(
           booking!.userId,
-          booking!._id,
+          booking!._id.toString(),
           originalStatus,
           booking!.status,
           {
@@ -485,7 +485,7 @@ export const cancelBooking = async (req: AuthRequest, res: Response) => {
       try {
         await NotificationService.notifyBookingStatusChange(
           booking.userId,
-          booking._id,
+          booking._id.toString(),
           'pending',
           'cancelled',
           {
@@ -678,7 +678,7 @@ export const completeBooking = async (req: Request, res: Response) => {
       try {
         await NotificationService.notifyBookingStatusChange(
           booking.userId,
-          booking._id,
+          booking._id.toString(),
           'in-progress',
           'completed',
           {
