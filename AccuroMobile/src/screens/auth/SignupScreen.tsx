@@ -1,0 +1,179 @@
+import React, { useState } from 'react';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { Text, useTheme } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../contexts/AuthContext';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
+import Card from '../../components/common/Card';
+
+const SignupScreen = () => {
+  const theme = useTheme();
+  const navigation = useNavigation();
+  const { register } = useAuth();
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSignup = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      if (!name || !email || !password) {
+        setError('Please fill in all fields');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
+
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters');
+        return;
+      }
+
+      await register({ name, email, password });
+    } catch (err: any) {
+      setError(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Text variant="displaySmall" style={styles.title}>
+            Create Account
+          </Text>
+          <Text variant="titleMedium" style={styles.subtitle}>
+            Join Accuro today
+          </Text>
+        </View>
+
+        <Card style={styles.card}>
+          <Card.Content>
+            {error ? (
+              <Text style={[styles.error, { color: theme.colors.error }]}>
+                {error}
+              </Text>
+            ) : null}
+
+            <Input
+              label="Full Name"
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter your full name"
+              left={<Input.Icon icon="account" />}
+            />
+
+            <Input
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              left={<Input.Icon icon="email" />}
+            />
+
+            <Input
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Enter your password"
+              secureTextEntry
+              autoCapitalize="none"
+            />
+
+            <Input
+              label="Confirm Password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="Confirm your password"
+              secureTextEntry
+              autoCapitalize="none"
+            />
+
+            <Button
+              mode="contained"
+              onPress={handleSignup}
+              loading={loading}
+              disabled={loading}
+              style={styles.signupButton}
+            >
+              Sign Up
+            </Button>
+          </Card.Content>
+        </Card>
+
+        <View style={styles.footer}>
+          <Text variant="bodyMedium">Already have an account?</Text>
+          <Button
+            mode="text"
+            onPress={() => navigation.navigate('Login' as never)}
+          >
+            Sign In
+          </Button>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 20,
+    justifyContent: 'center',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  title: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  subtitle: {
+    opacity: 0.7,
+  },
+  card: {
+    marginBottom: 16,
+  },
+  error: {
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  signupButton: {
+    marginTop: 8,
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+});
+
+export default SignupScreen;
