@@ -5,6 +5,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -12,6 +13,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Card from '../../components/common/Card';
+import { COLORS } from '../../constants/colors';
 
 const LoginScreen = () => {
   const theme = useTheme();
@@ -48,11 +50,16 @@ const LoginScreen = () => {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
+          <Image
+            source={require('../../assets/accuro_logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text variant="displaySmall" style={styles.title}>
-            Accuro Mobile
+            Login
           </Text>
           <Text variant="titleMedium" style={styles.subtitle}>
-            Sign in to your account
+            Sign in to your Accuro account
           </Text>
         </View>
 
@@ -120,6 +127,7 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.gray[50],
   },
   scrollContent: {
     flexGrow: 1,
@@ -129,16 +137,33 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 32,
+    backgroundColor: COLORS.secondary,
+    marginHorizontal: -20,
+    marginTop: -20,
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  logo: {
+    width: 180,
+    height: 60,
+    marginBottom: 20,
   },
   title: {
     fontWeight: 'bold',
     marginBottom: 8,
+    color: COLORS.white,
   },
   subtitle: {
-    opacity: 0.7,
+    color: COLORS.white,
+    opacity: 0.9,
   },
   card: {
     marginBottom: 16,
+    marginTop: 24,
+    borderRadius: 12,
+    elevation: 4,
   },
   error: {
     marginBottom: 16,
@@ -147,6 +172,7 @@ const styles = StyleSheet.create({
   loginButton: {
     marginTop: 8,
     marginBottom: 8,
+    borderRadius: 8,
   },
   forgotButton: {
     marginTop: 4,

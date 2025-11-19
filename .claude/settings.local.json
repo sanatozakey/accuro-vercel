@@ -46,7 +46,18 @@
       "Bash(npx shadcn-ui@latest:*)",
       "Bash(npx shadcn@latest init)",
       "Bash(npx shadcn@latest add button card badge input label textarea select separator avatar dropdown-menu dialog alert tabs)",
-      "mcp__playwright__browser_resize"
+      "mcp__playwright__browser_resize",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_network_requests",
+      "Bash(git restore:*)",
+      "Bash(find:*)",
+      "Bash(npx react-native@latest init:*)",
+      "Bash(npx @react-native-community/cli@latest init:*)",
+      "Bash(.gradlew.bat assembleRelease)",
+      "Bash(npx react-native build-android:*)",
+      "Bash(cmd /c \"set JAVA_HOME=C:\\Program Files\\Eclipse Adoptium\\jdk-11.0.27.6-hotspot && gradlew.bat assembleRelease\")",
+      "Bash(cmd /c build-release.bat)",
+      "Bash(gradlew.bat assembleRelease:*)"
     ],
     "deny": [],
     "ask": []

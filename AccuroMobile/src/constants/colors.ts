@@ -1,14 +1,14 @@
 // Color palette for the app
 export const COLORS = {
-  // Primary colors
-  primary: '#007AFF',
-  primaryDark: '#0051D5',
-  primaryLight: '#5AC8FA',
+  // Primary colors - Accuro Branding
+  primary: '#3B82F6', // Accuro bright blue
+  primaryDark: '#2563EB',
+  primaryLight: '#60A5FA',
 
-  // Secondary colors
-  secondary: '#5856D6',
-  secondaryDark: '#3634A3',
-  secondaryLight: '#7D7AFF',
+  // Secondary colors - Accuro Navy
+  secondary: '#001F3F', // Accuro dark navy blue
+  secondaryDark: '#001428',
+  secondaryLight: '#003566',
 
   // Neutral colors
   black: '#000000',
