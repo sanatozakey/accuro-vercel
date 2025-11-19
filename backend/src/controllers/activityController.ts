@@ -54,12 +54,12 @@ export const getUserActivity = async (req: AuthRequest, res: Response): Promise<
         id: booking._id.toString(),
         type: 'booking',
         title: 'Booking Created',
-        description: `Booking for ${booking.service} scheduled`,
+        description: `Booking for ${booking.purpose} scheduled`,
         status: booking.status,
         date: booking.createdAt,
         metadata: {
-          service: booking.service,
-          date: booking.preferredDate,
+          service: booking.purpose,
+          date: booking.date,
           location: booking.location,
         },
       });
@@ -69,12 +69,12 @@ export const getUserActivity = async (req: AuthRequest, res: Response): Promise<
           id: `${booking._id}-confirmed`,
           type: 'booking',
           title: 'Booking Confirmed',
-          description: `Your ${booking.service} booking was confirmed`,
+          description: `Your ${booking.purpose} booking was confirmed`,
           status: booking.status,
           date: booking.updatedAt,
           metadata: {
-            service: booking.service,
-            date: booking.preferredDate,
+            service: booking.purpose,
+            date: booking.date,
           },
         });
       }
@@ -84,11 +84,11 @@ export const getUserActivity = async (req: AuthRequest, res: Response): Promise<
           id: `${booking._id}-completed`,
           type: 'booking',
           title: 'Booking Completed',
-          description: `${booking.service} service completed`,
+          description: `${booking.purpose} service completed`,
           status: booking.status,
           date: booking.updatedAt,
           metadata: {
-            service: booking.service,
+            service: booking.purpose,
           },
         });
       }
@@ -142,7 +142,7 @@ export const getUserActivity = async (req: AuthRequest, res: Response): Promise<
 
     // Add important notifications
     notifications.forEach((notification) => {
-      if (notification.read === false || notification.priority === 'high') {
+      if (notification.isRead === false) {
         activities.push({
           id: notification._id.toString(),
           type: 'notification',
@@ -151,8 +151,7 @@ export const getUserActivity = async (req: AuthRequest, res: Response): Promise<
           date: notification.createdAt,
           metadata: {
             type: notification.type,
-            priority: notification.priority,
-            read: notification.read,
+            isRead: notification.isRead,
           },
         });
       }

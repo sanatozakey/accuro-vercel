@@ -25,7 +25,7 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
       .skip(skip);
 
     const total = await Notification.countDocuments(query);
-    const unreadCount = await NotificationService.getUnreadCount(req.user!._id);
+    const unreadCount = await NotificationService.getUnreadCount(req.user!._id as any);
 
     res.status(200).json({
       success: true,
@@ -52,7 +52,7 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
 // @access  Private
 export const getUnreadCount = async (req: AuthRequest, res: Response) => {
   try {
-    const count = await NotificationService.getUnreadCount(req.user!._id);
+    const count = await NotificationService.getUnreadCount(req.user!._id as any);
 
     res.status(200).json({
       success: true,
@@ -89,7 +89,7 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const updatedNotification = await NotificationService.markAsRead(notification._id);
+    const updatedNotification = await NotificationService.markAsRead(notification._id as any);
 
     res.status(200).json({
       success: true,
@@ -109,7 +109,7 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
 // @access  Private
 export const markAllAsRead = async (req: AuthRequest, res: Response) => {
   try {
-    await NotificationService.markAllAsRead(req.user!._id);
+    await NotificationService.markAllAsRead(req.user!._id as any);
 
     res.status(200).json({
       success: true,
@@ -146,7 +146,7 @@ export const deleteNotification = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    await NotificationService.deleteNotification(notification._id);
+    await NotificationService.deleteNotification(notification._id as any);
 
     res.status(200).json({
       success: true,
