@@ -24,6 +24,7 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     try {
@@ -37,7 +38,12 @@ const LoginScreen = () => {
 
       await login({ email, password });
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.');
+      // Extract error message from backend response
+      const errorMessage = err.response?.data?.message ||
+                          err.response?.data?.errors?.[0]?.message ||
+                          err.message ||
+                          'Login failed. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -86,8 +92,14 @@ const LoginScreen = () => {
               value={password}
               onChangeText={setPassword}
               placeholder="Enter your password"
-              secureTextEntry
+              secureTextEntry={!showPassword}
               autoCapitalize="none"
+              right={
+                <Input.Icon
+                  icon={showPassword ? 'eye-off' : 'eye'}
+                  onPress={() => setShowPassword(!showPassword)}
+                />
+              }
             />
 
             <Button
