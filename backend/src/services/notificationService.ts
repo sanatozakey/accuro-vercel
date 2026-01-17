@@ -1,6 +1,13 @@
 import Notification from '../models/Notification';
 import mongoose from 'mongoose';
-import { socketService } from './socketService';
+
+// Conditional socket import for serverless compatibility
+let socketService: any = { emitToUser: () => {}, emitToAdmins: () => {} };
+try {
+  socketService = require('./socketService').socketService;
+} catch (e) {
+  console.log('Socket service not available in serverless environment');
+}
 
 interface CreateNotificationParams {
   userId: mongoose.Types.ObjectId | string;

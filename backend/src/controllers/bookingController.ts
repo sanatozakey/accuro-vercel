@@ -5,7 +5,14 @@ import emailService from '../utils/emailService';
 import ActivityLog from '../models/ActivityLog';
 import recommendationService from '../services/recommendationService';
 import { NotificationService } from '../services/notificationService';
-import { socketService } from '../services/socketService';
+
+// Conditional socket import for serverless compatibility
+let socketService: any = { emitToUser: () => {}, emitToAdmins: () => {} };
+try {
+  socketService = require('../services/socketService').socketService;
+} catch (e) {
+  console.log('Socket service not available in serverless environment');
+}
 
 // Booking limits configuration
 const BOOKING_LIMITS = {

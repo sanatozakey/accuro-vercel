@@ -27,8 +27,8 @@ import productRoutes from '../src/routes/productRoutes';
 import notificationRoutes from '../src/routes/notificationRoutes';
 import quotationRoutes from '../src/routes/quotationRoutes';
 import activityRoutes from '../src/routes/activityRoutes';
-import settingsRoutes from '../src/routes/settingsRoutes';
-// Google Calendar temporarily disabled - googleapis package too large for Vercel serverless
+// Temporarily disabled to debug Vercel crash
+// import settingsRoutes from '../src/routes/settingsRoutes';
 // import googleCalendarRoutes from '../src/routes/googleCalendarRoutes';
 
 // Initialize app
@@ -96,7 +96,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/quotations', quotationRoutes);
 app.use('/api/activity', activityRoutes);
-app.use('/api/settings', settingsRoutes);
+// app.use('/api/settings', settingsRoutes);
 // app.use('/api/google-calendar', googleCalendarRoutes);
 
 // Health check route
