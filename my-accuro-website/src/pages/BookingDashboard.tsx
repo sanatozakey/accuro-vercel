@@ -64,6 +64,7 @@ import { UserHistoryModal } from '../components/UserHistoryModal'
 import { GoogleCalendarSettings } from '../components/GoogleCalendarSettings'
 import { EmbeddedGoogleCalendar } from '../components/EmbeddedGoogleCalendar'
 import { CompletionProofModal } from '../components/CompletionProofModal'
+import { CalendarView } from '../components/CalendarView'
 import { AdminSettings } from '../components/AdminSettings'
 import { DashboardOverview } from '../components/DashboardOverview'
 import { ProductManagement } from './ProductManagement'
@@ -1664,7 +1665,11 @@ export function BookingDashboard(): React.ReactElement {
           </>
         )}
         {viewMode === 'calendar' && (
-          <EmbeddedGoogleCalendar darkMode={darkMode} />
+          <CalendarView
+            darkMode={darkMode}
+            calendarEvents={calendarEvents}
+            handleEventClick={handleEventClick}
+          />
         )}
         {viewMode === 'users' && (
           <>
