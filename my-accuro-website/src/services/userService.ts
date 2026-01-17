@@ -9,6 +9,10 @@ export interface User {
   company?: string;
   profilePicture?: string;
   isEmailVerified: boolean;
+  // Login activity tracking
+  loginCount?: number;
+  lastLoginAt?: string;
+  lastLoginIP?: string;
   createdAt: string;
   updatedAt: string;
 }

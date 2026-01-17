@@ -5,6 +5,7 @@ import emailService from '../utils/emailService';
 import ActivityLog from '../models/ActivityLog';
 import recommendationService from '../services/recommendationService';
 import { NotificationService } from '../services/notificationService';
+import { socketService } from '../services/socketService';
 
 // Booking limits configuration
 const BOOKING_LIMITS = {
@@ -189,6 +190,24 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    // Send in-app notification to user
+    if (req.user) {
+      try {
+        await NotificationService.createNotification({
+          userId: req.user._id.toString(),
+          type: 'booking',
+          title: 'Booking Request Submitted',
+          message: `Your meeting request with ${booking.company} on ${booking.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at ${booking.time} has been submitted. We will confirm your booking shortly.`,
+          relatedId: booking._id.toString(),
+          relatedType: 'booking',
+          actionUrl: `/account?tab=bookings&bookingId=${booking._id.toString()}`,
+        });
+      } catch (notificationError) {
+        console.error('Failed to send in-app notification:', notificationError);
+        // Continue even if notification fails
+      }
+    }
+
     // Send emails
     try {
       // Send confirmation email to customer
@@ -281,6 +300,29 @@ export const updateBooking = async (req: Request, res: Response) => {
     }
 
     const originalStatus = booking.status;
+    const newStatus = req.body.status;
+
+    // Track status change in history if status is being updated
+    if (newStatus && newStatus !== originalStatus) {
+      const req_with_user = req as AuthRequest;
+      const statusHistoryEntry: any = {
+        status: newStatus,
+        changedAt: new Date(),
+        note: req.body.statusNote || `Status changed from ${originalStatus} to ${newStatus}`,
+      };
+
+      if (req_with_user.user?._id) {
+        statusHistoryEntry.changedBy = req_with_user.user._id;
+      }
+
+      // Push to statusHistory
+      if (!booking.statusHistory) {
+        booking.statusHistory = [];
+      }
+      booking.statusHistory.push(statusHistoryEntry);
+      req.body.statusHistory = booking.statusHistory;
+    }
+
     booking = await Booking.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
@@ -328,6 +370,15 @@ export const updateBooking = async (req: Request, res: Response) => {
             time: booking!.time,
           }
         );
+
+        // Emit socket event for real-time booking status update
+        socketService.emitToUser(booking!.userId.toString(), 'booking:statusUpdate', {
+          bookingId: booking!._id,
+          status: booking!.status,
+          previousStatus: originalStatus,
+          statusHistory: booking!.statusHistory,
+          updatedAt: new Date(),
+        });
       } catch (notificationError) {
         console.error('Failed to send notification:', notificationError);
         // Don't fail the request if notification fails

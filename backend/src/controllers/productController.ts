@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import Product from '../models/Product';
+import SiteSettings from '../models/SiteSettings';
 import { AuthRequest } from '../middleware/auth';
 import ActivityLog from '../models/ActivityLog';
+import { getStockStatus, getStockLabel, prepareProductWithStock } from '../utils/stockUtils';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -450,6 +452,325 @@ export const uploadProductImage = async (req: AuthRequest, res: Response) => {
         url: imageUrl,
         filename: req.file.filename,
       },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Update product stock
+// @route   PUT /api/products/:id/stock
+// @access  Private/Admin
+export const updateStock = async (req: AuthRequest, res: Response) => {
+  try {
+    const { stockQuantity, lowStockThreshold, trackInventory } = req.body;
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found',
+      });
+    }
+
+    // Update stock fields
+    if (stockQuantity !== undefined) {
+      if (stockQuantity < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Stock quantity cannot be negative',
+        });
+      }
+      product.stockQuantity = stockQuantity;
+    }
+
+    if (lowStockThreshold !== undefined) {
+      if (lowStockThreshold < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Low stock threshold cannot be negative',
+        });
+      }
+      product.lowStockThreshold = lowStockThreshold;
+    }
+
+    if (trackInventory !== undefined) {
+      product.trackInventory = trackInventory;
+    }
+
+    await product.save();
+
+    // Log activity
+    if (req.user) {
+      try {
+        await ActivityLog.create({
+          user: req.user._id,
+          userName: req.user.name,
+          userEmail: req.user.email,
+          action: 'STOCK_UPDATED',
+          resourceType: 'product',
+          resourceId: product._id.toString(),
+          details: `Stock updated for ${product.name}: qty=${product.stockQuantity}, threshold=${product.lowStockThreshold}, tracking=${product.trackInventory}`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
+
+    // Calculate stock status
+    const stockStatus = product.trackInventory
+      ? getStockStatus(product.stockQuantity, product.lowStockThreshold)
+      : null;
+
+    res.status(200).json({
+      success: true,
+      message: 'Stock updated successfully',
+      data: {
+        ...product.toObject(),
+        stockStatus,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Bulk update product stock
+// @route   PUT /api/products/bulk-stock
+// @access  Private/Admin
+export const bulkUpdateStock = async (req: AuthRequest, res: Response) => {
+  try {
+    const { updates } = req.body;
+
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Updates array is required',
+      });
+    }
+
+    const results = {
+      successful: 0,
+      failed: 0,
+      errors: [] as any[],
+    };
+
+    for (const update of updates) {
+      try {
+        const { productId, stockQuantity, lowStockThreshold, trackInventory } = update;
+
+        if (!productId) {
+          results.failed++;
+          results.errors.push({
+            productId: 'unknown',
+            error: 'Product ID is required',
+          });
+          continue;
+        }
+
+        const product = await Product.findById(productId);
+        if (!product) {
+          results.failed++;
+          results.errors.push({
+            productId,
+            error: 'Product not found',
+          });
+          continue;
+        }
+
+        // Validate and update
+        if (stockQuantity !== undefined) {
+          if (stockQuantity < 0) {
+            results.failed++;
+            results.errors.push({
+              productId,
+              error: 'Stock quantity cannot be negative',
+            });
+            continue;
+          }
+          product.stockQuantity = stockQuantity;
+        }
+
+        if (lowStockThreshold !== undefined) {
+          if (lowStockThreshold < 0) {
+            results.failed++;
+            results.errors.push({
+              productId,
+              error: 'Low stock threshold cannot be negative',
+            });
+            continue;
+          }
+          product.lowStockThreshold = lowStockThreshold;
+        }
+
+        if (trackInventory !== undefined) {
+          product.trackInventory = trackInventory;
+        }
+
+        await product.save();
+        results.successful++;
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push({
+          productId: update.productId || 'unknown',
+          error: error.message,
+        });
+      }
+    }
+
+    // Log activity
+    if (req.user) {
+      try {
+        await ActivityLog.create({
+          user: req.user._id,
+          userName: req.user.name,
+          userEmail: req.user.email,
+          action: 'BULK_STOCK_UPDATED',
+          resourceType: 'product',
+          resourceId: 'bulk',
+          details: `Bulk stock update: ${results.successful} successful, ${results.failed} failed`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Bulk stock update completed',
+      data: results,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Get products with stock info
+// @route   GET /api/products/with-stock
+// @access  Public
+export const getProductsWithStock = async (req: Request, res: Response) => {
+  try {
+    const { category, status, search, limit, page, stockStatus } = req.query;
+
+    // Get stock display settings
+    let settings = await SiteSettings.findById('global');
+    if (!settings) {
+      settings = await SiteSettings.create({ _id: 'global' });
+    }
+    const showExactQuantity = settings.stockDisplayMode === 'exact_quantities';
+
+    let query: any = {};
+
+    // Filter by category
+    if (category && category !== 'All Products') {
+      query.category = category;
+    }
+
+    // Filter by status
+    if (status !== undefined && status !== '') {
+      query.status = status;
+    } else if (status === undefined) {
+      query.status = 'active';
+    }
+
+    // Filter by stock status
+    if (stockStatus) {
+      query.trackInventory = true;
+      switch (stockStatus) {
+        case 'out_of_stock':
+          query.stockQuantity = { $lte: 0 };
+          break;
+        case 'low_stock':
+          query.$expr = {
+            $and: [
+              { $gt: ['$stockQuantity', 0] },
+              { $lte: ['$stockQuantity', '$lowStockThreshold'] },
+            ],
+          };
+          break;
+        case 'in_stock':
+          query.$expr = { $gt: ['$stockQuantity', '$lowStockThreshold'] };
+          break;
+      }
+    }
+
+    // Search
+    if (search) {
+      query.$text = { $search: search as string };
+    }
+
+    // Pagination
+    const pageNumber = parseInt(page as string) || 1;
+    const limitNumber = parseInt(limit as string) || 100;
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const products = await Product.find(query)
+      .sort({ createdAt: -1 })
+      .limit(limitNumber)
+      .skip(skip);
+
+    const total = await Product.countDocuments(query);
+
+    // Add stock info to each product
+    const productsWithStock = products.map((product) => {
+      const productObj = product.toObject();
+      return prepareProductWithStock(productObj, showExactQuantity);
+    });
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      total,
+      page: pageNumber,
+      pages: Math.ceil(total / limitNumber),
+      stockDisplayMode: settings.stockDisplayMode,
+      data: productsWithStock,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Get low stock products (for admin dashboard)
+// @route   GET /api/products/low-stock
+// @access  Private/Admin
+export const getLowStockProducts = async (req: AuthRequest, res: Response) => {
+  try {
+    const products = await Product.find({
+      trackInventory: true,
+      $expr: { $lte: ['$stockQuantity', '$lowStockThreshold'] },
+    }).sort({ stockQuantity: 1 });
+
+    const productsWithStatus = products.map((product) => {
+      const productObj = product.toObject();
+      const status = getStockStatus(product.stockQuantity, product.lowStockThreshold);
+      return {
+        ...productObj,
+        stockStatus: status,
+        stockLabel: getStockLabel(status, product.stockQuantity, true),
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      data: productsWithStatus,
     });
   } catch (error: any) {
     res.status(500).json({

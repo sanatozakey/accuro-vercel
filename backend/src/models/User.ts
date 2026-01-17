@@ -1,6 +1,12 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+export interface ILoginHistoryEntry {
+  loginAt: Date;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
 export interface IUser extends Document {
   name: string;
   email: string;
@@ -16,6 +22,11 @@ export interface IUser extends Document {
   resetPasswordExpires?: Date;
   loginAttempts: number;
   lockUntil?: Date;
+  // Login activity tracking
+  loginCount: number;
+  lastLoginAt?: Date;
+  lastLoginIP?: string;
+  loginHistory: ILoginHistoryEntry[];
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -87,6 +98,25 @@ const UserSchema: Schema = new Schema(
     lockUntil: {
       type: Date,
     },
+    // Login activity tracking
+    loginCount: {
+      type: Number,
+      default: 0,
+    },
+    lastLoginAt: {
+      type: Date,
+    },
+    lastLoginIP: {
+      type: String,
+    },
+    loginHistory: [{
+      loginAt: {
+        type: Date,
+        default: Date.now,
+      },
+      ipAddress: String,
+      userAgent: String,
+    }],
   },
   {
     timestamps: true,

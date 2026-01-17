@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   History,
   Star,
@@ -15,7 +16,12 @@ import {
   Package,
   MapPin,
   Truck,
-  DollarSign,
+  X,
+  User,
+  Phone,
+  Mail,
+  Building,
+  Info,
 } from 'lucide-react';
 import reviewService, { Review } from '../services/reviewService';
 import quoteService, { Quote } from '../services/quoteService';
@@ -32,6 +38,7 @@ interface AccountHistoryProps {
 }
 
 export function AccountHistory({ className = '', userId }: AccountHistoryProps) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabType>('bookings');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,6 +49,34 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+
+  // Booking details modal state
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  // Handle URL parameters for tab and bookingId
+  useEffect(() => {
+    const tab = searchParams.get('tab') as TabType;
+    if (tab && ['bookings', 'purchases', 'quotes', 'reviews', 'activity'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  // Handle bookingId URL parameter to auto-open modal
+  useEffect(() => {
+    const bookingId = searchParams.get('bookingId');
+    if (bookingId && bookings.length > 0) {
+      const booking = bookings.find(b => b._id === bookingId);
+      if (booking) {
+        setSelectedBooking(booking);
+        setIsDetailModalOpen(true);
+        // Clear bookingId from URL after opening modal
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('bookingId');
+        setSearchParams(newParams, { replace: true });
+      }
+    }
+  }, [bookings, searchParams, setSearchParams]);
 
   useEffect(() => {
     loadTabData(activeTab);
@@ -316,6 +351,20 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
                 </p>
               </div>
             )}
+
+            {/* View Details Button */}
+            <div className="mt-4 pt-3 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => {
+                  setSelectedBooking(booking);
+                  setIsDetailModalOpen(true);
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
+              >
+                <Eye className="h-4 w-4" />
+                View Details
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -840,6 +889,210 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
           </>
         )}
       </div>
+
+      {/* Booking Details Modal */}
+      {isDetailModalOpen && selectedBooking && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-6 w-6 text-white" />
+                  <h3 className="text-xl font-bold text-white">Booking Details</h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsDetailModalOpen(false);
+                    setSelectedBooking(null);
+                  }}
+                  className="text-white hover:text-gray-200 transition"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {/* Status Badge */}
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Booking ID</p>
+                  <p className="font-mono text-sm text-gray-700">{selectedBooking._id}</p>
+                </div>
+                {getBookingStatusBadge(selectedBooking.status)}
+              </div>
+
+              {/* Company & Contact Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Building className="h-4 w-4 text-blue-600" />
+                    Company Information
+                  </h4>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Company Name</p>
+                      <p className="font-medium text-gray-900">{selectedBooking.company}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <User className="h-4 w-4 text-blue-600" />
+                    Contact Information
+                  </h4>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-900">{selectedBooking.contactName}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-900">{selectedBooking.contactEmail}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-900">{selectedBooking.contactPhone}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Meeting Details */}
+              <div className="mb-6">
+                <h4 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                  <Calendar className="h-4 w-4 text-blue-600" />
+                  Meeting Details
+                </h4>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-100 rounded-lg p-2">
+                        <Calendar className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Date</p>
+                        <p className="font-medium text-gray-900">
+                          {new Date(selectedBooking.date).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-100 rounded-lg p-2">
+                        <Clock className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Time</p>
+                        <p className="font-medium text-gray-900">{selectedBooking.time}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-100 rounded-lg p-2">
+                        <MapPin className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Location</p>
+                        <p className="font-medium text-gray-900">{selectedBooking.location}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-100 rounded-lg p-2">
+                        <Package className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Product/Service</p>
+                        <p className="font-medium text-gray-900">{selectedBooking.product}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Purpose */}
+              <div className="mb-6">
+                <h4 className="font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  Purpose
+                </h4>
+                <p className="text-gray-700 bg-gray-50 rounded-lg p-4">{selectedBooking.purpose}</p>
+              </div>
+
+              {/* Additional Info */}
+              {selectedBooking.additionalInfo && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-blue-600" />
+                    Additional Information
+                  </h4>
+                  <p className="text-gray-700 bg-gray-50 rounded-lg p-4 whitespace-pre-wrap">
+                    {selectedBooking.additionalInfo}
+                  </p>
+                </div>
+              )}
+
+              {/* Conclusion (if completed) */}
+              {selectedBooking.conclusion && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    Meeting Conclusion
+                  </h4>
+                  <p className="text-gray-700 bg-green-50 rounded-lg p-4">
+                    {selectedBooking.conclusion}
+                  </p>
+                </div>
+              )}
+
+              {/* Cancellation Reason (if cancelled) */}
+              {selectedBooking.status === 'cancelled' && selectedBooking.cancellationReason && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                    <XCircle className="h-4 w-4 text-red-600" />
+                    Cancellation Reason
+                  </h4>
+                  <p className="text-gray-700 bg-red-50 rounded-lg p-4">
+                    {selectedBooking.cancellationReason}
+                  </p>
+                </div>
+              )}
+
+              {/* Created At */}
+              <div className="pt-4 border-t border-gray-200">
+                <p className="text-xs text-gray-500">
+                  Created on {new Date(selectedBooking.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-end">
+              <button
+                onClick={() => {
+                  setIsDetailModalOpen(false);
+                  setSelectedBooking(null);
+                }}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -13,6 +13,10 @@ export interface IProduct extends Document {
   estimatedPriceUSD?: number;
   specifications?: Record<string, any>;
   status: 'active' | 'inactive' | 'archived';
+  // Inventory fields
+  stockQuantity: number;
+  lowStockThreshold: number;
+  trackInventory: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -77,6 +81,21 @@ const ProductSchema: Schema = new Schema(
       enum: ['active', 'inactive', 'archived'],
       default: 'active',
     },
+    // Inventory fields
+    stockQuantity: {
+      type: Number,
+      default: 0,
+      min: [0, 'Stock quantity cannot be negative'],
+    },
+    lowStockThreshold: {
+      type: Number,
+      default: 10,
+      min: [0, 'Low stock threshold cannot be negative'],
+    },
+    trackInventory: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -88,5 +107,6 @@ ProductSchema.index({ name: 'text', description: 'text' });
 ProductSchema.index({ category: 1, status: 1 });
 ProductSchema.index({ status: 1 });
 ProductSchema.index({ createdAt: -1 });
+ProductSchema.index({ stockQuantity: 1, trackInventory: 1 }); // For stock filtering
 
 export default mongoose.model<IProduct>('Product', ProductSchema);

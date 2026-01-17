@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, Check, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { useSocket } from '../contexts/SocketContext';
 import { useNavigate, Link } from 'react-router-dom';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -24,6 +25,7 @@ export default function Notifications() {
   const [isLoading, setIsLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const { user } = useAuth();
+  const { socket, isConnected } = useSocket();
   const navigate = useNavigate();
 
   // Redirect if not logged in
@@ -133,6 +135,26 @@ export default function Notifications() {
       console.error('Failed to delete notification:', error);
     }
   };
+
+  // Handle real-time notification from socket
+  const handleNewNotification = useCallback((notification: Notification) => {
+    // Only prepend if we're on page 1 and filter allows it
+    if (page === 1 && (filter === 'all' || filter === 'unread')) {
+      setNotifications(prev => [notification, ...prev]);
+      setUnreadCount(prev => prev + 1);
+    }
+  }, [page, filter]);
+
+  // Socket event listener for real-time notifications
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    socket.on('notification:new', handleNewNotification);
+
+    return () => {
+      socket.off('notification:new', handleNewNotification);
+    };
+  }, [socket, isConnected, handleNewNotification]);
 
   // Fetch on mount and when dependencies change
   useEffect(() => {

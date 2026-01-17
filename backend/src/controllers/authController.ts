@@ -155,6 +155,29 @@ export const login = async (req: Request, res: Response) => {
       await user.resetLoginAttempts();
     }
 
+    // Track login activity
+    const ipAddress = req.ip || (req.headers['x-forwarded-for'] as string) || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    // Update login tracking fields
+    user.loginCount = (user.loginCount || 0) + 1;
+    user.lastLoginAt = new Date();
+    user.lastLoginIP = ipAddress;
+
+    // Add to login history (keep only last 20 entries)
+    if (!user.loginHistory) {
+      user.loginHistory = [];
+    }
+    user.loginHistory.unshift({
+      loginAt: new Date(),
+      ipAddress,
+      userAgent,
+    });
+    if (user.loginHistory.length > 20) {
+      user.loginHistory = user.loginHistory.slice(0, 20);
+    }
+    await user.save();
+
     // @ts-ignore
     const token = generateToken(user._id.toString());
 

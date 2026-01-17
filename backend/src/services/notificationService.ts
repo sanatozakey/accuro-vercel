@@ -1,5 +1,6 @@
 import Notification from '../models/Notification';
 import mongoose from 'mongoose';
+import { socketService } from './socketService';
 
 interface CreateNotificationParams {
   userId: mongoose.Types.ObjectId | string;
@@ -26,6 +27,20 @@ export class NotificationService {
         relatedType: params.relatedType,
         actionUrl: params.actionUrl,
         isRead: false,
+      });
+
+      // Emit socket event for real-time notification
+      const userId = typeof params.userId === 'string' ? params.userId : params.userId.toString();
+      socketService.emitToUser(userId, 'notification:new', {
+        _id: notification._id,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        relatedId: notification.relatedId,
+        relatedType: notification.relatedType,
+        actionUrl: notification.actionUrl,
+        isRead: notification.isRead,
+        createdAt: notification.createdAt,
       });
 
       return notification;
@@ -74,7 +89,7 @@ export class NotificationService {
       message: statusInfo.message,
       relatedId: bookingId,
       relatedType: 'booking',
-      actionUrl: '/bookings',
+      actionUrl: `/account?tab=bookings&bookingId=${bookingId}`,
     });
   }
 

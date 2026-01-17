@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Bell } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import { useSocket } from '../contexts/SocketContext';
 import toast from 'react-hot-toast';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -26,6 +27,8 @@ export function NotificationBell() {
   const previousUnreadCount = useRef<number>(0);
   const isInitialLoad = useRef<boolean>(true);
   const { user } = useAuth();
+  const { socket, isConnected } = useSocket();
+  const navigate = useNavigate();
 
   // Fetch unread count and show toast for new notifications
   const fetchUnreadCount = async () => {
@@ -66,7 +69,7 @@ export function NotificationBell() {
               ),
               {
                 duration: 5000,
-                position: 'top-right',
+                position: 'bottom-right',
                 icon: '🔔',
                 style: {
                   maxWidth: '400px',
@@ -184,15 +187,68 @@ export function NotificationBell() {
     };
   }, [isOpen]);
 
-  // Fetch unread count on mount and periodically
+  // Handle real-time notification from socket
+  const handleNewNotification = useCallback((notification: Notification) => {
+    const icon = getNotificationIcon(notification.type);
+    const isDarkMode = document.documentElement.classList.contains('dark');
+
+    // Show toast notification
+    toast(
+      (t) => (
+        <div className="flex items-start gap-3 p-1">
+          <span className="text-2xl">{icon}</span>
+          <div className="flex-1">
+            <p className="font-semibold text-sm text-gray-900 dark:text-white">{notification.title}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{notification.message}</p>
+          </div>
+        </div>
+      ),
+      {
+        duration: 5000,
+        position: 'bottom-right',
+        icon: '🔔',
+        style: {
+          maxWidth: '400px',
+          background: isDarkMode ? '#1f2937' : '#ffffff',
+          color: isDarkMode ? '#f3f4f6' : '#111827',
+          border: isDarkMode ? '1px solid #374151' : '1px solid #e5e7eb',
+          boxShadow: isDarkMode
+            ? '0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)'
+            : '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+        },
+      }
+    );
+
+    // Update unread count
+    setUnreadCount(prev => prev + 1);
+
+    // If dropdown is open, prepend the new notification
+    setNotifications(prev => [notification, ...prev.slice(0, 4)]);
+  }, []);
+
+  // Socket event listener for real-time notifications
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    socket.on('notification:new', handleNewNotification);
+
+    return () => {
+      socket.off('notification:new', handleNewNotification);
+    };
+  }, [socket, isConnected, handleNewNotification]);
+
+  // Fetch unread count on mount and periodically (as fallback when socket is not connected)
   useEffect(() => {
     if (user) {
       fetchUnreadCount();
-      const interval = setInterval(fetchUnreadCount, 30000); // Poll every 30 seconds
 
-      return () => clearInterval(interval);
+      // Only poll if socket is not connected (fallback)
+      if (!isConnected) {
+        const interval = setInterval(fetchUnreadCount, 30000); // Poll every 30 seconds as fallback
+        return () => clearInterval(interval);
+      }
     }
-  }, [user]);
+  }, [user, isConnected]);
 
   // Fetch notifications when dropdown opens
   useEffect(() => {
@@ -277,8 +333,9 @@ export function NotificationBell() {
                     if (!notification.isRead) {
                       markAsRead(notification._id);
                     }
+                    setIsOpen(false);
                     if (notification.actionUrl) {
-                      setIsOpen(false);
+                      navigate(notification.actionUrl);
                     }
                   }}
                   className={`px-4 py-3 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition ${
