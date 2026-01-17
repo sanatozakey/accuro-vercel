@@ -5,6 +5,7 @@ import emailService from '../utils/emailService';
 import ActivityLog from '../models/ActivityLog';
 import recommendationService from '../services/recommendationService';
 import { NotificationService } from '../services/notificationService';
+import googleCalendarService from '../services/googleCalendarService';
 
 // Conditional socket import for serverless compatibility
 let socketService: any = { emitToUser: () => {}, emitToAdmins: () => {} };
@@ -250,6 +251,14 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       // Continue even if email fails
     }
 
+    // Sync booking to Google Calendar (if connected)
+    try {
+      await googleCalendarService.syncBookingToGoogle(booking._id.toString());
+    } catch (calendarError) {
+      console.error('Failed to sync booking to Google Calendar:', calendarError);
+      // Continue even if calendar sync fails
+    }
+
     res.status(201).json({
       success: true,
       data: booking,
@@ -390,6 +399,14 @@ export const updateBooking = async (req: Request, res: Response) => {
         console.error('Failed to send notification:', notificationError);
         // Don't fail the request if notification fails
       }
+    }
+
+    // Sync updated booking to Google Calendar
+    try {
+      await googleCalendarService.syncBookingToGoogle(booking!._id.toString());
+    } catch (calendarError) {
+      console.error('Failed to sync booking to Google Calendar:', calendarError);
+      // Continue even if calendar sync fails
     }
 
     res.status(200).json({
