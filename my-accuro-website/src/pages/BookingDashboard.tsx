@@ -62,6 +62,7 @@ import RealTimeAnalytics from '../components/RealTimeAnalytics'
 import { SimpleReportsTab } from '../components/SimpleReportsTab'
 import { UserHistoryModal } from '../components/UserHistoryModal'
 import { GoogleCalendarSettings } from '../components/GoogleCalendarSettings'
+import { EmbeddedGoogleCalendar } from '../components/EmbeddedGoogleCalendar'
 import { ProductManagement } from './ProductManagement'
 // Define types for our booking data
 interface Booking {
@@ -1645,46 +1646,7 @@ export function BookingDashboard(): React.ReactElement {
           </>
         )}
         {viewMode === 'calendar' && (
-          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-3 sm:p-6`}>
-            <FullCalendar
-              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-              initialView="dayGridMonth"
-              headerToolbar={{
-                left: 'prev,next',
-                center: 'title',
-                right: window.innerWidth < 640 ? '' : 'dayGridMonth,timeGridWeek,timeGridDay',
-              }}
-              footerToolbar={window.innerWidth < 640 ? {
-                center: 'dayGridMonth,timeGridWeek'
-              } : undefined}
-              events={calendarEvents}
-              eventClick={handleEventClick}
-              height="auto"
-              contentHeight={window.innerWidth < 640 ? 400 : 600}
-              dayMaxEventRows={window.innerWidth < 640 ? 2 : 3}
-              moreLinkClick="popover"
-              eventDisplay="block"
-              displayEventTime={true}
-              displayEventEnd={false}
-              eventTimeFormat={{
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-              }}
-              eventContent={(arg) => {
-                return (
-                  <div className="p-1 overflow-hidden text-ellipsis whitespace-nowrap">
-                    <div className="font-medium text-xs">
-                      {arg.timeText && <span className="mr-1">{arg.timeText}</span>}
-                    </div>
-                    <div className="text-xs truncate">
-                      {arg.event.title}
-                    </div>
-                  </div>
-                )
-              }}
-            />
-          </div>
+          <EmbeddedGoogleCalendar darkMode={darkMode} />
         )}
         {viewMode === 'logs' && (
           <>
