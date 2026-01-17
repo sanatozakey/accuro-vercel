@@ -31,6 +31,7 @@ import productRoutes from './routes/productRoutes';
 import settingsRoutes from './routes/settingsRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import googleCalendarRoutes from './routes/googleCalendarRoutes';
+import completionProofRoutes from './routes/completionProofRoutes';
 
 // Initialize app
 const app: Application = express();
@@ -79,6 +80,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/google-calendar', googleCalendarRoutes);
+app.use('/api/completion-proofs', completionProofRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

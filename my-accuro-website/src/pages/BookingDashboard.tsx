@@ -63,6 +63,7 @@ import { SimpleReportsTab } from '../components/SimpleReportsTab'
 import { UserHistoryModal } from '../components/UserHistoryModal'
 import { GoogleCalendarSettings } from '../components/GoogleCalendarSettings'
 import { EmbeddedGoogleCalendar } from '../components/EmbeddedGoogleCalendar'
+import { CompletionProofModal } from '../components/CompletionProofModal'
 import { ProductManagement } from './ProductManagement'
 // Define types for our booking data
 interface Booking {
@@ -171,9 +172,8 @@ export function BookingDashboard(): React.ReactElement {
   const [isCompletionModalOpen, setIsCompletionModalOpen] =
     useState<boolean>(false)
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
-  const [conclusion, setConclusion] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
-  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'products' | 'logs' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings'>(
+  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'products' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings'>(
     'table',
   )
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
@@ -534,24 +534,12 @@ export function BookingDashboard(): React.ReactElement {
       toast.error(errorMessage)
     }
   }
-  // Handle completion status change
-  const markBookingAsCompleted = async (id: string, conclusion: string): Promise<void> => {
-    try {
-      await bookingService.update(id, {
-        status: 'completed',
-        conclusion,
-        canReview: true
-      })
-      // Refresh bookings from server
-      await fetchBookings()
-      setIsCompletionModalOpen(false)
-      setIsDetailModalOpen(false)
-      toast.success('Booking marked as completed successfully!')
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Failed to mark booking as completed'
-      setError(errorMessage)
-      toast.error(errorMessage)
-    }
+  // Handle completion - called after proof is created
+  const handleBookingCompleted = async (): Promise<void> => {
+    // Refresh bookings from server
+    await fetchBookings()
+    setIsCompletionModalOpen(false)
+    setIsDetailModalOpen(false)
   }
   // Handle reschedule
   const rescheduleBooking = async (): Promise<void> => {
@@ -604,7 +592,6 @@ export function BookingDashboard(): React.ReactElement {
   // Open completion modal
   const openCompletionModal = (): void => {
     if (selectedBooking) {
-      setConclusion(selectedBooking.conclusion || '')
       setIsCompletionModalOpen(true)
     }
   }
@@ -1070,25 +1057,6 @@ export function BookingDashboard(): React.ReactElement {
 
           <Button
             onClick={() => {
-              setViewMode('logs')
-              setSidebarOpen(false)
-            }}
-            variant={viewMode === 'logs' ? 'default' : 'ghost'}
-            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
-              viewMode === 'logs'
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : darkMode
-                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-            title="Logs"
-          >
-            <ClipboardList className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
-            {!sidebarCollapsed && 'Logs'}
-          </Button>
-
-          <Button
-            onClick={() => {
               setViewMode('activityLogs')
               setSidebarOpen(false)
             }}
@@ -1351,10 +1319,10 @@ export function BookingDashboard(): React.ReactElement {
           {!loading && (
             <>
         {/* Filters and Actions - Only show for booking-related views */}
-        {(viewMode === 'table' || viewMode === 'calendar' || viewMode === 'logs') && (
+        {(viewMode === 'table' || viewMode === 'calendar') && (
           <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6 mb-6`}>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-              <div className="md:col-span-4 relative">
+              <div className="md:col-span-3 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search className={`h-5 w-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                 </div>
@@ -1388,24 +1356,22 @@ export function BookingDashboard(): React.ReactElement {
                   <option value="completed">Completed</option>
                 </select>
               </div>
-              {viewMode === 'logs' && (
-                <div className="md:col-span-3">
-                  <select
-                    className={`block w-full pl-3 pr-10 py-2 text-base border ${
-                      darkMode
-                        ? 'border-gray-600 bg-gray-700 text-white'
-                        : 'border-gray-300 bg-white'
-                    } focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md`}
-                    value={completionFilter}
-                    onChange={(e) => setCompletionFilter(e.target.value)}
-                  >
-                    <option value="all">All Meetings</option>
-                    <option value="completed">Completed</option>
-                    <option value="pending">Pending Completion</option>
-                  </select>
-                </div>
-              )}
-              <div className={`${viewMode === 'logs' ? 'md:col-span-2' : 'md:col-span-5'} flex space-x-2 justify-end`}>
+              <div className="md:col-span-2">
+                <select
+                  className={`block w-full pl-3 pr-10 py-2 text-base border ${
+                    darkMode
+                      ? 'border-gray-600 bg-gray-700 text-white'
+                      : 'border-gray-300 bg-white'
+                  } focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md`}
+                  value={completionFilter}
+                  onChange={(e) => setCompletionFilter(e.target.value)}
+                >
+                  <option value="all">All Bookings</option>
+                  <option value="completed">With Proof</option>
+                  <option value="pending">Pending Proof</option>
+                </select>
+              </div>
+              <div className="md:col-span-4 flex space-x-2 justify-end">
                 <button
                   className={`inline-flex items-center px-4 py-2 border ${
                     darkMode
@@ -1647,231 +1613,6 @@ export function BookingDashboard(): React.ReactElement {
         )}
         {viewMode === 'calendar' && (
           <EmbeddedGoogleCalendar darkMode={darkMode} />
-        )}
-        {viewMode === 'logs' && (
-          <>
-            {/* Desktop Table View */}
-            <div className={`hidden lg:block ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
-              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-18rem)]">
-                <table className={`min-w-full divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                <thead className={`sticky top-0 z-10 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-                  <tr>
-                    <th
-                      scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
-                    >
-                      ID
-                    </th>
-                    <th
-                      scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
-                    >
-                      Date & Time
-                    </th>
-                    <th
-                      scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
-                    >
-                      Company
-                    </th>
-                    <th
-                      scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
-                    >
-                      Status
-                    </th>
-                    <th
-                      scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
-                    >
-                      Completion
-                    </th>
-                    <th
-                      scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
-                    >
-                      Conclusion / Notes
-                    </th>
-                    <th
-                      scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className={`${darkMode ? 'bg-gray-800' : 'bg-white'} divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                  {filteredBookings.length > 0 ? (
-                    filteredBookings.map((booking) => (
-                      <tr key={booking._id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-                          {booking._id}
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
-                          <div className="flex items-center">
-                            <Calendar className={`h-4 w-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'} mr-1`} />
-                            {new Date(booking.date).toLocaleDateString()}
-                          </div>
-                          <div className="flex items-center mt-1">
-                            <Clock className={`h-4 w-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'} mr-1`} />
-                            {booking.time}
-                          </div>
-                          {booking.status === 'rescheduled' && (
-                            <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-1 italic`}>
-                              Originally:{' '}
-                              {new Date(
-                                booking.originalDate || '',
-                              ).toLocaleDateString()}{' '}
-                              at {booking.originalTime}
-                            </div>
-                          )}
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
-                          <div className="font-medium">{booking.company}</div>
-                          <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                            {booking.contactName}
-                          </div>
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
-                          {getStatusBadge(booking.status)}
-                          {booking.status === 'rescheduled' &&
-                            booking.rescheduleReason && (
-                              <div className={`mt-1 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} max-w-xs`}>
-                                <span className="font-medium">Reason:</span>{' '}
-                                {booking.rescheduleReason}
-                              </div>
-                            )}
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
-                          {getCompletionBadge(booking.isCompleted)}
-                        </td>
-                        <td className={`px-6 py-4 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'} max-w-md`}>
-                          {booking.conclusion ? (
-                            <div className="line-clamp-2">
-                              {booking.conclusion}
-                            </div>
-                          ) : (
-                            <span className={`${darkMode ? 'text-gray-500' : 'text-gray-400'} italic`}>
-                              No conclusion recorded
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => viewBookingDetails(booking)}
-                            className={darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-900'}
-                          >
-                            View Details
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className={`px-6 py-4 text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                      >
-                        No meeting logs found matching your criteria
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Mobile Card View */}
-          <div className="lg:hidden space-y-3">
-            {filteredBookings.length > 0 ? (
-              filteredBookings.map((booking) => (
-                <div
-                  key={booking._id}
-                  className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg p-4 shadow-sm`}
-                >
-                  <div className="space-y-3">
-                    {/* Date & Time */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <Calendar className="h-4 w-4 text-blue-500" />
-                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-                          {new Date(booking.date).toLocaleDateString()}
-                        </span>
-                        <Clock className="h-4 w-4 text-blue-500 ml-2" />
-                        <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                          {booking.time}
-                        </span>
-                      </div>
-                      {booking.status === 'rescheduled' && (
-                        <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} italic ml-6`}>
-                          Originally: {new Date(booking.originalDate || '').toLocaleDateString()} at {booking.originalTime}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Company & Contact */}
-                    <div>
-                      <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
-                        {booking.company}
-                      </h3>
-                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {booking.contactName}
-                      </p>
-                    </div>
-
-                    {/* Status & Completion Badges */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {getStatusBadge(booking.status)}
-                      {booking.isCompleted !== undefined && getCompletionBadge(booking.isCompleted)}
-                    </div>
-
-                    {/* Reschedule Reason */}
-                    {booking.status === 'rescheduled' && booking.rescheduleReason && (
-                      <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} p-2 rounded ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-                        <span className="font-medium">Reschedule Reason:</span> {booking.rescheduleReason}
-                      </div>
-                    )}
-
-                    {/* Conclusion / Notes */}
-                    {booking.conclusion ? (
-                      <div className={`p-2 rounded ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-                        <p className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
-                          Conclusion:
-                        </p>
-                        <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'} line-clamp-3`}>
-                          {booking.conclusion}
-                        </p>
-                      </div>
-                    ) : (
-                      <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'} italic`}>
-                        No conclusion recorded
-                      </p>
-                    )}
-
-                    {/* ID (small, at bottom) */}
-                    <p className={`text-xs ${darkMode ? 'text-gray-600' : 'text-gray-400'} font-mono`}>
-                      ID: {booking._id}
-                    </p>
-
-                    {/* Action Button */}
-                    <button
-                      onClick={() => viewBookingDetails(booking)}
-                      className="w-full px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-medium"
-                    >
-                      View Details
-                    </button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-8 text-center`}>
-                <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  No meeting logs found matching your criteria
-                </p>
-              </div>
-            )}
-          </div>
-        </>
         )}
         {viewMode === 'users' && (
           <>
@@ -3588,78 +3329,15 @@ export function BookingDashboard(): React.ReactElement {
         </div>
       )}
       {/* Meeting Completion Modal */}
+      {/* Completion Proof Modal */}
       {isCompletionModalOpen && selectedBooking && (
-        <div className="fixed inset-0 overflow-y-auto z-50">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div
-              className="fixed inset-0 transition-opacity"
-              aria-hidden="true"
-            >
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            <span
-              className="hidden sm:inline-block sm:align-middle sm:h-screen"
-              aria-hidden="true"
-            >
-              &#8203;
-            </span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">
-                      Complete Meeting
-                    </h3>
-                    <div className="mt-4">
-                      <p className="text-sm text-gray-500 mb-4">
-                        Mark meeting with{' '}
-                        <span className="font-medium">
-                          {selectedBooking.company}
-                        </span>{' '}
-                        as completed and add conclusion notes.
-                      </p>
-                      <div>
-                        <label
-                          htmlFor="conclusion"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          Meeting Conclusion / Notes
-                        </label>
-                        <textarea
-                          id="conclusion"
-                          name="conclusion"
-                          rows={5}
-                          value={conclusion}
-                          onChange={(e) => setConclusion(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                          placeholder="Enter meeting outcome, action items, and any follow-up required..."
-                        ></textarea>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                  onClick={() =>
-                    markBookingAsCompleted(selectedBooking._id, conclusion)
-                  }
-                >
-                  Mark as Complete
-                </button>
-                <button
-                  type="button"
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                  onClick={() => setIsCompletionModalOpen(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <CompletionProofModal
+          isOpen={isCompletionModalOpen}
+          onClose={() => setIsCompletionModalOpen(false)}
+          onComplete={handleBookingCompleted}
+          booking={selectedBooking}
+          darkMode={darkMode}
+        />
       )}
       {/* User Edit Modal */}
       {isUserModalOpen && selectedUser && editedUser && (
