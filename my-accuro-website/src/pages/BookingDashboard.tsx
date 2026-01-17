@@ -44,6 +44,7 @@ import {
   X,
   Sun,
   Moon,
+  Settings,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
@@ -60,6 +61,7 @@ import EnhancedAnalytics from '../components/EnhancedAnalytics'
 import RealTimeAnalytics from '../components/RealTimeAnalytics'
 import { SimpleReportsTab } from '../components/SimpleReportsTab'
 import { UserHistoryModal } from '../components/UserHistoryModal'
+import { GoogleCalendarSettings } from '../components/GoogleCalendarSettings'
 import { ProductManagement } from './ProductManagement'
 // Define types for our booking data
 interface Booking {
@@ -170,7 +172,7 @@ export function BookingDashboard(): React.ReactElement {
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [conclusion, setConclusion] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
-  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'products' | 'logs' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports'>(
+  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'products' | 'logs' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings'>(
     'table',
   )
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
@@ -1178,6 +1180,25 @@ export function BookingDashboard(): React.ReactElement {
             <TrendingUp className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
             {!sidebarCollapsed && 'Reports'}
           </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('settings')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'settings' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'settings'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Settings"
+          >
+            <Settings className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Settings'}
+          </Button>
         </nav>
 
         {/* Bottom Actions */}
@@ -1934,6 +1955,12 @@ export function BookingDashboard(): React.ReactElement {
                       Status
                     </th>
                     <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
+                      Logins
+                    </th>
+                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
+                      Last Login
+                    </th>
+                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                       Created
                     </th>
                     <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
@@ -2002,6 +2029,24 @@ export function BookingDashboard(): React.ReactElement {
                             </span>
                           )}
                         </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
+                          {user.loginCount || 0}
+                        </td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} title={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : 'Never'}>
+                          {user.lastLoginAt ? (() => {
+                            const date = new Date(user.lastLoginAt);
+                            const now = new Date();
+                            const diffMs = now.getTime() - date.getTime();
+                            const diffMins = Math.floor(diffMs / 60000);
+                            const diffHours = Math.floor(diffMins / 60);
+                            const diffDays = Math.floor(diffHours / 24);
+                            if (diffMins < 1) return 'Just now';
+                            if (diffMins < 60) return `${diffMins}m ago`;
+                            if (diffHours < 24) return `${diffHours}h ago`;
+                            if (diffDays < 7) return `${diffDays}d ago`;
+                            return date.toLocaleDateString();
+                          })() : 'Never'}
+                        </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           {new Date(user.createdAt).toLocaleDateString()}
                         </td>
@@ -2032,7 +2077,7 @@ export function BookingDashboard(): React.ReactElement {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className={`px-6 py-4 text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      <td colSpan={10} className={`px-6 py-4 text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                         No users found matching your criteria
                       </td>
                     </tr>
@@ -2862,6 +2907,11 @@ export function BookingDashboard(): React.ReactElement {
         {/* Products View */}
         {viewMode === 'products' && (
           <ProductManagement isInline={true} darkMode={darkMode} />
+        )}
+
+        {/* Settings View */}
+        {viewMode === 'settings' && (
+          <GoogleCalendarSettings darkMode={darkMode} />
         )}
           </>
         )}

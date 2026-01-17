@@ -1,4 +1,5 @@
 import express, { Application } from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -7,6 +8,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { seedAdminUser } from './utils/seedAdmin';
 import { corsConfig } from './config/cors';
 import { createIndexes } from './config/indexes';
+import { socketService } from './services/socketService';
 
 // Load env vars
 dotenv.config();
@@ -26,9 +28,19 @@ import userHistoryRoutes from './routes/userHistoryRoutes';
 import reportRoutes from './routes/reportRoutes';
 import activeSessionRoutes from './routes/activeSessionRoutes';
 import productRoutes from './routes/productRoutes';
+import settingsRoutes from './routes/settingsRoutes';
+import notificationRoutes from './routes/notificationRoutes';
+import googleCalendarRoutes from './routes/googleCalendarRoutes';
 
 // Initialize app
 const app: Application = express();
+
+// Create HTTP server for Socket.io
+const httpServer = createServer(app);
+
+// Initialize Socket.io with CORS origins
+const corsOrigins = corsConfig.origin as string[];
+socketService.initialize(httpServer, corsOrigins);
 
 // Connect to database
 connectDB().then(async () => {
@@ -64,6 +76,9 @@ app.use('/api/user-history', userHistoryRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/sessions', activeSessionRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/google-calendar', googleCalendarRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -79,7 +94,7 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
+const server = httpServer.listen(PORT, () => {
   console.log(`
 ╔══════════════════════════════════════════════╗
 ║                                              ║
@@ -88,6 +103,7 @@ const server = app.listen(PORT, () => {
 ║   Environment: ${process.env.NODE_ENV || 'development'}                    ║
 ║   Port: ${PORT}                                   ║
 ║   MongoDB: Connected                         ║
+║   Socket.io: Enabled                         ║
 ║                                              ║
 ║   API Endpoints:                             ║
 ║   - Health:   GET  /api/health               ║
