@@ -76,7 +76,7 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
       const [bookingsRes, activityRes, lowStockRes] = await Promise.all([
         bookingService.getAll(),
         activityLogService.getAll({ limit: 10 }),
-        axios.get(`${API_URL}/products/low-stock`, { headers }).catch(() => ({ data: { data: [] } })),
+        axios.get(`${API_URL}/api/products/low-stock`, { headers }).catch(() => ({ data: { data: [] } })),
       ]);
 
       const allBookings = bookingsRes.data || [];
@@ -107,7 +107,7 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
       });
 
       const completedThisMonth = thisMonthBookings.filter((b: Booking) =>
-        b.status === 'completed'
+        b.isCompleted === true
       ).length;
 
       setStats({
@@ -128,6 +128,13 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
 
   useEffect(() => {
     fetchDashboardData();
+
+    // Auto-refresh every 30 seconds for real-time updates
+    const refreshInterval = setInterval(() => {
+      fetchDashboardData();
+    }, 30000);
+
+    return () => clearInterval(refreshInterval);
   }, [fetchDashboardData]);
 
   const bgClass = darkMode ? 'bg-gray-800' : 'bg-white';
