@@ -64,6 +64,8 @@ import { UserHistoryModal } from '../components/UserHistoryModal'
 import { GoogleCalendarSettings } from '../components/GoogleCalendarSettings'
 import { EmbeddedGoogleCalendar } from '../components/EmbeddedGoogleCalendar'
 import { CompletionProofModal } from '../components/CompletionProofModal'
+import { AdminSettings } from '../components/AdminSettings'
+import { DashboardOverview } from '../components/DashboardOverview'
 import { ProductManagement } from './ProductManagement'
 // Define types for our booking data
 interface Booking {
@@ -173,8 +175,8 @@ export function BookingDashboard(): React.ReactElement {
     useState<boolean>(false)
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
-  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'products' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings'>(
-    'table',
+  const [viewMode, setViewMode] = useState<'dashboard' | 'table' | 'calendar' | 'products' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings'>(
+    'dashboard',
   )
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
 
@@ -997,7 +999,33 @@ export function BookingDashboard(): React.ReactElement {
         </div>
 
         {/* Navigation */}
-        <nav className={`flex-1 px-4 py-6 space-y-2 ${!sidebarCollapsed && 'overflow-y-auto'}`}>
+        <nav className={`flex-1 px-4 py-6 space-y-1 ${!sidebarCollapsed && 'overflow-y-auto'}`}>
+          {/* MAIN Section */}
+          {!sidebarCollapsed && (
+            <div className={`px-3 py-2 text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              Main
+            </div>
+          )}
+
+          <Button
+            onClick={() => {
+              setViewMode('dashboard')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'dashboard' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'dashboard'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Dashboard"
+          >
+            <Home className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Dashboard'}
+          </Button>
+
           <Button
             onClick={() => {
               setViewMode('table')
@@ -1011,10 +1039,10 @@ export function BookingDashboard(): React.ReactElement {
                 ? 'text-gray-300 hover:text-white hover:bg-gray-800'
                 : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
             }`}
-            title="List View"
+            title="Bookings"
           >
             <List className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
-            {!sidebarCollapsed && 'List View'}
+            {!sidebarCollapsed && 'Bookings'}
           </Button>
 
           <Button
@@ -1035,6 +1063,14 @@ export function BookingDashboard(): React.ReactElement {
             <CalendarDays className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
             {!sidebarCollapsed && 'Calendar'}
           </Button>
+
+          {/* MANAGE Section */}
+          {!sidebarCollapsed && (
+            <div className={`px-3 py-2 mt-4 text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              Manage
+            </div>
+          )}
+          {sidebarCollapsed && <div className="my-2 border-t border-gray-700" />}
 
           <Button
             onClick={() => {
@@ -1057,44 +1093,6 @@ export function BookingDashboard(): React.ReactElement {
 
           <Button
             onClick={() => {
-              setViewMode('activityLogs')
-              setSidebarOpen(false)
-            }}
-            variant={viewMode === 'activityLogs' ? 'default' : 'ghost'}
-            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
-              viewMode === 'activityLogs'
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : darkMode
-                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-            title="Activity"
-          >
-            <Shield className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
-            {!sidebarCollapsed && 'Activity'}
-          </Button>
-
-          <Button
-            onClick={() => {
-              setViewMode('reviews')
-              setSidebarOpen(false)
-            }}
-            variant={viewMode === 'reviews' ? 'default' : 'ghost'}
-            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
-              viewMode === 'reviews'
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : darkMode
-                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-            title="Reviews"
-          >
-            <Award className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
-            {!sidebarCollapsed && 'Reviews'}
-          </Button>
-
-          <Button
-            onClick={() => {
               setViewMode('users')
               setSidebarOpen(false)
             }}
@@ -1111,6 +1109,14 @@ export function BookingDashboard(): React.ReactElement {
             <Users className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
             {!sidebarCollapsed && 'Users'}
           </Button>
+
+          {/* INSIGHTS Section */}
+          {!sidebarCollapsed && (
+            <div className={`px-3 py-2 mt-4 text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              Insights
+            </div>
+          )}
+          {sidebarCollapsed && <div className="my-2 border-t border-gray-700" />}
 
           <Button
             onClick={() => {
@@ -1149,6 +1155,52 @@ export function BookingDashboard(): React.ReactElement {
             <TrendingUp className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
             {!sidebarCollapsed && 'Reports'}
           </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('reviews')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'reviews' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'reviews'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Reviews"
+          >
+            <Award className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Reviews'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('activityLogs')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'activityLogs' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'activityLogs'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Activity"
+          >
+            <Shield className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Activity'}
+          </Button>
+
+          {/* SYSTEM Section */}
+          {!sidebarCollapsed && (
+            <div className={`px-3 py-2 mt-4 text-xs font-semibold uppercase tracking-wider ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              System
+            </div>
+          )}
+          {sidebarCollapsed && <div className="my-2 border-t border-gray-700" />}
 
           <Button
             onClick={() => {
@@ -2607,6 +2659,14 @@ export function BookingDashboard(): React.ReactElement {
           <SimpleReportsTab darkMode={darkMode} />
         )}
 
+        {/* Dashboard Overview */}
+        {viewMode === 'dashboard' && (
+          <DashboardOverview
+            darkMode={darkMode}
+            onNavigate={(view) => setViewMode(view as any)}
+          />
+        )}
+
         {/* Products View */}
         {viewMode === 'products' && (
           <ProductManagement isInline={true} darkMode={darkMode} />
@@ -2614,7 +2674,7 @@ export function BookingDashboard(): React.ReactElement {
 
         {/* Settings View */}
         {viewMode === 'settings' && (
-          <GoogleCalendarSettings darkMode={darkMode} />
+          <AdminSettings darkMode={darkMode} />
         )}
           </>
         )}
