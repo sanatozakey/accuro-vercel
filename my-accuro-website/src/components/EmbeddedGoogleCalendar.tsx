@@ -11,6 +11,7 @@ export function EmbeddedGoogleCalendar({ darkMode }: EmbeddedGoogleCalendarProps
   const [status, setStatus] = useState<CalendarStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [calendarEmail, setCalendarEmail] = useState<string | null>(null);
+  const [iframeHeight, setIframeHeight] = useState(500);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -31,6 +32,22 @@ export function EmbeddedGoogleCalendar({ darkMode }: EmbeddedGoogleCalendarProps
     fetchStatus();
   }, [fetchStatus]);
 
+  // Calculate responsive height
+  useEffect(() => {
+    const calculateHeight = () => {
+      const viewportHeight = window.innerHeight;
+      // Leave room for header, tabs, and padding
+      const availableHeight = viewportHeight - 320;
+      // Clamp between 350 and 700
+      const height = Math.max(350, Math.min(700, availableHeight));
+      setIframeHeight(height);
+    };
+
+    calculateHeight();
+    window.addEventListener('resize', calculateHeight);
+    return () => window.removeEventListener('resize', calculateHeight);
+  }, []);
+
   // Build Google Calendar embed URL
   const getEmbedUrl = () => {
     if (!calendarEmail) return null;
@@ -45,7 +62,7 @@ export function EmbeddedGoogleCalendar({ darkMode }: EmbeddedGoogleCalendarProps
 
   if (loading) {
     return (
-      <div className={`flex flex-col items-center justify-center h-96 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md`}>
+      <div className={`flex flex-col items-center justify-center h-64 sm:h-80 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md`}>
         <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
         <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Loading Google Calendar...</span>
       </div>
@@ -54,12 +71,12 @@ export function EmbeddedGoogleCalendar({ darkMode }: EmbeddedGoogleCalendarProps
 
   if (!status?.isConnected) {
     return (
-      <div className={`flex flex-col items-center justify-center h-96 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
-        <Calendar className={`h-16 w-16 mb-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-        <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+      <div className={`flex flex-col items-center justify-center h-64 sm:h-80 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
+        <Calendar className={`h-12 w-12 sm:h-16 sm:w-16 mb-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+        <h3 className={`text-base sm:text-lg font-semibold mb-2 text-center ${darkMode ? 'text-white' : 'text-gray-900'}`}>
           Google Calendar Not Connected
         </h3>
-        <p className={`text-center mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+        <p className={`text-sm text-center mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
           Connect your Google Calendar in the Settings tab to view your calendar here.
         </p>
         <Button variant="outline" onClick={() => window.location.href = '/admin/dashboard?tab=settings'}>
@@ -74,23 +91,24 @@ export function EmbeddedGoogleCalendar({ darkMode }: EmbeddedGoogleCalendarProps
   return (
     <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
       {/* Header */}
-      <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 gap-2 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <div className="flex items-center gap-2">
-          <Calendar className={`h-5 w-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-          <span className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+          <Calendar className={`h-4 w-4 sm:h-5 sm:w-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+          <span className={`text-sm sm:text-base font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             Google Calendar
           </span>
-          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          <span className={`text-xs sm:text-sm truncate max-w-[150px] sm:max-w-none ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             ({calendarEmail})
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={fetchStatus} title="Refresh">
+          <Button variant="ghost" size="sm" onClick={fetchStatus} title="Refresh" className="h-8 w-8 p-0 sm:h-9 sm:w-9">
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="sm" onClick={openInGoogleCalendar}>
-            <ExternalLink className="h-4 w-4 mr-1" />
-            Open in Google
+          <Button variant="outline" size="sm" onClick={openInGoogleCalendar} className="text-xs sm:text-sm h-8 sm:h-9">
+            <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            <span className="hidden sm:inline">Open in Google</span>
+            <span className="sm:hidden">Open</span>
           </Button>
         </div>
       </div>
@@ -99,30 +117,29 @@ export function EmbeddedGoogleCalendar({ darkMode }: EmbeddedGoogleCalendarProps
       <div className="relative">
         {embedUrl ? (
           <>
-            <iframe
-              src={embedUrl}
-              style={{ border: 0 }}
-              width="100%"
-              height="600"
-              frameBorder="0"
-              scrolling="no"
-              title="Google Calendar"
-              className={darkMode ? 'invert hue-rotate-180' : ''}
-            />
+            <div style={{ height: iframeHeight, overflow: 'hidden' }}>
+              <iframe
+                src={embedUrl}
+                style={{ border: 0, width: '100%', height: '100%' }}
+                frameBorder="0"
+                scrolling="no"
+                title="Google Calendar"
+                className={darkMode ? 'invert hue-rotate-180' : ''}
+              />
+            </div>
             {/* Note about public calendar */}
-            <div className={`p-3 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className={`p-2 sm:p-3 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <div className="flex items-start gap-2">
-                <AlertTriangle className={`h-4 w-4 mt-0.5 flex-shrink-0 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
-                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <AlertTriangle className={`h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0 ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`} />
+                <p className={`text-[10px] sm:text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   <strong>Note:</strong> If the calendar appears empty, ensure your Google Calendar is set to public.
-                  Go to Google Calendar → Settings → [Your Calendar] → Access permissions → Make available to public.
-                  For security, only events marked as "Show details to everyone" will appear in the embed.
+                  <span className="hidden sm:inline"> Go to Google Calendar → Settings → [Your Calendar] → Access permissions → Make available to public.</span>
                 </p>
               </div>
             </div>
           </>
         ) : (
-          <div className="flex items-center justify-center h-96">
+          <div className="flex items-center justify-center h-64 sm:h-80">
             <p className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Unable to load calendar embed</p>
           </div>
         )}
