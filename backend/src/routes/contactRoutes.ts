@@ -14,12 +14,12 @@ import {
 
 const router = express.Router();
 
-router.route('/').get(protect, authorize('admin'), getContacts).post(validateContactForm, handleValidationErrors, createContact);
+router.route('/').get(protect, authorize('admin', 'superadmin'), getContacts).post(validateContactForm, handleValidationErrors, createContact);
 
 router
   .route('/:id')
-  .get(protect, authorize('admin'), getContact)
-  .put(protect, authorize('admin'), updateContact)
-  .delete(protect, authorize('admin'), deleteContact);
+  .get(protect, authorize('admin', 'superadmin'), getContact)
+  .put(protect, authorize('admin', 'superadmin'), updateContact)
+  .delete(protect, authorize('admin', 'superadmin'), deleteContact);
 
 export default router;

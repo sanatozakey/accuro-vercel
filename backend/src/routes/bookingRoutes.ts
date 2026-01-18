@@ -22,7 +22,7 @@ const router = express.Router();
 
 router
   .route('/')
-  .get(protect, authorize('admin'), getBookings)
+  .get(protect, authorize('admin', 'superadmin'), getBookings)
   .post(protect, validateCreateBooking, handleValidationErrors, createBooking);
 
 router.get('/upcoming', getBookings); // Public endpoint for calendar view
@@ -32,12 +32,12 @@ router.get('/my', protect, getMyBookings);
 router
   .route('/:id')
   .get(protect, getBooking)
-  .put(protect, authorize('admin'), validateUpdateBooking, handleValidationErrors, updateBooking)
-  .delete(protect, authorize('admin'), deleteBooking);
+  .put(protect, authorize('admin', 'superadmin'), validateUpdateBooking, handleValidationErrors, updateBooking)
+  .delete(protect, authorize('admin', 'superadmin'), deleteBooking);
 
 // New booking action routes
 router.put('/:id/cancel', protect, cancelBooking);
 router.put('/:id/reschedule', protect, validateUpdateBooking, handleValidationErrors, rescheduleBooking);
-router.put('/:id/complete', protect, authorize('admin'), completeBooking);
+router.put('/:id/complete', protect, authorize('admin', 'superadmin'), completeBooking);
 
 export default router;

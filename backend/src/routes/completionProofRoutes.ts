@@ -16,12 +16,12 @@ const router = express.Router();
 router.use(protect);
 
 // Get all completion proofs (admin only)
-router.get('/', authorize('admin'), getAllCompletionProofs);
+router.get('/', authorize('admin', 'superadmin'), getAllCompletionProofs);
 
 // Create completion proof with file uploads (admin only)
 router.post(
   '/',
-  authorize('admin'),
+  authorize('admin', 'superadmin'),
   proofUpload.array('attachments', 5),
   createCompletionProof
 );
@@ -35,12 +35,12 @@ router.get('/:id', getCompletionProof);
 // Update completion proof (admin only)
 router.put(
   '/:id',
-  authorize('admin'),
+  authorize('admin', 'superadmin'),
   proofUpload.array('attachments', 5),
   updateCompletionProof
 );
 
 // Delete attachment from proof (admin only)
-router.delete('/:id/attachments/:filename', authorize('admin'), deleteAttachment);
+router.delete('/:id/attachments/:filename', authorize('admin', 'superadmin'), deleteAttachment);
 
 export default router;

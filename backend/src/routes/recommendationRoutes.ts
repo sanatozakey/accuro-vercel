@@ -13,7 +13,7 @@ router.get('/', protect, getRecommendations);
 router.post('/interaction', protect, recordInteraction);
 
 // Admin only routes
-router.get('/interactions', protect, authorize('admin'), getAllInteractions);
-router.get('/stats', protect, authorize('admin'), getRecommendationStats);
+router.get('/interactions', protect, authorize('admin', 'superadmin'), getAllInteractions);
+router.get('/stats', protect, authorize('admin', 'superadmin'), getRecommendationStats);
 
 export default router;
