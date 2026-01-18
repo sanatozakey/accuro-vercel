@@ -107,7 +107,7 @@ class ProductService {
   }
 
   async updateStock(id: string, stockQuantity: number): Promise<ProductResponse> {
-    const response = await api.put<ProductResponse>(`/products/${id}`, { stockQuantity });
+    const response = await api.put<ProductResponse>(`/products/${id}/stock`, { stockQuantity });
     return response.data;
   }
 
