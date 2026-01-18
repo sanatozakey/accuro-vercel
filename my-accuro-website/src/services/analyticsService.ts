@@ -134,6 +134,27 @@ const analyticsService = {
     const response = await api.post('/analytics/track', eventData);
     return response.data;
   },
+
+  // New simplified dashboard endpoints
+  getBookingTrends: async (period: number = 30) => {
+    const response = await api.get('/analytics/booking-trends', { params: { period } });
+    return response.data;
+  },
+
+  getPendingActions: async () => {
+    const response = await api.get('/analytics/pending-actions');
+    return response.data;
+  },
+
+  getRecentActivity: async (limit: number = 10) => {
+    const response = await api.get('/analytics/recent-activity', { params: { limit } });
+    return response.data;
+  },
+
+  getConversionFunnel: async (params?: { startDate?: string; endDate?: string }) => {
+    const response = await api.get('/analytics/conversion-funnel', { params });
+    return response.data;
+  },
 };
 
 export default analyticsService;

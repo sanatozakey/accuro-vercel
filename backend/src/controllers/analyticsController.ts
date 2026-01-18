@@ -801,6 +801,269 @@ export const getSearchDetails = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// @desc    Get booking trends over time
+// @route   GET /api/analytics/booking-trends
+// @access  Private/Admin
+export const getBookingTrends = async (req: AuthRequest, res: Response) => {
+  try {
+    const { period = '30' } = req.query;
+    const daysBack = parseInt(period as string);
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysBack);
+    startDate.setHours(0, 0, 0, 0);
+
+    const bookingTrends = await Booking.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' },
+            day: { $dayOfMonth: '$createdAt' },
+          },
+          count: { $sum: 1 },
+          confirmed: {
+            $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, 1, 0] },
+          },
+          completed: {
+            $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] },
+          },
+          cancelled: {
+            $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] },
+          },
+        },
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } },
+    ]);
+
+    // Format the data for charts
+    const formattedTrends = bookingTrends.map((item) => ({
+      date: `${item._id.year}-${String(item._id.month).padStart(2, '0')}-${String(item._id.day).padStart(2, '0')}`,
+      total: item.count,
+      confirmed: item.confirmed,
+      completed: item.completed,
+      cancelled: item.cancelled,
+    }));
+
+    // Fill in missing days with zero values
+    const filledTrends: any[] = [];
+    const currentDate = new Date(startDate);
+    const endDate = new Date();
+
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const existing = formattedTrends.find((t) => t.date === dateStr);
+
+      if (existing) {
+        filledTrends.push(existing);
+      } else {
+        filledTrends.push({
+          date: dateStr,
+          total: 0,
+          confirmed: 0,
+          completed: 0,
+          cancelled: 0,
+        });
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: filledTrends,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Get pending actions summary
+// @route   GET /api/analytics/pending-actions
+// @access  Private/Admin
+export const getPendingActions = async (req: AuthRequest, res: Response) => {
+  try {
+    const [
+      pendingBookings,
+      unconfirmedBookings,
+      pendingQuotes,
+      unreadContacts,
+      todayBookings,
+    ] = await Promise.all([
+      Booking.countDocuments({ status: 'pending' }),
+      Booking.countDocuments({ status: { $in: ['pending', 'rescheduled'] } }),
+      Quote.countDocuments({ status: 'pending' }),
+      Contact.countDocuments({ status: 'new' }),
+      Booking.countDocuments({
+        date: {
+          $gte: new Date(new Date().setHours(0, 0, 0, 0)),
+          $lte: new Date(new Date().setHours(23, 59, 59, 999)),
+        },
+        status: { $in: ['pending', 'confirmed', 'rescheduled'] },
+      }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        pendingBookings,
+        unconfirmedBookings,
+        pendingQuotes,
+        unreadContacts,
+        todayBookings,
+        totalPending: pendingBookings + pendingQuotes + unreadContacts,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Get recent activity across all resources
+// @route   GET /api/analytics/recent-activity
+// @access  Private/Admin
+export const getRecentActivity = async (req: AuthRequest, res: Response) => {
+  try {
+    const { limit = '10' } = req.query;
+    const limitNum = parseInt(limit as string);
+
+    const [recentBookings, recentQuotes, recentContacts] = await Promise.all([
+      Booking.find()
+        .sort({ createdAt: -1 })
+        .limit(limitNum)
+        .select('_id contactName company product date time status createdAt')
+        .lean(),
+      Quote.find()
+        .sort({ createdAt: -1 })
+        .limit(limitNum)
+        .populate('userId', 'name email')
+        .select('_id status products createdAt userId')
+        .lean(),
+      Contact.find()
+        .sort({ createdAt: -1 })
+        .limit(limitNum)
+        .select('_id name email subject status createdAt')
+        .lean(),
+    ]);
+
+    // Combine and sort all activities by date
+    const activities: any[] = [
+      ...recentBookings.map((b: any) => ({
+        type: 'booking',
+        id: b._id,
+        title: `New booking from ${b.company}`,
+        subtitle: `${b.contactName} - ${b.product}`,
+        status: b.status,
+        date: b.createdAt,
+      })),
+      ...recentQuotes.map((q: any) => ({
+        type: 'quote',
+        id: q._id,
+        title: `Quote request`,
+        subtitle: q.userId ? `${(q.userId as any).name} - ${q.products?.length || 0} products` : `${q.products?.length || 0} products`,
+        status: q.status,
+        date: q.createdAt,
+      })),
+      ...recentContacts.map((c: any) => ({
+        type: 'contact',
+        id: c._id,
+        title: `Contact from ${c.name}`,
+        subtitle: c.subject || c.email,
+        status: c.status,
+        date: c.createdAt,
+      })),
+    ];
+
+    // Sort by date descending and take the most recent
+    activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const recentActivities = activities.slice(0, limitNum);
+
+    res.status(200).json({
+      success: true,
+      data: recentActivities,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Get conversion funnel data
+// @route   GET /api/analytics/conversion-funnel
+// @access  Private/Admin
+export const getConversionFunnel = async (req: AuthRequest, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    const dateFilter: any = {};
+    if (startDate) dateFilter.$gte = new Date(startDate as string);
+    if (endDate) dateFilter.$lte = new Date(endDate as string);
+
+    const matchFilter = Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {};
+
+    const [
+      totalQuotes,
+      acceptedQuotes,
+      totalBookings,
+      confirmedBookings,
+      completedBookings,
+    ] = await Promise.all([
+      Quote.countDocuments(matchFilter),
+      Quote.countDocuments({ ...matchFilter, status: 'accepted' }),
+      Booking.countDocuments(matchFilter),
+      Booking.countDocuments({ ...matchFilter, status: 'confirmed' }),
+      Booking.countDocuments({ ...matchFilter, status: 'completed' }),
+    ]);
+
+    // Calculate rates
+    const quoteAcceptanceRate = totalQuotes > 0 ? (acceptedQuotes / totalQuotes) * 100 : 0;
+    const bookingConfirmationRate = totalBookings > 0 ? (confirmedBookings / totalBookings) * 100 : 0;
+    const bookingCompletionRate = confirmedBookings > 0 ? (completedBookings / confirmedBookings) * 100 : 0;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        quotes: {
+          total: totalQuotes,
+          accepted: acceptedQuotes,
+          rate: Math.round(quoteAcceptanceRate * 10) / 10,
+        },
+        bookings: {
+          total: totalBookings,
+          confirmed: confirmedBookings,
+          completed: completedBookings,
+          confirmationRate: Math.round(bookingConfirmationRate * 10) / 10,
+          completionRate: Math.round(bookingCompletionRate * 10) / 10,
+        },
+        funnel: [
+          { stage: 'Quotes Requested', count: totalQuotes },
+          { stage: 'Quotes Accepted', count: acceptedQuotes },
+          { stage: 'Bookings Created', count: totalBookings },
+          { stage: 'Bookings Confirmed', count: confirmedBookings },
+          { stage: 'Bookings Completed', count: completedBookings },
+        ],
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
 // @desc    Track analytics event
 // @route   POST /api/analytics/track
 // @access  Public (but tracks user if authenticated)

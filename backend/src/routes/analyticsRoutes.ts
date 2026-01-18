@@ -15,6 +15,10 @@ import {
   getRegistrationDetails,
   getSearchAnalytics,
   getSearchDetails,
+  getBookingTrends,
+  getPendingActions,
+  getRecentActivity,
+  getConversionFunnel,
   trackEvent,
 } from '../controllers/analyticsController';
 import { protect, adminOnly } from '../middleware/auth';
@@ -56,5 +60,11 @@ router.get('/registrations/details', getRegistrationDetails);
 // Search analytics
 router.get('/searches', getSearchAnalytics);
 router.get('/searches/details', getSearchDetails);
+
+// New simplified dashboard endpoints
+router.get('/booking-trends', getBookingTrends);
+router.get('/pending-actions', getPendingActions);
+router.get('/recent-activity', getRecentActivity);
+router.get('/conversion-funnel', getConversionFunnel);
 
 export default router;

@@ -48,6 +48,7 @@ import {
   Download,
   Square,
   CheckSquare2,
+  Pencil,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
@@ -60,8 +61,7 @@ import analyticsService from '../services/analyticsService'
 import reviewService, { Review } from '../services/reviewService'
 import activityLogService, { ActivityLog } from '../services/activityLogService'
 import recommendationAdminService, { RecommendationStats, UserInteraction } from '../services/recommendationAdminService'
-import EnhancedAnalytics from '../components/EnhancedAnalytics'
-import RealTimeAnalytics from '../components/RealTimeAnalytics'
+import AnalyticsDashboard from '../components/AnalyticsDashboard'
 import { SimpleReportsTab } from '../components/SimpleReportsTab'
 import { UserHistoryModal } from '../components/UserHistoryModal'
 import { GoogleCalendarSettings } from '../components/GoogleCalendarSettings'
@@ -71,6 +71,7 @@ import { CalendarView } from '../components/CalendarView'
 import { AdminSettings } from '../components/AdminSettings'
 import { DashboardOverview } from '../components/DashboardOverview'
 import { ProductManagement } from './ProductManagement'
+import { UserManagement } from '../components/UserManagement'
 // Define types for our booking data
 interface Booking {
   _id: string
@@ -1628,63 +1629,57 @@ export function BookingDashboard(): React.ReactElement {
               </div>
             )}
 
-            {/* Desktop Table View */}
+            {/* Desktop Table View - Compact Layout */}
             <div className={`hidden lg:block ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
-              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-18rem)]">
-                <table className="min-w-full divide-y divide-gray-200">
+              <div className="overflow-y-auto max-h-[calc(100vh-18rem)]">
+                <table className={`w-full divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                 <thead className={`sticky top-0 z-10 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                   <tr>
-                    <th scope="col" className="px-4 py-3 w-12">
+                    <th scope="col" className="px-2 py-3 w-10">
                       <button
                         onClick={toggleSelectAll}
                         className={`p-1 rounded hover:bg-opacity-20 ${darkMode ? 'hover:bg-gray-500' : 'hover:bg-gray-300'}`}
                       >
                         {selectedBookings.size === filteredBookings.length && filteredBookings.length > 0 ? (
-                          <CheckSquare2 className={`h-5 w-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                          <CheckSquare2 className={`h-4 w-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                         ) : (
-                          <Square className={`h-5 w-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                          <Square className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                         )}
                       </button>
                     </th>
                     <th
                       scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
+                      className={`px-3 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider w-20`}
                     >
                       ID
                     </th>
                     <th
                       scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
+                      className={`px-3 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider w-32`}
                     >
-                      Date & Time
+                      Schedule
                     </th>
                     <th
                       scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
+                      className={`px-3 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
                     >
-                      Company
+                      Client Details
                     </th>
                     <th
                       scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
-                    >
-                      Contact
-                    </th>
-                    <th
-                      scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
+                      className={`px-3 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider w-36`}
                     >
                       Purpose
                     </th>
                     <th
                       scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
+                      className={`px-3 py-3 text-center text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider w-28`}
                     >
                       Status
                     </th>
                     <th
                       scope="col"
-                      className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
+                      className={`px-3 py-3 text-center text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider w-24`}
                     >
                       Actions
                     </th>
@@ -1694,7 +1689,7 @@ export function BookingDashboard(): React.ReactElement {
                   {filteredBookings.length > 0 ? (
                     filteredBookings.map((booking) => (
                       <tr key={booking._id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} ${selectedBookings.has(booking._id) ? (darkMode ? 'bg-blue-900/30' : 'bg-blue-50') : ''}`}>
-                        <td className="px-4 py-4 w-12">
+                        <td className="px-2 py-3 w-10">
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
@@ -1703,61 +1698,56 @@ export function BookingDashboard(): React.ReactElement {
                             className={`p-1 rounded hover:bg-opacity-20 ${darkMode ? 'hover:bg-gray-500' : 'hover:bg-gray-300'}`}
                           >
                             {selectedBookings.has(booking._id) ? (
-                              <CheckSquare2 className={`h-5 w-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                              <CheckSquare2 className={`h-4 w-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                             ) : (
-                              <Square className={`h-5 w-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                              <Square className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
                             )}
                           </button>
                         </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-                          {booking._id}
+                        <td className={`px-3 py-3 text-xs font-mono ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} title={booking._id}>
+                          ...{booking._id.slice(-6)}
                         </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
-                          <div className="flex items-center">
-                            <Calendar className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-400'} mr-1`} />
-                            {new Date(booking.date).toLocaleDateString()}
+                        <td className={`px-3 py-3 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                          <div className="flex items-center gap-1">
+                            <Calendar className={`h-3.5 w-3.5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`} />
+                            <span className="font-medium">{new Date(booking.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                           </div>
-                          <div className="flex items-center mt-1">
-                            <Clock className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-400'} mr-1`} />
-                            {booking.time}
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Clock className={`h-3.5 w-3.5 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+                            <span className="text-xs">{booking.time}</span>
                           </div>
                           {booking.status === 'rescheduled' && (
-                            <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} mt-1 italic`}>
-                              Originally:{' '}
-                              {new Date(
-                                booking.originalDate || '',
-                              ).toLocaleDateString()}{' '}
-                              at {booking.originalTime}
+                            <div className={`text-[10px] ${darkMode ? 'text-yellow-400' : 'text-yellow-600'} mt-0.5 italic`}>
+                              Was: {new Date(booking.originalDate || '').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             </div>
                           )}
                         </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
-                          <div className="font-medium">{booking.company}</div>
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
-                          <div>{booking.contactName}</div>
-                          <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                        <td className={`px-3 py-3 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          <div className="font-semibold truncate max-w-[200px]" title={booking.company}>{booking.company}</div>
+                          <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} truncate max-w-[200px]`} title={booking.contactName}>
+                            {booking.contactName}
+                          </div>
+                          <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'} truncate max-w-[200px]`} title={booking.contactEmail}>
                             {booking.contactEmail}
                           </div>
                         </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
-                          {booking.purpose}
+                        <td className={`px-3 py-3 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                          <span className="line-clamp-2" title={booking.purpose}>{booking.purpose}</span>
                         </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
-                          {getStatusBadge(booking.status)}
-                          {booking.isCompleted !== undefined && (
-                            <div className="mt-1">
-                              {getCompletionBadge(booking.isCompleted)}
-                            </div>
-                          )}
+                        <td className="px-3 py-3 text-center">
+                          <div className="flex flex-col items-center gap-1">
+                            {getStatusBadge(booking.status)}
+                            {booking.isCompleted !== undefined && getCompletionBadge(booking.isCompleted)}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
+                        <td className="px-3 py-3">
+                          <div className="flex items-center justify-center gap-1">
                             <button
                               onClick={() => viewBookingDetails(booking)}
-                              className="text-blue-600 hover:text-blue-800"
+                              className={`p-1.5 rounded-md ${darkMode ? 'hover:bg-gray-600 text-blue-400' : 'hover:bg-blue-50 text-blue-600'}`}
+                              title="View Details"
                             >
-                              View
+                              <Eye className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => {
@@ -1768,15 +1758,17 @@ export function BookingDashboard(): React.ReactElement {
                                 setIsEditMode(true)
                                 setIsDetailModalOpen(true)
                               }}
-                              className="text-indigo-600 hover:text-indigo-800"
+                              className={`p-1.5 rounded-md ${darkMode ? 'hover:bg-gray-600 text-indigo-400' : 'hover:bg-indigo-50 text-indigo-600'}`}
+                              title="Edit"
                             >
-                              Edit
+                              <Pencil className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => deleteBooking(booking._id)}
-                              className="text-red-600 hover:text-red-800"
+                              className={`p-1.5 rounded-md ${darkMode ? 'hover:bg-gray-600 text-red-400' : 'hover:bg-red-50 text-red-600'}`}
+                              title="Delete"
                             >
-                              Delete
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>
@@ -1785,8 +1777,8 @@ export function BookingDashboard(): React.ReactElement {
                   ) : (
                     <tr>
                       <td
-                        colSpan={8}
-                        className={`px-6 py-4 text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                        colSpan={7}
+                        className={`px-3 py-8 text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
                       >
                         No bookings found matching your criteria
                       </td>
@@ -1908,308 +1900,10 @@ export function BookingDashboard(): React.ReactElement {
           />
         )}
         {viewMode === 'users' && (
-          <>
-            {/* Search Bar - Shared */}
-            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4 sm:p-6 mb-4`}>
-              <h2 className={`text-xl font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'} mb-4`}>User Management</h2>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className={`h-5 w-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-                </div>
-                <input
-                  type="text"
-                  className={`block w-full pl-10 pr-3 py-2 border ${darkMode ? 'border-gray-600 bg-gray-700 text-white placeholder-gray-500' : 'border-gray-300 bg-white placeholder-gray-500'} rounded-md leading-5 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-                  placeholder="Search users by name, email, or company"
-                  value={userSearchTerm}
-                  onChange={(e) => setUserSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Desktop Table View */}
-            <div className={`hidden lg:block ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
-              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-18rem)]">
-                <table className={`min-w-full divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                <thead className={`sticky top-0 z-10 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-                  <tr>
-                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
-                      User
-                    </th>
-                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
-                      Email
-                    </th>
-                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
-                      Company
-                    </th>
-                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
-                      Phone
-                    </th>
-                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
-                      Role
-                    </th>
-                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
-                      Status
-                    </th>
-                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
-                      Logins
-                    </th>
-                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
-                      Last Login
-                    </th>
-                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
-                      Created
-                    </th>
-                    <th scope="col" className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className={`${darkMode ? 'bg-gray-800' : 'bg-white'} divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                  {filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
-                      <tr key={user._id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            {user.profilePicture ? (
-                              <img
-                                src={user.profilePicture}
-                                alt={user.name}
-                                className="h-10 w-10 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                                <span className="text-sm font-bold text-white">
-                                  {user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
-                                </span>
-                              </div>
-                            )}
-                            <div className="ml-4">
-                              <div className={`text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{user.name}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{user.email}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{user.company || 'N/A'}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>{user.phone || 'N/A'}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {user.role === 'superadmin' ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              <Shield className="w-3 h-3 mr-1" />
-                              Super Admin
-                            </span>
-                          ) : user.role === 'admin' ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                              <Shield className="w-3 h-3 mr-1" />
-                              Admin
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              User
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {user.isEmailVerified ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Verified
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                              Unverified
-                            </span>
-                          )}
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
-                          {user.loginCount || 0}
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} title={user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : 'Never'}>
-                          {user.lastLoginAt ? (() => {
-                            const date = new Date(user.lastLoginAt);
-                            const now = new Date();
-                            const diffMs = now.getTime() - date.getTime();
-                            const diffMins = Math.floor(diffMs / 60000);
-                            const diffHours = Math.floor(diffMins / 60);
-                            const diffDays = Math.floor(diffHours / 24);
-                            if (diffMins < 1) return 'Just now';
-                            if (diffMins < 60) return `${diffMins}m ago`;
-                            if (diffHours < 24) return `${diffHours}h ago`;
-                            if (diffDays < 7) return `${diffDays}d ago`;
-                            return date.toLocaleDateString();
-                          })() : 'Never'}
-                        </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => openUserHistoryModal(user)}
-                              className={darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-900'}
-                              title="View user history"
-                            >
-                              History
-                            </button>
-                            <button
-                              onClick={() => openUserModal(user)}
-                              className={darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-900'}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => deleteUserHandler(user._id, user.name)}
-                              className={darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-900'}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={10} className={`px-6 py-4 text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        No users found matching your criteria
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Mobile Card View */}
-          <div className="lg:hidden space-y-3">
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => (
-                <div
-                  key={user._id}
-                  className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg p-4 shadow-sm`}
-                >
-                  <div className="space-y-3">
-                    {/* User Info with Avatar */}
-                    <div className="flex items-start gap-3">
-                      {user.profilePicture ? (
-                        <img
-                          src={user.profilePicture}
-                          alt={user.name}
-                          className="h-12 w-12 rounded-full object-cover flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-bold text-white">
-                            {user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className={`text-base font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} truncate`}>
-                          {user.name}
-                        </h3>
-                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} truncate`}>
-                          {user.email}
-                        </p>
-                        {user.company && (
-                          <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>
-                            {user.company}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Contact Info */}
-                    {user.phone && (
-                      <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        <span className="font-medium">Phone:</span> {user.phone}
-                      </div>
-                    )}
-
-                    {/* Role & Status Badges */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {user.role === 'superadmin' ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          <Shield className="w-3 h-3 mr-1" />
-                          Super Admin
-                        </span>
-                      ) : user.role === 'admin' ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                          <Shield className="w-3 h-3 mr-1" />
-                          Admin
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          User
-                        </span>
-                      )}
-                      {user.isEmailVerified ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Verified
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                          Unverified
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Created Date */}
-                    <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                      Joined: {new Date(user.createdAt).toLocaleDateString()}
-                    </p>
-
-                    {/* Action Buttons */}
-                    <div className={`flex gap-2 pt-2 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                      <button
-                        onClick={() => openUserHistoryModal(user)}
-                        className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-medium"
-                      >
-                        History
-                      </button>
-                      <button
-                        onClick={() => openUserModal(user)}
-                        className={`flex-1 px-3 py-2 text-sm ${darkMode ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'} rounded-md transition font-medium`}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => deleteUserHandler(user._id, user.name)}
-                        className="flex-1 px-3 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition font-medium"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg p-8 text-center`}>
-                <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  No users found matching your criteria
-                </p>
-              </div>
-            )}
-          </div>
-        </>
+          <UserManagement darkMode={darkMode} />
         )}
         {viewMode === 'analytics' && (
-          <div className="space-y-6">
-            {/* Real-Time Analytics Section */}
-            <RealTimeAnalytics darkMode={darkMode} />
-
-            {/* Divider */}
-            <div className={`border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'} my-8`}></div>
-
-            {/* Historical Analytics Section */}
-            <div>
-              <h2 className={`text-2xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'} mb-4`}>Historical Analytics</h2>
-              <EnhancedAnalytics darkMode={darkMode} />
-            </div>
-          </div>
+          <AnalyticsDashboard darkMode={darkMode} />
         )}
 
         {/* Activity Logs View */}

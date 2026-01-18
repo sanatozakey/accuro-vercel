@@ -14,6 +14,10 @@ export interface Product {
   estimatedPriceUSD?: number;
   specifications?: Record<string, any>;
   status: 'active' | 'inactive' | 'archived';
+  // Inventory fields
+  stockQuantity: number;
+  lowStockThreshold: number;
+  trackInventory: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,6 +35,10 @@ export interface CreateProductData {
   estimatedPriceUSD?: number;
   specifications?: Record<string, any>;
   status?: 'active' | 'inactive' | 'archived';
+  // Inventory fields
+  stockQuantity?: number;
+  lowStockThreshold?: number;
+  trackInventory?: boolean;
 }
 
 export interface UpdateProductData extends Partial<CreateProductData> {}
@@ -95,6 +103,18 @@ class ProductService {
       }
     );
 
+    return response.data;
+  }
+
+  async updateStock(id: string, stockQuantity: number): Promise<ProductResponse> {
+    const response = await api.put<ProductResponse>(`/products/${id}`, { stockQuantity });
+    return response.data;
+  }
+
+  async getLowStockProducts(threshold?: number): Promise<ProductsResponse> {
+    const response = await api.get<ProductsResponse>('/products/low-stock', {
+      params: threshold ? { threshold } : undefined,
+    });
     return response.data;
   }
 }

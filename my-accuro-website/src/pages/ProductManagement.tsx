@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import {
   Package,
@@ -7,10 +7,19 @@ import {
   Edit,
   Trash2,
   RefreshCw,
-  Filter,
   X,
   Upload,
   AlertCircle,
+  Download,
+  ArrowUpDown,
+  Eye,
+  CheckSquare2,
+  Square,
+  Archive,
+  Zap,
+  FileText,
+  MoreVertical,
+  Minus,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -51,6 +60,8 @@ const STATUSES = ['active', 'inactive', 'archived'] as const;
 const PHP_TO_USD_RATE = 0.018; // 1 PHP = 0.018 USD
 const USD_TO_PHP_RATE = 56; // 1 USD = 56 PHP
 
+type StatusTab = 'all' | 'active' | 'inactive' | 'archived';
+
 interface ProductManagementProps {
   isInline?: boolean;
   darkMode?: boolean;
@@ -63,18 +74,24 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [activeTab, setActiveTab] = useState<StatusTab>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'stock' | 'date'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Selection state
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
 
   // Dialog states
   const [showAddEditDialog, setShowAddEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
+  const [showStockDialog, setShowStockDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
+  const [stockEditProduct, setStockEditProduct] = useState<Product | null>(null);
+  const [newStockValue, setNewStockValue] = useState<number>(0);
 
   // Form states
   const [formData, setFormData] = useState<CreateProductData>({
@@ -89,6 +106,9 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
     estimatedPrice: undefined,
     estimatedPriceUSD: undefined,
     status: 'active',
+    stockQuantity: 0,
+    lowStockThreshold: 10,
+    trackInventory: true,
   });
   const [featureInput, setFeatureInput] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -109,14 +129,13 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
   }, [user, navigate]);
 
   useEffect(() => {
-    filterProducts();
-  }, [products, searchQuery, categoryFilter, statusFilter]);
+    filterAndSortProducts();
+  }, [products, searchQuery, activeTab, sortBy, sortOrder]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
       setError('');
-      // Pass empty string for status to get ALL products (admin view)
       const response = await productService.getProducts({ status: '' });
       setProducts(response.data);
     } catch (err: any) {
@@ -127,32 +146,44 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
     }
   };
 
-  const filterProducts = () => {
+  const filterAndSortProducts = useCallback(() => {
     let filtered = [...products];
 
+    // Filter by search
     if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (product) =>
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.description.toLowerCase().includes(searchQuery.toLowerCase())
+          product.name.toLowerCase().includes(query) ||
+          product.description.toLowerCase().includes(query) ||
+          product.category.toLowerCase().includes(query)
       );
     }
 
-    if (categoryFilter !== 'All') {
-      filtered = filtered.filter((product) => product.category === categoryFilter);
+    // Filter by tab/status
+    if (activeTab !== 'all') {
+      filtered = filtered.filter((product) => product.status === activeTab);
     }
 
-    if (statusFilter !== 'All') {
-      filtered = filtered.filter((product) => product.status === statusFilter);
-    }
+    // Sort
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'stock':
+          comparison = (a.stockQuantity || 0) - (b.stockQuantity || 0);
+          break;
+        case 'date':
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
 
     setFilteredProducts(filtered);
-  };
-
-  const showSuccessMessage = (message: string) => {
-    setSuccessMessage(message);
-    setTimeout(() => setSuccessMessage(''), 5000);
-  };
+  }, [products, searchQuery, activeTab, sortBy, sortOrder]);
 
   const resetForm = () => {
     setFormData({
@@ -167,6 +198,9 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       estimatedPrice: undefined,
       estimatedPriceUSD: undefined,
       status: 'active',
+      stockQuantity: 0,
+      lowStockThreshold: 10,
+      trackInventory: true,
     });
     setFeatureInput('');
     setImageFile(null);
@@ -197,6 +231,9 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       estimatedPrice: product.estimatedPrice,
       estimatedPriceUSD: product.estimatedPriceUSD,
       status: product.status,
+      stockQuantity: product.stockQuantity || 0,
+      lowStockThreshold: product.lowStockThreshold || 10,
+      trackInventory: product.trackInventory ?? true,
     });
     setImagePreview(product.image || '');
     setShowAddEditDialog(true);
@@ -212,6 +249,12 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
     setShowViewDialog(true);
   };
 
+  const openStockDialog = (product: Product) => {
+    setStockEditProduct(product);
+    setNewStockValue(product.stockQuantity || 0);
+    setShowStockDialog(true);
+  };
+
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
@@ -221,6 +264,8 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
 
     if (!formData.description.trim()) {
       errors.description = 'Description is required';
+    } else if (formData.description.trim().length < 10) {
+      errors.description = 'Description must be at least 10 characters';
     }
 
     if (isAddingNewCategory) {
@@ -322,19 +367,18 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
     try {
       setUploadingImage(true);
 
-      // Set a timeout for image upload (10 seconds)
       const uploadPromise = productService.uploadImage(imageFile);
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Upload timeout')), 10000)
+        setTimeout(() => reject(new Error('Upload timeout')), 15000)
       );
 
       const response: any = await Promise.race([uploadPromise, timeoutPromise]);
       return response.data.url;
     } catch (err: any) {
       console.error('Image upload error:', err);
-      // If upload fails, just use the preview (base64) or skip image
+      // If upload fails, use base64 preview as fallback
       if (imagePreview && imagePreview.startsWith('data:')) {
-        return imagePreview; // Use base64 preview as fallback
+        return imagePreview;
       }
       setFormErrors({
         ...formErrors,
@@ -342,7 +386,7 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
           ? 'Image upload timed out. Product will be created without image.'
           : err.response?.data?.message || 'Image upload failed. Product will be created without image.',
       });
-      return ''; // Return empty string to skip image
+      return '';
     } finally {
       setUploadingImage(false);
     }
@@ -363,8 +407,6 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       let imageUrl = formData.image;
       if (imageFile) {
         const uploadedUrl = await uploadImage();
-        // Even if upload fails, continue with product creation
-        // uploadedUrl will be empty string or undefined if it fails
         if (uploadedUrl) {
           imageUrl = uploadedUrl;
         }
@@ -378,16 +420,14 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       const productData = {
         ...formData,
         category: finalCategory,
-        image: imageUrl || '', // Ensure image is never undefined
+        image: imageUrl || '',
       };
 
       if (editingProduct) {
         await productService.updateProduct(editingProduct._id, productData);
-        showSuccessMessage('Product updated successfully');
         toast.success('Product updated successfully!');
       } else {
         await productService.createProduct(productData);
-        showSuccessMessage('Product created successfully');
         toast.success('Product created successfully!');
       }
 
@@ -395,23 +435,17 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       resetForm();
       fetchProducts();
     } catch (err: any) {
-      // Show detailed validation errors if available
       const errorMessage = err.response?.data?.message || 'Failed to save product';
       const validationErrors = err.response?.data?.errors;
 
       if (validationErrors && Array.isArray(validationErrors)) {
         const detailedErrors = validationErrors.map((e: any) => `${e.field}: ${e.message}`).join(', ');
-        const fullError = `${errorMessage}: ${detailedErrors}`;
-        setError(fullError);
-        toast.error(fullError);
-        console.error('Validation errors:', validationErrors);
+        toast.error(`${errorMessage}: ${detailedErrors}`);
       } else {
-        setError(errorMessage);
         toast.error(errorMessage);
       }
 
       console.error('Error saving product:', err);
-      console.error('Full error response:', err.response?.data);
     } finally {
       setSubmitting(false);
     }
@@ -424,18 +458,30 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
       setLoading(true);
       setError('');
       await productService.deleteProduct(deletingProduct._id);
-      showSuccessMessage('Product deleted successfully');
       toast.success('Product deleted successfully!');
       setShowDeleteDialog(false);
       setDeletingProduct(null);
       fetchProducts();
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to delete product';
-      setError(errorMessage);
       toast.error(errorMessage);
       console.error('Error deleting product:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStockUpdate = async () => {
+    if (!stockEditProduct) return;
+
+    try {
+      await productService.updateStock(stockEditProduct._id, newStockValue);
+      toast.success('Stock updated successfully!');
+      setShowStockDialog(false);
+      setStockEditProduct(null);
+      fetchProducts();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to update stock');
     }
   };
 
@@ -456,12 +502,103 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
     });
   };
 
+  const toggleSelectAll = () => {
+    if (selectedProducts.size === filteredProducts.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(filteredProducts.map((p) => p._id)));
+    }
+  };
+
+  const toggleSelectProduct = (productId: string) => {
+    const newSelected = new Set(selectedProducts);
+    if (newSelected.has(productId)) {
+      newSelected.delete(productId);
+    } else {
+      newSelected.add(productId);
+    }
+    setSelectedProducts(newSelected);
+  };
+
+  const exportToCSV = () => {
+    const productsToExport = selectedProducts.size > 0
+      ? filteredProducts.filter((p) => selectedProducts.has(p._id))
+      : filteredProducts;
+
+    const headers = ['Name', 'Category', 'Status', 'Stock', 'Price Range PHP', 'Price Range USD', 'Description'];
+    const rows = productsToExport.map((p) => [
+      p.name,
+      p.category,
+      p.status,
+      p.stockQuantity || 0,
+      p.priceRange || '',
+      p.priceRangeUSD || '',
+      p.description.replace(/,/g, ';'),
+    ]);
+
+    const csvContent = [headers, ...rows].map((row) => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `products_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported ${productsToExport.length} products to CSV`);
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return (
+          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+            Active
+          </Badge>
+        );
+      case 'inactive':
+        return (
+          <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">
+            Draft
+          </Badge>
+        );
+      case 'archived':
+        return (
+          <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100">
+            Archived
+          </Badge>
+        );
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getStockDisplay = (product: Product) => {
+    const stock = product.stockQuantity || 0;
+    const threshold = product.lowStockThreshold || 10;
+    const isLowStock = stock <= threshold;
+    const isOutOfStock = stock === 0;
+
+    if (isOutOfStock) {
+      return <span className="text-red-600 font-medium">0 in stock</span>;
+    }
+    if (isLowStock) {
+      return <span className="text-yellow-600 font-medium">{stock} in stock</span>;
+    }
+    return <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{stock} in stock</span>;
+  };
+
+  const getTabCount = (tab: StatusTab) => {
+    if (tab === 'all') return products.length;
+    return products.filter((p) => p.status === tab).length;
+  };
+
   if (loading && products.length === 0) {
     return (
-      <div className={`${isInline ? '' : 'min-h-screen'} ${isInline ? (darkMode ? 'bg-gray-900' : 'bg-gray-50') : 'bg-gray-50'} flex items-center justify-center ${isInline ? 'py-12' : ''}`}>
+      <div className={`${isInline ? '' : 'min-h-screen'} ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center ${isInline ? 'py-12' : ''}`}>
         <div className="text-center">
           <RefreshCw className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className={`${isInline && darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading products...</p>
+          <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Loading products...</p>
         </div>
       </div>
     );
@@ -469,363 +606,332 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
 
   return (
     <div className={isInline ? '' : 'min-h-screen bg-gray-50'}>
-      {/* Header - Only show when not inline */}
-      {!isInline && (
-        <div className="bg-navy-900 text-white py-12">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
-                  <Package className="h-10 w-10" />
-                  Product Management
-                </h1>
-                <p className="text-gray-300">Manage your product catalog</p>
-              </div>
-              <div className="flex gap-3">
-                <Button
-                  onClick={fetchProducts}
-                  variant="outline"
-                  className="bg-transparent border-white text-white hover:bg-white hover:text-navy-900"
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
-                </Button>
-                <Button
-                  onClick={openAddDialog}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Product
-                </Button>
-              </div>
+      <div className={isInline ? '' : 'container mx-auto px-4 py-8'}>
+        {/* Header */}
+        <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-6 py-4 rounded-t-lg`}>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Products</h1>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToCSV}
+                className={darkMode ? 'border-gray-600 text-gray-300' : ''}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <Button
+                onClick={openAddDialog}
+                size="sm"
+                className="bg-gray-900 hover:bg-gray-800 text-white"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add product
+              </Button>
             </div>
           </div>
         </div>
-      )}
-
-      <div className={isInline ? '' : 'container mx-auto px-4 py-8'}>
-        {/* Inline Header - Show when in inline mode */}
-        {isInline && (
-          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6 mb-6`}>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h2 className={`text-2xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-900'} flex items-center gap-3`}>
-                  <Package className="h-8 w-8" />
-                  Product Management
-                </h2>
-                <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>Manage your product catalog</p>
-              </div>
-              <div className="flex gap-3">
-                <Button
-                  onClick={fetchProducts}
-                  variant="outline"
-                  className={darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : ''}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh
-                </Button>
-                <Button
-                  onClick={openAddDialog}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Product
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Success Message */}
-        {successMessage && (
-          <div className={`mb-6 ${isInline && darkMode ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200'} border rounded-lg p-4 flex items-center gap-3`}>
-            <div className="flex-shrink-0">
-              <div className={`h-5 w-5 ${isInline && darkMode ? 'text-green-400' : 'text-green-500'}`}>✓</div>
-            </div>
-            <p className={`${isInline && darkMode ? 'text-green-300' : 'text-green-800'} font-medium`}>{successMessage}</p>
-            <button
-              onClick={() => setSuccessMessage('')}
-              className={`ml-auto ${isInline && darkMode ? 'text-green-400 hover:text-green-300' : 'text-green-600 hover:text-green-800'}`}
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        )}
 
         {/* Error Message */}
         {error && (
-          <div className={`mb-6 ${isInline && darkMode ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200'} border rounded-lg p-4 flex items-center gap-3`}>
-            <AlertCircle className={`h-5 w-5 ${isInline && darkMode ? 'text-red-400' : 'text-red-500'} flex-shrink-0`} />
-            <p className={`${isInline && darkMode ? 'text-red-300' : 'text-red-800'}`}>{error}</p>
+          <div className={`mx-6 mt-4 ${darkMode ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200'} border rounded-lg p-4 flex items-center gap-3`}>
+            <AlertCircle className={`h-5 w-5 ${darkMode ? 'text-red-400' : 'text-red-500'} flex-shrink-0`} />
+            <p className={darkMode ? 'text-red-300' : 'text-red-800'}>{error}</p>
             <button
               onClick={() => setError('')}
-              className={`ml-auto ${isInline && darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-800'}`}
+              className={`ml-auto ${darkMode ? 'text-red-400 hover:text-red-300' : 'text-red-600 hover:text-red-800'}`}
             >
               <X className="h-4 w-4" />
             </button>
           </div>
         )}
 
-        {/* Filters */}
-        <div className={`${isInline && darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6 mb-6`}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className={`absolute left-3 top-3 h-5 w-5 ${isInline && darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-              <Input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`pl-10 ${isInline && darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : ''}`}
-              />
-            </div>
-
-            {/* Category Filter */}
-            <div className="flex items-center gap-2">
-              <Filter className={`h-4 w-4 ${isInline && darkMode ? 'text-gray-400' : 'text-gray-600'} flex-shrink-0`} />
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className={isInline && darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}>
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent className={isInline && darkMode ? 'bg-gray-700 border-gray-600' : ''}>
-                  <SelectItem value="All">All Categories</SelectItem>
-                  {CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Status Filter */}
-            <div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className={isInline && darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}>
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent className={isInline && darkMode ? 'bg-gray-700 border-gray-600' : ''}>
-                  <SelectItem value="All">All Statuses</SelectItem>
-                  {STATUSES.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Main Content */}
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-b-lg shadow-md`}>
+          {/* My Products Title */}
+          <div className={`px-6 pt-6 pb-2`}>
+            <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>My products</h2>
           </div>
 
-          <div className="mt-4 flex items-center gap-2">
-            <Badge variant="secondary" className={isInline && darkMode ? 'bg-gray-700 text-gray-300' : ''}>
-              {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
-            </Badge>
-          </div>
-        </div>
-
-        {/* Products List - Mobile Card View (hidden on md+) */}
-        <div className="md:hidden space-y-4">
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map((product) => (
-              <div
-                key={product._id}
-                onClick={() => openViewDialog(product)}
-                className={`${isInline && darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow`}
-              >
-                <div className="flex items-start gap-3 mb-3">
-                  {product.image && (
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="h-16 w-16 rounded object-cover flex-shrink-0"
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className={`font-medium ${isInline && darkMode ? 'text-gray-200' : 'text-gray-900'} mb-1`}>
-                      {product.name}
-                    </h3>
-                    <p className={`text-sm ${isInline && darkMode ? 'text-gray-400' : 'text-gray-500'} line-clamp-2 mb-2`}>
-                      {product.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="outline" className={`text-xs ${isInline && darkMode ? 'border-gray-600 text-gray-300' : ''}`}>
-                        {product.category}
-                      </Badge>
-                      <Badge
-                        variant={
-                          product.status === 'active'
-                            ? 'default'
-                            : product.status === 'inactive'
-                            ? 'secondary'
-                            : 'outline'
-                        }
-                        className="text-xs"
-                      >
-                        {product.status}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-
-                {product.priceRange && (
-                  <div className={`text-sm ${isInline && darkMode ? 'text-gray-300' : 'text-gray-700'} mb-3`}>
-                    Price: {product.priceRange}
-                  </div>
-                )}
-
-                <div className="flex gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openEditDialog(product);
-                    }}
-                    className="flex-1"
+          {/* Tabs and Search */}
+          <div className={`px-6 pb-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              {/* Status Tabs */}
+              <div className="flex gap-1 overflow-x-auto">
+                {[
+                  { key: 'all', label: 'All', icon: Package },
+                  { key: 'active', label: 'Active', icon: Zap },
+                  { key: 'inactive', label: 'Draft', icon: FileText },
+                  { key: 'archived', label: 'Archived', icon: Archive },
+                ].map(({ key, label, icon: Icon }) => (
+                  <button
+                    key={key}
+                    onClick={() => setActiveTab(key as StatusTab)}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors ${
+                      activeTab === key
+                        ? darkMode
+                          ? 'bg-gray-700 text-white'
+                          : 'bg-gray-100 text-gray-900'
+                        : darkMode
+                        ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    }`}
                   >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openDeleteDialog(product);
-                    }}
-                    className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
-                  </Button>
-                </div>
+                    <Icon className="h-4 w-4" />
+                    {label}
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                      activeTab === key
+                        ? darkMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-200 text-gray-700'
+                        : darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {getTabCount(key as StatusTab)}
+                    </span>
+                  </button>
+                ))}
               </div>
-            ))
-          ) : (
-            <div className={`${isInline && darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-8 text-center ${isInline && darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              No products found
+
+              {/* Search and Sort */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1 lg:w-64">
+                  <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                  <Input
+                    type="text"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className={`pl-9 h-9 ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : ''}`}
+                  />
+                </div>
+                <Select
+                  value={`${sortBy}-${sortOrder}`}
+                  onValueChange={(value) => {
+                    const [newSortBy, newSortOrder] = value.split('-') as ['name' | 'stock' | 'date', 'asc' | 'desc'];
+                    setSortBy(newSortBy);
+                    setSortOrder(newSortOrder);
+                  }}
+                >
+                  <SelectTrigger className={`w-32 h-9 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}>
+                    <ArrowUpDown className="h-4 w-4 mr-2" />
+                    <span className="text-sm">Sort</span>
+                  </SelectTrigger>
+                  <SelectContent className={darkMode ? 'bg-gray-700 border-gray-600' : ''}>
+                    <SelectItem value="name-asc">Name A-Z</SelectItem>
+                    <SelectItem value="name-desc">Name Z-A</SelectItem>
+                    <SelectItem value="stock-asc">Stock Low-High</SelectItem>
+                    <SelectItem value="stock-desc">Stock High-Low</SelectItem>
+                    <SelectItem value="date-desc">Newest First</SelectItem>
+                    <SelectItem value="date-asc">Oldest First</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchProducts}
+                  className={`h-9 ${darkMode ? 'border-gray-600 text-gray-300' : ''}`}
+                >
+                  <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Bulk Actions Bar */}
+          {selectedProducts.size > 0 && (
+            <div className={`px-6 py-3 ${darkMode ? 'bg-blue-900/20 border-blue-800' : 'bg-blue-50 border-blue-200'} border-b flex items-center justify-between`}>
+              <span className={`text-sm font-medium ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                {selectedProducts.size} product{selectedProducts.size !== 1 ? 's' : ''} selected
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportToCSV}
+                  className={darkMode ? 'border-gray-600 text-gray-300' : ''}
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Export Selected
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedProducts(new Set())}
+                  className={darkMode ? 'border-gray-600 text-gray-300' : ''}
+                >
+                  Clear Selection
+                </Button>
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Products Table - Desktop View (hidden on mobile) */}
-        <div className={`hidden md:block ${isInline && darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
+          {/* Products Table */}
           <div className="overflow-x-auto">
-            <table className={`min-w-full divide-y ${isInline && darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-              <thead className={isInline && darkMode ? 'bg-gray-900' : 'bg-gray-50'}>
-                <tr>
-                  <th className={`px-6 py-3 text-left text-xs font-medium ${isInline && darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
+            <table className={`w-full ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+              <thead>
+                <tr className={darkMode ? 'bg-gray-900/50' : 'bg-gray-50'}>
+                  <th className="px-4 py-3 w-10">
+                    <button
+                      onClick={toggleSelectAll}
+                      className={`p-1 rounded hover:bg-opacity-20 ${darkMode ? 'hover:bg-gray-500' : 'hover:bg-gray-300'}`}
+                    >
+                      {selectedProducts.size === filteredProducts.length && filteredProducts.length > 0 ? (
+                        <CheckSquare2 className={`h-4 w-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                      ) : (
+                        <Square className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                      )}
+                    </button>
+                  </th>
+                  <th className={`px-4 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                     Product
                   </th>
-                  <th className={`px-6 py-3 text-left text-xs font-medium ${isInline && darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
-                    Category
-                  </th>
-                  <th className={`px-6 py-3 text-left text-xs font-medium ${isInline && darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
-                    Price Range
-                  </th>
-                  <th className={`px-6 py-3 text-left text-xs font-medium ${isInline && darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
+                  <th className={`px-4 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                     Status
                   </th>
-                  <th className={`px-6 py-3 text-right text-xs font-medium ${isInline && darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
+                  <th className={`px-4 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
+                    Inventory
+                  </th>
+                  <th className={`px-4 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
+                    Category
+                  </th>
+                  <th className={`px-4 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
+                    Price
+                  </th>
+                  <th className={`px-4 py-3 text-center text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider w-24`}>
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className={`${isInline && darkMode ? 'bg-gray-800' : 'bg-white'} divide-y ${isInline && darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+              <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                 {filteredProducts.length > 0 ? (
                   filteredProducts.map((product) => (
                     <tr
                       key={product._id}
-                      onClick={() => openViewDialog(product)}
-                      className={`cursor-pointer ${isInline && darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+                      className={`${darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'} ${
+                        selectedProducts.has(product._id) ? (darkMode ? 'bg-blue-900/20' : 'bg-blue-50') : ''
+                      }`}
                     >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center">
-                          {product.image && (
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => toggleSelectProduct(product._id)}
+                          className={`p-1 rounded hover:bg-opacity-20 ${darkMode ? 'hover:bg-gray-500' : 'hover:bg-gray-300'}`}
+                        >
+                          {selectedProducts.has(product._id) ? (
+                            <CheckSquare2 className={`h-4 w-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                          ) : (
+                            <Square className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {product.image ? (
                             <img
                               src={product.image}
                               alt={product.name}
-                              className="h-12 w-12 rounded object-cover mr-4"
+                              className="h-10 w-10 rounded object-cover flex-shrink-0"
                             />
-                          )}
-                          <div>
-                            <div className={`font-medium ${isInline && darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{product.name}</div>
-                            <div className={`text-sm ${isInline && darkMode ? 'text-gray-400' : 'text-gray-500'} line-clamp-1`}>
-                              {product.description}
+                          ) : (
+                            <div className={`h-10 w-10 rounded flex items-center justify-center flex-shrink-0 ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                              <Package className={`h-5 w-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
                             </div>
+                          )}
+                          <div className="min-w-0">
+                            <button
+                              onClick={() => openViewDialog(product)}
+                              className={`font-medium truncate max-w-[200px] block text-left hover:underline ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}
+                            >
+                              {product.name}
+                            </button>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge variant="outline" className={isInline && darkMode ? 'border-gray-600 text-gray-300' : ''}>{product.category}</Badge>
+                      <td className="px-4 py-3">
+                        {getStatusBadge(product.status)}
                       </td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${isInline && darkMode ? 'text-gray-300' : 'text-gray-900'}`}>
-                        {product.priceRange || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge
-                          variant={
-                            product.status === 'active'
-                              ? 'default'
-                              : product.status === 'inactive'
-                              ? 'secondary'
-                              : 'outline'
-                          }
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => openStockDialog(product)}
+                          className={`text-sm hover:underline cursor-pointer ${
+                            product.stockQuantity === 0 ? 'text-red-600' :
+                            (product.stockQuantity || 0) <= (product.lowStockThreshold || 10) ? 'text-yellow-600' :
+                            darkMode ? 'text-gray-300' : 'text-gray-700'
+                          }`}
+                          title="Click to edit stock"
                         >
-                          {product.status}
-                        </Badge>
+                          {getStockDisplay(product)}
+                        </button>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditDialog(product);
-                            }}
+                      <td className={`px-4 py-3 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {product.category}
+                      </td>
+                      <td className={`px-4 py-3 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {product.priceRange || product.estimatedPrice ? (
+                          <span>
+                            {product.estimatedPrice ? `₱${product.estimatedPrice.toLocaleString()}` : product.priceRange}
+                          </span>
+                        ) : (
+                          <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => openViewDialog(product)}
+                            className={`p-1.5 rounded-md ${darkMode ? 'hover:bg-gray-600 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
+                            title="View"
                           >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openDeleteDialog(product);
-                            }}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => openEditDialog(product)}
+                            className={`p-1.5 rounded-md ${darkMode ? 'hover:bg-gray-600 text-blue-400' : 'hover:bg-blue-50 text-blue-600'}`}
+                            title="Edit"
                           >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => openDeleteDialog(product)}
+                            className={`p-1.5 rounded-md ${darkMode ? 'hover:bg-gray-600 text-red-400' : 'hover:bg-red-50 text-red-600'}`}
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className={`px-6 py-12 text-center ${isInline && darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      No products found
+                    <td colSpan={7} className={`px-6 py-12 text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      <Package className={`h-12 w-12 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-300'}`} />
+                      <p className="text-lg font-medium mb-1">No products found</p>
+                      <p className="text-sm">
+                        {searchQuery ? 'Try adjusting your search or filters' : 'Add your first product to get started'}
+                      </p>
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
+
+          {/* Footer */}
+          <div className={`px-6 py-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
+            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Showing {filteredProducts.length} of {products.length} products
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Add/Edit Product Dialog */}
       <Dialog open={showAddEditDialog} onOpenChange={setShowAddEditDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className={`max-w-2xl max-h-[90vh] overflow-y-auto ${darkMode ? 'bg-gray-800 border-gray-700' : ''}`}>
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className={darkMode ? 'text-white' : ''}>
               {editingProduct ? 'Edit Product' : 'Add New Product'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className={darkMode ? 'text-gray-400' : ''}>
               {editingProduct
                 ? 'Update the product information below'
                 : 'Fill in the product details below'}
@@ -833,73 +939,76 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
           </DialogHeader>
 
           <form onSubmit={handleSubmit}>
-            <div className="space-y-4">
-              {/* Product Name */}
-              <div>
-                <Label htmlFor="name">
-                  Product Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter product name"
-                  className={formErrors.name ? 'border-red-500' : ''}
-                />
-                {formErrors.name && (
-                  <p className="text-sm text-red-500 mt-1">{formErrors.name}</p>
-                )}
-              </div>
+            <div className="space-y-6">
+              {/* Basic Info Section */}
+              <div className="space-y-4">
+                <h3 className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Basic Information</h3>
 
-              {/* Description */}
-              <div>
-                <Label htmlFor="description">
-                  Description <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Enter product description"
-                  rows={4}
-                  className={formErrors.description ? 'border-red-500' : ''}
-                />
-                {formErrors.description && (
-                  <p className="text-sm text-red-500 mt-1">{formErrors.description}</p>
-                )}
-              </div>
-
-              {/* Category and Status */}
-              <div className="grid grid-cols-2 gap-4">
+                {/* Product Name */}
                 <div>
-                  <Label htmlFor="category">
-                    Category <span className="text-red-500">*</span>
+                  <Label htmlFor="name" className={darkMode ? 'text-gray-200' : ''}>
+                    Product Name <span className="text-red-500">*</span>
                   </Label>
-                  {isAddingNewCategory ? (
-                    <div className="space-y-2">
-                      <Input
-                        id="customCategory"
-                        value={customCategory}
-                        onChange={(e) => setCustomCategory(e.target.value)}
-                        placeholder="Enter new category name"
-                        className={formErrors.category ? 'border-red-500' : ''}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setIsAddingNewCategory(false);
-                          setCustomCategory('');
-                        }}
-                        className="text-xs"
-                      >
-                        <X className="h-3 w-3 mr-1" />
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter product name"
+                    className={`mt-1 ${formErrors.name ? 'border-red-500' : ''} ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                  />
+                  {formErrors.name && (
+                    <p className="text-sm text-red-500 mt-1">{formErrors.name}</p>
+                  )}
+                </div>
+
+                {/* Description */}
+                <div>
+                  <Label htmlFor="description" className={darkMode ? 'text-gray-200' : ''}>
+                    Description <span className="text-red-500">*</span>
+                  </Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Enter product description (minimum 10 characters)"
+                    rows={3}
+                    className={`mt-1 ${formErrors.description ? 'border-red-500' : ''} ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                  />
+                  {formErrors.description && (
+                    <p className="text-sm text-red-500 mt-1">{formErrors.description}</p>
+                  )}
+                </div>
+
+                {/* Category and Status */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="category" className={darkMode ? 'text-gray-200' : ''}>
+                      Category <span className="text-red-500">*</span>
+                    </Label>
+                    {isAddingNewCategory ? (
+                      <div className="space-y-2 mt-1">
+                        <Input
+                          id="customCategory"
+                          value={customCategory}
+                          onChange={(e) => setCustomCategory(e.target.value)}
+                          placeholder="Enter new category name"
+                          className={`${formErrors.category ? 'border-red-500' : ''} ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setIsAddingNewCategory(false);
+                            setCustomCategory('');
+                          }}
+                          className="text-xs"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
                       <Select
                         value={formData.category}
                         onValueChange={(value) => {
@@ -911,10 +1020,10 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                           }
                         }}
                       >
-                        <SelectTrigger className={formErrors.category ? 'border-red-500' : ''}>
+                        <SelectTrigger className={`mt-1 ${formErrors.category ? 'border-red-500' : ''} ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}>
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className={darkMode ? 'bg-gray-700 border-gray-600' : ''}>
                           {CATEGORIES.map((category) => (
                             <SelectItem key={category} value={category}>
                               {category}
@@ -928,211 +1037,253 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-                  )}
-                  {formErrors.category && (
-                    <p className="text-sm text-red-500 mt-1">{formErrors.category}</p>
-                  )}
-                </div>
+                    )}
+                    {formErrors.category && (
+                      <p className="text-sm text-red-500 mt-1">{formErrors.category}</p>
+                    )}
+                  </div>
 
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) =>
-                      setFormData({
-                        ...formData,
-                        status: value as 'active' | 'inactive' | 'archived',
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUSES.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div>
+                    <Label htmlFor="status" className={darkMode ? 'text-gray-200' : ''}>Status</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          status: value as 'active' | 'inactive' | 'archived',
+                        })
+                      }
+                    >
+                      <SelectTrigger className={`mt-1 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className={darkMode ? 'bg-gray-700 border-gray-600' : ''}>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Draft</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
-              {/* Image Upload with Drag & Drop */}
-              <div>
-                <Label htmlFor="image">Product Image</Label>
-                <div className="mt-2 space-y-4">
-                  {/* Drag & Drop Zone */}
-                  <div
-                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                      isDragging
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
+              {/* Image Upload Section */}
+              <div className="space-y-4">
+                <h3 className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Product Image</h3>
+
+                <div
+                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                    isDragging
+                      ? 'border-blue-500 bg-blue-50'
+                      : darkMode ? 'border-gray-600 hover:border-gray-500' : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  <Upload className={`h-10 w-10 mx-auto mb-3 ${isDragging ? 'text-blue-500' : darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                  <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {isDragging ? 'Drop image here' : 'Drag and drop an image here, or click to browse'}
+                  </p>
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('image')?.click()}
+                    className={darkMode ? 'border-gray-600 text-gray-300' : ''}
                   >
-                    <Upload className={`h-12 w-12 mx-auto mb-4 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
-                    <p className="text-sm text-gray-600 mb-2">
-                      {isDragging ? 'Drop image here' : 'Drag and drop an image here, or click to browse'}
-                    </p>
-                    <Input
-                      id="image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
+                    Choose File
+                  </Button>
+                  <p className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>Max file size: 2MB</p>
+                </div>
+
+                {/* Image Preview */}
+                {imagePreview && (
+                  <div className="relative w-32 h-32 border rounded-md overflow-hidden">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
                     />
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="destructive"
                       size="sm"
-                      onClick={() => document.getElementById('image')?.click()}
-                    >
-                      Choose File
-                    </Button>
-                    <p className="text-xs text-gray-500 mt-2">Max file size: 2MB</p>
-                  </div>
-
-                  {/* Image Preview */}
-                  {imagePreview && (
-                    <div className="relative w-32 h-32 border rounded-md overflow-hidden">
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-1 right-1 h-6 w-6 p-0"
-                        onClick={() => {
-                          setImageFile(null);
-                          setImagePreview('');
-                          setFormData({ ...formData, image: '' });
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-
-                  {formErrors.image && (
-                    <p className="text-sm text-red-500">{formErrors.image}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Beamex URL */}
-              <div>
-                <Label htmlFor="beamexUrl">Beamex Product URL</Label>
-                <Input
-                  id="beamexUrl"
-                  value={formData.beamexUrl}
-                  onChange={(e) => setFormData({ ...formData, beamexUrl: e.target.value })}
-                  placeholder="https://www.beamex.com/..."
-                />
-              </div>
-
-              {/* Price Ranges */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="priceRange">Price Range (PHP)</Label>
-                  <Input
-                    id="priceRange"
-                    value={formData.priceRange}
-                    onChange={(e) => setFormData({ ...formData, priceRange: e.target.value })}
-                    placeholder="₱50,000 - ₱100,000"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="priceRangeUSD">Price Range (USD)</Label>
-                  <Input
-                    id="priceRangeUSD"
-                    value={formData.priceRangeUSD}
-                    onChange={(e) =>
-                      setFormData({ ...formData, priceRangeUSD: e.target.value })
-                    }
-                    placeholder="$1,000 - $2,000"
-                  />
-                </div>
-              </div>
-
-              {/* Estimated Prices with Auto-Conversion */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="estimatedPrice">Estimated Price (PHP)</Label>
-                  <Input
-                    id="estimatedPrice"
-                    type="number"
-                    value={formData.estimatedPrice || ''}
-                    onChange={(e) => handleEstimatedPriceChange(e.target.value)}
-                    placeholder="75000"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Auto-converts to USD</p>
-                </div>
-
-                <div>
-                  <Label htmlFor="estimatedPriceUSD">Estimated Price (USD)</Label>
-                  <Input
-                    id="estimatedPriceUSD"
-                    type="number"
-                    value={formData.estimatedPriceUSD || ''}
-                    onChange={(e) => handleEstimatedPriceUSDChange(e.target.value)}
-                    placeholder="1500"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Auto-converts to PHP</p>
-                </div>
-              </div>
-
-              {/* Features */}
-              <div>
-                <Label htmlFor="features">Features</Label>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      id="features"
-                      value={featureInput}
-                      onChange={(e) => setFeatureInput(e.target.value)}
-                      placeholder="Enter a feature"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addFeature();
-                        }
+                      className="absolute top-1 right-1 h-6 w-6 p-0"
+                      onClick={() => {
+                        setImageFile(null);
+                        setImagePreview('');
+                        setFormData({ ...formData, image: '' });
                       }}
-                    />
-                    <Button type="button" onClick={addFeature} variant="outline">
-                      <Plus className="h-4 w-4" />
+                    >
+                      <X className="h-4 w-4" />
                     </Button>
                   </div>
-                  {formData.features && formData.features.length > 0 && (
-                    <div className="space-y-1">
-                      {formData.features.map((feature, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded"
-                        >
-                          <span className="text-sm">{feature}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeFeature(index)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                )}
+
+                {formErrors.image && (
+                  <p className="text-sm text-red-500">{formErrors.image}</p>
+                )}
+              </div>
+
+              {/* Inventory Section */}
+              <div className="space-y-4">
+                <h3 className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Inventory</h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="stockQuantity" className={darkMode ? 'text-gray-200' : ''}>Stock Quantity</Label>
+                    <Input
+                      id="stockQuantity"
+                      type="number"
+                      min="0"
+                      value={formData.stockQuantity || 0}
+                      onChange={(e) => setFormData({ ...formData, stockQuantity: parseInt(e.target.value) || 0 })}
+                      className={`mt-1 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="lowStockThreshold" className={darkMode ? 'text-gray-200' : ''}>Low Stock Alert</Label>
+                    <Input
+                      id="lowStockThreshold"
+                      type="number"
+                      min="0"
+                      value={formData.lowStockThreshold || 10}
+                      onChange={(e) => setFormData({ ...formData, lowStockThreshold: parseInt(e.target.value) || 10 })}
+                      className={`mt-1 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                    />
+                    <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                      Alert when stock falls below this level
+                    </p>
+                  </div>
                 </div>
+              </div>
+
+              {/* Pricing Section */}
+              <div className="space-y-4">
+                <h3 className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Pricing</h3>
+
+                {/* Beamex URL */}
+                <div>
+                  <Label htmlFor="beamexUrl" className={darkMode ? 'text-gray-200' : ''}>Beamex Product URL</Label>
+                  <Input
+                    id="beamexUrl"
+                    value={formData.beamexUrl}
+                    onChange={(e) => setFormData({ ...formData, beamexUrl: e.target.value })}
+                    placeholder="https://www.beamex.com/..."
+                    className={`mt-1 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                  />
+                </div>
+
+                {/* Price Ranges */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="priceRange" className={darkMode ? 'text-gray-200' : ''}>Price Range (PHP)</Label>
+                    <Input
+                      id="priceRange"
+                      value={formData.priceRange}
+                      onChange={(e) => setFormData({ ...formData, priceRange: e.target.value })}
+                      placeholder="₱50,000 - ₱100,000"
+                      className={`mt-1 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="priceRangeUSD" className={darkMode ? 'text-gray-200' : ''}>Price Range (USD)</Label>
+                    <Input
+                      id="priceRangeUSD"
+                      value={formData.priceRangeUSD}
+                      onChange={(e) =>
+                        setFormData({ ...formData, priceRangeUSD: e.target.value })
+                      }
+                      placeholder="$1,000 - $2,000"
+                      className={`mt-1 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                    />
+                  </div>
+                </div>
+
+                {/* Estimated Prices with Auto-Conversion */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="estimatedPrice" className={darkMode ? 'text-gray-200' : ''}>Estimated Price (PHP)</Label>
+                    <Input
+                      id="estimatedPrice"
+                      type="number"
+                      value={formData.estimatedPrice || ''}
+                      onChange={(e) => handleEstimatedPriceChange(e.target.value)}
+                      placeholder="75000"
+                      className={`mt-1 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                    />
+                    <p className={`text-xs mt-1 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>Auto-converts to USD</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="estimatedPriceUSD" className={darkMode ? 'text-gray-200' : ''}>Estimated Price (USD)</Label>
+                    <Input
+                      id="estimatedPriceUSD"
+                      type="number"
+                      value={formData.estimatedPriceUSD || ''}
+                      onChange={(e) => handleEstimatedPriceUSDChange(e.target.value)}
+                      placeholder="1500"
+                      className={`mt-1 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                    />
+                    <p className={`text-xs mt-1 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>Auto-converts to PHP</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Features Section */}
+              <div className="space-y-4">
+                <h3 className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Features</h3>
+
+                <div className="flex gap-2">
+                  <Input
+                    id="features"
+                    value={featureInput}
+                    onChange={(e) => setFeatureInput(e.target.value)}
+                    placeholder="Enter a feature"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addFeature();
+                      }
+                    }}
+                    className={darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}
+                  />
+                  <Button type="button" onClick={addFeature} variant="outline" className={darkMode ? 'border-gray-600' : ''}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {formData.features && formData.features.length > 0 && (
+                  <div className="space-y-1">
+                    {formData.features.map((feature, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-center justify-between px-3 py-2 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
+                      >
+                        <span className={`text-sm ${darkMode ? 'text-gray-200' : ''}`}>{feature}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFeature(index)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1145,6 +1296,7 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                   resetForm();
                 }}
                 disabled={submitting}
+                className={darkMode ? 'border-gray-600 text-gray-300' : ''}
               >
                 Cancel
               </Button>
@@ -1152,7 +1304,7 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                 {submitting || uploadingImage ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    {uploadingImage ? 'Uploading Image...' : submitting ? 'Saving Product...' : 'Processing...'}
+                    {uploadingImage ? 'Uploading...' : 'Saving...'}
                   </>
                 ) : (
                   <>{editingProduct ? 'Update Product' : 'Create Product'}</>
@@ -1163,14 +1315,72 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
         </DialogContent>
       </Dialog>
 
+      {/* Stock Edit Dialog */}
+      <Dialog open={showStockDialog} onOpenChange={setShowStockDialog}>
+        <DialogContent className={`max-w-sm ${darkMode ? 'bg-gray-800 border-gray-700' : ''}`}>
+          <DialogHeader>
+            <DialogTitle className={darkMode ? 'text-white' : ''}>Update Stock</DialogTitle>
+            <DialogDescription className={darkMode ? 'text-gray-400' : ''}>
+              {stockEditProduct?.name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            <Label className={darkMode ? 'text-gray-200' : ''}>Stock Quantity</Label>
+            <div className="flex items-center gap-2 mt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setNewStockValue(Math.max(0, newStockValue - 1))}
+                className={darkMode ? 'border-gray-600' : ''}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <Input
+                type="number"
+                min="0"
+                value={newStockValue}
+                onChange={(e) => setNewStockValue(parseInt(e.target.value) || 0)}
+                className={`w-24 text-center ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setNewStockValue(newStockValue + 1)}
+                className={darkMode ? 'border-gray-600' : ''}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowStockDialog(false);
+                setStockEditProduct(null);
+              }}
+              className={darkMode ? 'border-gray-600 text-gray-300' : ''}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleStockUpdate}>
+              Update Stock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
+        <DialogContent className={darkMode ? 'bg-gray-800 border-gray-700' : ''}>
           <DialogHeader>
-            <DialogTitle>Delete Product</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{deletingProduct?.name}"? This action cannot be
-              undone.
+            <DialogTitle className={darkMode ? 'text-white' : ''}>Delete Product</DialogTitle>
+            <DialogDescription className={darkMode ? 'text-gray-400' : ''}>
+              Are you sure you want to delete "{deletingProduct?.name}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1180,6 +1390,7 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                 setShowDeleteDialog(false);
                 setDeletingProduct(null);
               }}
+              className={darkMode ? 'border-gray-600 text-gray-300' : ''}
             >
               Cancel
             </Button>
@@ -1196,7 +1407,7 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
               ) : (
                 <>
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Product
+                  Delete
                 </>
               )}
             </Button>
@@ -1206,112 +1417,117 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
 
       {/* View Product Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className={`max-w-2xl max-h-[90vh] overflow-y-auto ${darkMode ? 'bg-gray-800 border-gray-700' : ''}`}>
           <DialogHeader>
-            <DialogTitle className="text-2xl">Product Details</DialogTitle>
+            <DialogTitle className={darkMode ? 'text-white' : ''}>Product Details</DialogTitle>
           </DialogHeader>
 
           {viewingProduct && (
             <div className="space-y-6">
               {/* Product Image */}
-              {viewingProduct.image && (
-                <div className="flex justify-center">
+              <div className="flex justify-center">
+                {viewingProduct.image ? (
                   <img
                     src={viewingProduct.image}
                     alt={viewingProduct.name}
-                    className="max-h-64 w-auto rounded-lg object-contain border border-gray-200"
+                    className="max-h-48 w-auto rounded-lg object-contain border border-gray-200"
                   />
-                </div>
-              )}
+                ) : (
+                  <div className={`h-48 w-48 rounded-lg flex items-center justify-center ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                    <Package className={`h-16 w-16 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                  </div>
+                )}
+              </div>
 
-              {/* Product Name and Status */}
+              {/* Product Info */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     {viewingProduct.name}
                   </h3>
-                  <Badge
-                    variant={
-                      viewingProduct.status === 'active'
-                        ? 'default'
-                        : viewingProduct.status === 'inactive'
-                        ? 'secondary'
-                        : 'outline'
-                    }
-                  >
-                    {viewingProduct.status}
-                  </Badge>
+                  {getStatusBadge(viewingProduct.status)}
                 </div>
-                <Badge variant="outline">{viewingProduct.category}</Badge>
+                <Badge variant="outline" className={darkMode ? 'border-gray-600 text-gray-300' : ''}>{viewingProduct.category}</Badge>
               </div>
 
               {/* Description */}
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
-                <p className="text-gray-700 whitespace-pre-wrap">{viewingProduct.description}</p>
+                <h4 className={`font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Description</h4>
+                <p className={`whitespace-pre-wrap ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{viewingProduct.description}</p>
               </div>
 
-              {/* Pricing Information */}
+              {/* Inventory Info */}
+              <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <h4 className={`font-medium mb-3 ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Inventory</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Current Stock</p>
+                    <p className={`text-lg font-semibold ${
+                      viewingProduct.stockQuantity === 0 ? 'text-red-600' :
+                      (viewingProduct.stockQuantity || 0) <= (viewingProduct.lowStockThreshold || 10) ? 'text-yellow-600' :
+                      darkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      {viewingProduct.stockQuantity || 0} units
+                    </p>
+                  </div>
+                  <div>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Low Stock Alert</p>
+                    <p className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {viewingProduct.lowStockThreshold || 10} units
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pricing Info */}
               {(viewingProduct.priceRange || viewingProduct.estimatedPrice) && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
-                  {viewingProduct.priceRange && (
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">Price Range (PHP)</h4>
-                      <p className="text-gray-700">{viewingProduct.priceRange}</p>
-                    </div>
-                  )}
-                  {viewingProduct.priceRangeUSD && (
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">Price Range (USD)</h4>
-                      <p className="text-gray-700">{viewingProduct.priceRangeUSD}</p>
-                    </div>
-                  )}
-                  {viewingProduct.estimatedPrice && (
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">Estimated Price (PHP)</h4>
-                      <p className="text-gray-700">₱{viewingProduct.estimatedPrice.toLocaleString()}</p>
-                    </div>
-                  )}
-                  {viewingProduct.estimatedPriceUSD && (
-                    <div>
-                      <h4 className="font-semibold text-gray-900 mb-1">Estimated Price (USD)</h4>
-                      <p className="text-gray-700">${viewingProduct.estimatedPriceUSD.toLocaleString()}</p>
-                    </div>
-                  )}
+                <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <h4 className={`font-medium mb-3 ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Pricing</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    {viewingProduct.priceRange && (
+                      <div>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Price Range (PHP)</p>
+                        <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{viewingProduct.priceRange}</p>
+                      </div>
+                    )}
+                    {viewingProduct.priceRangeUSD && (
+                      <div>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Price Range (USD)</p>
+                        <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{viewingProduct.priceRangeUSD}</p>
+                      </div>
+                    )}
+                    {viewingProduct.estimatedPrice && (
+                      <div>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Estimated Price (PHP)</p>
+                        <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>₱{viewingProduct.estimatedPrice.toLocaleString()}</p>
+                      </div>
+                    )}
+                    {viewingProduct.estimatedPriceUSD && (
+                      <div>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Estimated Price (USD)</p>
+                        <p className={darkMode ? 'text-gray-300' : 'text-gray-700'}>${viewingProduct.estimatedPriceUSD.toLocaleString()}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
               {/* Features */}
               {viewingProduct.features && viewingProduct.features.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Features</h4>
+                  <h4 className={`font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>Features</h4>
                   <ul className="list-disc list-inside space-y-1">
                     {viewingProduct.features.map((feature, index) => (
-                      <li key={index} className="text-gray-700">{feature}</li>
+                      <li key={index} className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{feature}</li>
                     ))}
                   </ul>
-                </div>
-              )}
-
-              {/* Specifications */}
-              {viewingProduct.specifications && Object.keys(viewingProduct.specifications).length > 0 && (
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Specifications</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {Object.entries(viewingProduct.specifications).map(([key, value]) => (
-                      <div key={key} className="flex justify-between p-2 bg-gray-50 rounded">
-                        <span className="font-medium text-gray-700">{key}:</span>
-                        <span className="text-gray-600">{String(value)}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )}
 
               {/* Beamex URL */}
               {viewingProduct.beamexUrl && (
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">More Information</h4>
+                  <h4 className={`font-medium mb-2 ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>More Information</h4>
                   <a
                     href={viewingProduct.beamexUrl}
                     target="_blank"
@@ -1326,16 +1542,27 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                 </div>
               )}
 
-              {/* Action Buttons */}
+              {/* Actions */}
               <DialogFooter className="flex gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setShowViewDialog(false)}
+                  className={darkMode ? 'border-gray-600 text-gray-300' : ''}
                 >
                   Close
                 </Button>
                 <Button
-                  variant="default"
+                  variant="outline"
+                  onClick={() => {
+                    setShowViewDialog(false);
+                    openStockDialog(viewingProduct);
+                  }}
+                  className={darkMode ? 'border-gray-600 text-gray-300' : ''}
+                >
+                  <Package className="h-4 w-4 mr-2" />
+                  Update Stock
+                </Button>
+                <Button
                   onClick={() => {
                     setShowViewDialog(false);
                     openEditDialog(viewingProduct);
