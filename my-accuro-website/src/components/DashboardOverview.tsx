@@ -18,9 +18,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import bookingService from '../services/bookingService';
 import activityLogService, { ActivityLog } from '../services/activityLogService';
-import axios from 'axios';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import productService from '../services/productService';
 
 interface DashboardOverviewProps {
   darkMode: boolean;
@@ -76,7 +74,7 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
       const [bookingsRes, activityRes, lowStockRes] = await Promise.all([
         bookingService.getAll(),
         activityLogService.getAll({ limit: 10 }),
-        axios.get(`${API_URL}/api/products/low-stock`, { headers }).catch(() => ({ data: { data: [] } })),
+        productService.getLowStockProducts().catch(() => ({ data: [] })),
       ]);
 
       const allBookings = bookingsRes.data || [];
@@ -114,7 +112,7 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
         todayBookings,
         pendingBookings,
         confirmedBookings,
-        lowStockProducts: lowStockRes.data?.data || [],
+        lowStockProducts: lowStockRes.data || [],
         recentActivity: activityRes.data || [],
         totalBookingsThisMonth: thisMonthBookings.length,
         completedThisMonth,

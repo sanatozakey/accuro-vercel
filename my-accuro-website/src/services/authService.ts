@@ -110,7 +110,7 @@ class AuthService {
 
   isAdmin(): boolean {
     const user = this.getCurrentUser();
-    return user && user.role === 'admin';
+    return user && (user.role === 'admin' || user.role === 'superadmin');
   }
 }
 

@@ -27,7 +27,7 @@ export function QuotationDashboard() {
   const [rejectNotes, setRejectNotes] = useState('');
 
   useEffect(() => {
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' && user?.role !== 'superadmin') {
       navigate('/');
       return;
     }

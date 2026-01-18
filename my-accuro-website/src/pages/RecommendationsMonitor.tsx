@@ -31,7 +31,7 @@ export function RecommendationsMonitor() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' && user?.role !== 'superadmin') {
       navigate('/');
       return;
     }

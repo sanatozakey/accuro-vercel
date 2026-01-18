@@ -54,7 +54,7 @@ export function StockSettings() {
   const [loadingLowStock, setLoadingLowStock] = useState(true);
 
   useEffect(() => {
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' && user?.role !== 'superadmin') {
       navigate('/');
       return;
     }

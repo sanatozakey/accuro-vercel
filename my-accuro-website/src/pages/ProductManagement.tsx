@@ -121,7 +121,7 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' && user?.role !== 'superadmin') {
       navigate('/');
       return;
     }
