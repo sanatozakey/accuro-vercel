@@ -26,10 +26,11 @@ const router = express.Router();
 // Public routes - specific paths MUST come before parameterized paths
 router.get('/categories', getCategories);
 router.get('/with-stock', getProductsWithStock); // Get products with stock info
-router.get('/', getProducts);
-router.get('/:id', getProduct);
 
 // Protected admin routes - specific paths MUST come before parameterized paths
+// Low stock route (must come before /:id to avoid being caught by it)
+router.get('/low-stock', protect, adminOnly, getLowStockProducts);
+
 // Image upload route
 router.post(
   '/upload-image',
@@ -43,9 +44,12 @@ router.post(
 router.post('/bulk/import', protect, adminOnly, bulkImportProducts);
 
 // Stock management routes
-router.get('/low-stock', protect, adminOnly, getLowStockProducts);
 router.put('/bulk-stock', protect, adminOnly, bulkUpdateStock);
 router.put('/:id/stock', protect, adminOnly, updateStock);
+
+// These parameterized routes must come LAST
+router.get('/', getProducts);
+router.get('/:id', getProduct);
 
 router.post(
   '/',
