@@ -45,6 +45,9 @@ import {
   Sun,
   Moon,
   Settings,
+  Download,
+  Square,
+  CheckSquare2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
@@ -185,6 +188,10 @@ export function BookingDashboard(): React.ReactElement {
   const [darkMode, setDarkMode] = useState<boolean>(false) // Default to light mode
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false) // Mobile sidebar state
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false) // Desktop sidebar collapsed state
+
+  // Bulk actions state
+  const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set())
+  const [bulkActionLoading, setBulkActionLoading] = useState<boolean>(false)
 
   // User management state
   const [users, setUsers] = useState<UserType[]>([])
@@ -544,6 +551,107 @@ export function BookingDashboard(): React.ReactElement {
     setIsCompletionModalOpen(false)
     setIsDetailModalOpen(false)
   }
+
+  // Bulk action handlers
+  const toggleSelectBooking = (bookingId: string): void => {
+    const newSelected = new Set(selectedBookings)
+    if (newSelected.has(bookingId)) {
+      newSelected.delete(bookingId)
+    } else {
+      newSelected.add(bookingId)
+    }
+    setSelectedBookings(newSelected)
+  }
+
+  const toggleSelectAll = (): void => {
+    if (selectedBookings.size === filteredBookings.length) {
+      setSelectedBookings(new Set())
+    } else {
+      setSelectedBookings(new Set(filteredBookings.map(b => b._id)))
+    }
+  }
+
+  const clearSelection = (): void => {
+    setSelectedBookings(new Set())
+  }
+
+  const bulkUpdateStatus = async (newStatus: string): Promise<void> => {
+    if (selectedBookings.size === 0) return
+    setBulkActionLoading(true)
+    try {
+      const promises = Array.from(selectedBookings).map(id =>
+        bookingService.update(id, { status: newStatus })
+      )
+      await Promise.all(promises)
+      await fetchBookings()
+      toast.success(`${selectedBookings.size} booking(s) updated to "${newStatus}"`)
+      clearSelection()
+    } catch (err: any) {
+      toast.error('Failed to update some bookings')
+    } finally {
+      setBulkActionLoading(false)
+    }
+  }
+
+  const bulkDelete = async (): Promise<void> => {
+    if (selectedBookings.size === 0) return
+    if (!window.confirm(`Are you sure you want to delete ${selectedBookings.size} booking(s)? This action cannot be undone.`)) {
+      return
+    }
+    setBulkActionLoading(true)
+    try {
+      const promises = Array.from(selectedBookings).map(id =>
+        bookingService.delete(id)
+      )
+      await Promise.all(promises)
+      await fetchBookings()
+      toast.success(`${selectedBookings.size} booking(s) deleted`)
+      clearSelection()
+    } catch (err: any) {
+      toast.error('Failed to delete some bookings')
+    } finally {
+      setBulkActionLoading(false)
+    }
+  }
+
+  const exportToCSV = (): void => {
+    const bookingsToExport = selectedBookings.size > 0
+      ? filteredBookings.filter(b => selectedBookings.has(b._id))
+      : filteredBookings
+
+    const headers = ['ID', 'Date', 'Time', 'Company', 'Contact Name', 'Email', 'Phone', 'Purpose', 'Location', 'Product', 'Status', 'Completed', 'Created At']
+    const csvRows = [
+      headers.join(','),
+      ...bookingsToExport.map(b => [
+        b._id,
+        new Date(b.date).toLocaleDateString(),
+        b.time,
+        `"${b.company.replace(/"/g, '""')}"`,
+        `"${b.contactName.replace(/"/g, '""')}"`,
+        b.contactEmail,
+        b.contactPhone,
+        `"${b.purpose.replace(/"/g, '""')}"`,
+        `"${b.location.replace(/"/g, '""')}"`,
+        `"${b.product.replace(/"/g, '""')}"`,
+        b.status,
+        b.isCompleted ? 'Yes' : 'No',
+        new Date(b.createdAt).toLocaleDateString(),
+      ].join(','))
+    ]
+
+    const csvContent = csvRows.join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `bookings_export_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success(`Exported ${bookingsToExport.length} booking(s) to CSV`)
+  }
+
   // Handle reschedule
   const rescheduleBooking = async (): Promise<void> => {
     if (!editedBooking) return
@@ -1449,12 +1557,95 @@ export function BookingDashboard(): React.ReactElement {
         )}
         {viewMode === 'table' && (
           <>
+            {/* Bulk Actions Toolbar */}
+            {selectedBookings.size > 0 && (
+              <div className={`${darkMode ? 'bg-blue-900/50 border-blue-700' : 'bg-blue-50 border-blue-200'} border rounded-lg p-4 mb-4 flex flex-wrap items-center justify-between gap-4`}>
+                <div className="flex items-center gap-3">
+                  <span className={`font-medium ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+                    {selectedBookings.size} booking(s) selected
+                  </span>
+                  <button
+                    onClick={clearSelection}
+                    className={`text-sm ${darkMode ? 'text-blue-300 hover:text-blue-100' : 'text-blue-600 hover:text-blue-800'}`}
+                  >
+                    Clear selection
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        bulkUpdateStatus(e.target.value)
+                        e.target.value = ''
+                      }
+                    }}
+                    disabled={bulkActionLoading}
+                    className={`px-3 py-2 text-sm border rounded-md ${
+                      darkMode
+                        ? 'bg-gray-700 border-gray-600 text-gray-200'
+                        : 'bg-white border-gray-300 text-gray-700'
+                    }`}
+                  >
+                    <option value="">Change Status...</option>
+                    <option value="pending">Set to Pending</option>
+                    <option value="confirmed">Set to Confirmed</option>
+                    <option value="cancelled">Set to Cancelled</option>
+                  </select>
+                  <button
+                    onClick={exportToCSV}
+                    disabled={bulkActionLoading}
+                    className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Export CSV
+                  </button>
+                  <button
+                    onClick={bulkDelete}
+                    disabled={bulkActionLoading}
+                    className="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Export All Button (when nothing selected) */}
+            {selectedBookings.size === 0 && filteredBookings.length > 0 && (
+              <div className="flex justify-end mb-4">
+                <button
+                  onClick={exportToCSV}
+                  className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                    darkMode
+                      ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
+                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export All to CSV
+                </button>
+              </div>
+            )}
+
             {/* Desktop Table View */}
             <div className={`hidden lg:block ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
               <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-18rem)]">
                 <table className="min-w-full divide-y divide-gray-200">
                 <thead className={`sticky top-0 z-10 ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                   <tr>
+                    <th scope="col" className="px-4 py-3 w-12">
+                      <button
+                        onClick={toggleSelectAll}
+                        className={`p-1 rounded hover:bg-opacity-20 ${darkMode ? 'hover:bg-gray-500' : 'hover:bg-gray-300'}`}
+                      >
+                        {selectedBookings.size === filteredBookings.length && filteredBookings.length > 0 ? (
+                          <CheckSquare2 className={`h-5 w-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                        ) : (
+                          <Square className={`h-5 w-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                        )}
+                      </button>
+                    </th>
                     <th
                       scope="col"
                       className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-500'} uppercase tracking-wider`}
@@ -1502,7 +1693,22 @@ export function BookingDashboard(): React.ReactElement {
                 <tbody className={`${darkMode ? 'bg-gray-800' : 'bg-white'} divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                   {filteredBookings.length > 0 ? (
                     filteredBookings.map((booking) => (
-                      <tr key={booking._id} className={darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                      <tr key={booking._id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} ${selectedBookings.has(booking._id) ? (darkMode ? 'bg-blue-900/30' : 'bg-blue-50') : ''}`}>
+                        <td className="px-4 py-4 w-12">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleSelectBooking(booking._id)
+                            }}
+                            className={`p-1 rounded hover:bg-opacity-20 ${darkMode ? 'hover:bg-gray-500' : 'hover:bg-gray-300'}`}
+                          >
+                            {selectedBookings.has(booking._id) ? (
+                              <CheckSquare2 className={`h-5 w-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                            ) : (
+                              <Square className={`h-5 w-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                            )}
+                          </button>
+                        </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
                           {booking._id}
                         </td>
@@ -1579,7 +1785,7 @@ export function BookingDashboard(): React.ReactElement {
                   ) : (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={8}
                         className={`px-6 py-4 text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}
                       >
                         No bookings found matching your criteria
@@ -1593,13 +1799,43 @@ export function BookingDashboard(): React.ReactElement {
 
             {/* Mobile Card View */}
             <div className="lg:hidden space-y-3">
+              {/* Mobile Select All */}
+              {filteredBookings.length > 0 && (
+                <div className={`flex items-center justify-between ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg px-4 py-2 shadow-sm`}>
+                  <button
+                    onClick={toggleSelectAll}
+                    className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+                  >
+                    {selectedBookings.size === filteredBookings.length && filteredBookings.length > 0 ? (
+                      <CheckSquare2 className={`h-5 w-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                    ) : (
+                      <Square className={`h-5 w-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                    )}
+                    Select All
+                  </button>
+                  <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {filteredBookings.length} booking(s)
+                  </span>
+                </div>
+              )}
+
               {filteredBookings.length > 0 ? (
                 filteredBookings.map((booking) => (
                   <div
                     key={booking._id}
-                    className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg p-4 shadow-sm`}
+                    className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} ${selectedBookings.has(booking._id) ? (darkMode ? 'border-blue-500 bg-blue-900/20' : 'border-blue-500 bg-blue-50') : ''} border rounded-lg p-4 shadow-sm`}
                   >
                     <div className="flex items-start justify-between mb-3">
+                      <button
+                        onClick={() => toggleSelectBooking(booking._id)}
+                        className={`mr-3 p-1 rounded ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                      >
+                        {selectedBookings.has(booking._id) ? (
+                          <CheckSquare2 className={`h-5 w-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                        ) : (
+                          <Square className={`h-5 w-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                        )}
+                      </button>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <Calendar className="h-4 w-4 text-blue-500" />

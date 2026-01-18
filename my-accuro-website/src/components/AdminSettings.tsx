@@ -15,6 +15,9 @@ import {
   Activity,
   Loader2,
   Save,
+  Bell,
+  Mail,
+  Monitor,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -42,7 +45,7 @@ interface AdminSettingsProps {
   darkMode: boolean;
 }
 
-type SettingsTab = 'calendar' | 'inventory';
+type SettingsTab = 'calendar' | 'inventory' | 'notifications';
 
 interface StockSettingsData {
   stockDisplayMode: 'labels_only' | 'exact_quantities';
@@ -80,6 +83,17 @@ export function AdminSettings({ darkMode }: AdminSettingsProps): React.ReactElem
     defaultLowStockThreshold: 10,
   });
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
+
+  // Notification preferences state
+  const [notificationSettings, setNotificationSettings] = useState({
+    emailNewBooking: true,
+    emailBookingConfirmed: true,
+    emailBookingCancelled: true,
+    emailLowStock: true,
+    emailDailyDigest: false,
+    desktopNotifications: false,
+  });
+  const [savingNotifications, setSavingNotifications] = useState(false);
 
   // Calendar functions
   const fetchCalendarStatus = useCallback(async () => {
@@ -299,6 +313,19 @@ export function AdminSettings({ darkMode }: AdminSettingsProps): React.ReactElem
               {lowStockProducts.length}
             </Badge>
           )}
+        </button>
+        <button
+          onClick={() => setActiveTab('notifications')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'notifications'
+              ? 'bg-blue-600 text-white'
+              : darkMode
+              ? 'text-gray-300 hover:bg-gray-800'
+              : 'text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <Bell className="h-4 w-4" />
+          Notifications
         </button>
       </div>
 
@@ -641,6 +668,157 @@ export function AdminSettings({ darkMode }: AdminSettingsProps): React.ReactElem
             </div>
           )}
         </>
+      )}
+
+      {/* Notifications Tab */}
+      {activeTab === 'notifications' && (
+        <div className="space-y-6">
+          {/* Email Notifications */}
+          <Card className={darkMode ? 'bg-gray-800 border-gray-700' : ''}>
+            <CardHeader>
+              <CardTitle className={`flex items-center gap-2 ${textClass}`}>
+                <Mail className="h-5 w-5" />
+                Email Notifications
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <label className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <div>
+                    <p className={`font-medium ${textClass}`}>New Booking</p>
+                    <p className={`text-sm ${mutedClass}`}>Get notified when a new booking is created</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={notificationSettings.emailNewBooking}
+                    onChange={(e) => setNotificationSettings(prev => ({ ...prev, emailNewBooking: e.target.checked }))}
+                    className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </label>
+
+                <label className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <div>
+                    <p className={`font-medium ${textClass}`}>Booking Confirmed</p>
+                    <p className={`text-sm ${mutedClass}`}>Get notified when a booking is confirmed</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={notificationSettings.emailBookingConfirmed}
+                    onChange={(e) => setNotificationSettings(prev => ({ ...prev, emailBookingConfirmed: e.target.checked }))}
+                    className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </label>
+
+                <label className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <div>
+                    <p className={`font-medium ${textClass}`}>Booking Cancelled</p>
+                    <p className={`text-sm ${mutedClass}`}>Get notified when a booking is cancelled</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={notificationSettings.emailBookingCancelled}
+                    onChange={(e) => setNotificationSettings(prev => ({ ...prev, emailBookingCancelled: e.target.checked }))}
+                    className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </label>
+
+                <label className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <div>
+                    <p className={`font-medium ${textClass}`}>Low Stock Alert</p>
+                    <p className={`text-sm ${mutedClass}`}>Get notified when products are running low</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={notificationSettings.emailLowStock}
+                    onChange={(e) => setNotificationSettings(prev => ({ ...prev, emailLowStock: e.target.checked }))}
+                    className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </label>
+
+                <label className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                  <div>
+                    <p className={`font-medium ${textClass}`}>Daily Digest</p>
+                    <p className={`text-sm ${mutedClass}`}>Receive a daily summary of all activities</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={notificationSettings.emailDailyDigest}
+                    onChange={(e) => setNotificationSettings(prev => ({ ...prev, emailDailyDigest: e.target.checked }))}
+                    className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                </label>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Desktop Notifications */}
+          <Card className={darkMode ? 'bg-gray-800 border-gray-700' : ''}>
+            <CardHeader>
+              <CardTitle className={`flex items-center gap-2 ${textClass}`}>
+                <Monitor className="h-5 w-5" />
+                Desktop Notifications
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <label className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <div>
+                  <p className={`font-medium ${textClass}`}>Enable Desktop Notifications</p>
+                  <p className={`text-sm ${mutedClass}`}>Show browser notifications for important events</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notificationSettings.desktopNotifications}
+                  onChange={(e) => {
+                    if (e.target.checked && 'Notification' in window) {
+                      Notification.requestPermission().then((permission) => {
+                        if (permission === 'granted') {
+                          setNotificationSettings(prev => ({ ...prev, desktopNotifications: true }));
+                          toast.success('Desktop notifications enabled');
+                        } else {
+                          toast.error('Please allow notifications in your browser settings');
+                        }
+                      });
+                    } else {
+                      setNotificationSettings(prev => ({ ...prev, desktopNotifications: false }));
+                    }
+                  }}
+                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </label>
+              {!('Notification' in window) && (
+                <p className={`text-sm mt-2 ${mutedClass}`}>
+                  Desktop notifications are not supported in this browser.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Save Button */}
+          <Button
+            onClick={() => {
+              setSavingNotifications(true);
+              // Save to localStorage for now (backend integration can be added later)
+              localStorage.setItem('notificationSettings', JSON.stringify(notificationSettings));
+              setTimeout(() => {
+                setSavingNotifications(false);
+                toast.success('Notification preferences saved');
+              }, 500);
+            }}
+            disabled={savingNotifications}
+            className="w-full"
+          >
+            {savingNotifications ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            Save Notification Preferences
+          </Button>
+
+          <p className={`text-sm text-center ${mutedClass}`}>
+            Note: Email notifications require backend email service configuration.
+          </p>
+        </div>
       )}
     </div>
   );
