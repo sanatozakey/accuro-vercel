@@ -752,9 +752,14 @@ export const getProductsWithStock = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const getLowStockProducts = async (req: AuthRequest, res: Response) => {
   try {
+    // Show all products with low or zero stock for admin visibility
+    // Either: stock is 0 (out of stock) OR stock is at/below threshold
     const products = await Product.find({
-      trackInventory: true,
-      $expr: { $lte: ['$stockQuantity', '$lowStockThreshold'] },
+      status: 'active', // Only show active products
+      $or: [
+        { stockQuantity: 0 }, // Out of stock
+        { $expr: { $lte: ['$stockQuantity', '$lowStockThreshold'] } }, // Low stock
+      ],
     }).sort({ stockQuantity: 1 });
 
     const productsWithStatus = products.map((product) => {

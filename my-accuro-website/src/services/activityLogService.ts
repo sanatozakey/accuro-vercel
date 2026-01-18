@@ -28,6 +28,19 @@ export interface ActivityLogsResponse {
 
 const activityLogService = {
   // Get all activity logs with pagination and filters (Admin only)
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    action?: string;
+    resourceType?: string;
+    userId?: string;
+    productCategory?: string;
+  }) => {
+    const response = await api.get<ActivityLogsResponse>('/activity-logs', { params });
+    return response.data;
+  },
+
+  // Alias for backward compatibility
   getAllActivityLogs: async (params?: {
     page?: number;
     limit?: number;
