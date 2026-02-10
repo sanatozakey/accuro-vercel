@@ -25,6 +25,7 @@ import {
   Building,
   Calendar,
   Clock,
+  LogIn,
 } from 'lucide-react';
 import userService, {
   User,
@@ -560,6 +561,9 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
                   Last active
                 </th>
                 <th className={`px-4 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
+                  Logins
+                </th>
+                <th className={`px-4 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                   Date added
                 </th>
                 <th className={`px-4 py-3 w-12`}></th>
@@ -626,6 +630,12 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
                       {getRelativeTime(user.lastLoginAt)}
                     </td>
                     <td className={`px-4 py-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      <div className="flex items-center gap-1.5">
+                        <LogIn className="h-3.5 w-3.5" />
+                        <span>{user.loginCount ?? 0}</span>
+                      </div>
+                    </td>
+                    <td className={`px-4 py-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       {formatDate(user.createdAt)}
                     </td>
                     <td className="px-4 py-4">
@@ -663,7 +673,7 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className={`px-6 py-12 text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <td colSpan={7} className={`px-6 py-12 text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     <Users className={`h-12 w-12 mx-auto mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-300'}`} />
                     <p className="text-lg font-medium mb-1">No users found</p>
                     <p className="text-sm">
