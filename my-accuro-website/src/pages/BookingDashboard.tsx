@@ -67,6 +67,9 @@ import { UserHistoryModal } from '../components/UserHistoryModal'
 import { GoogleCalendarSettings } from '../components/GoogleCalendarSettings'
 import { EmbeddedGoogleCalendar } from '../components/EmbeddedGoogleCalendar'
 import { CompletionProofModal } from '../components/CompletionProofModal'
+import { BulkCompletionWizard } from '../components/BulkCompletionWizard'
+import { AdminReviewsManager } from '../components/AdminReviewsManager'
+import { EnhancedReportsTab } from '../components/EnhancedReportsTab'
 import { CalendarView } from '../components/CalendarView'
 import { AdminSettings } from '../components/AdminSettings'
 import { DashboardOverview } from '../components/DashboardOverview'
@@ -236,6 +239,7 @@ export function BookingDashboard(): React.ReactElement {
   // Past bookings warning state
   const [pastBookings, setPastBookings] = useState<Booking[]>([])
   const [showPastBookingsWarning, setShowPastBookingsWarning] = useState<boolean>(false)
+  const [showBulkCompletionWizard, setShowBulkCompletionWizard] = useState<boolean>(false)
 
   const [newBooking, setNewBooking] = useState<NewBooking>({
     date: new Date().toISOString().split('T')[0],
@@ -708,22 +712,17 @@ export function BookingDashboard(): React.ReactElement {
     }
   }
 
-  // Handle past bookings - mark all as complete
-  const markAllPastAsCompleted = async (): Promise<void> => {
-    try {
-      for (const booking of pastBookings) {
-        await bookingService.update(booking._id, {
-          status: 'completed',
-          conclusion: 'Automatically completed - past booking',
-          canReview: true
-        })
-      }
-      await fetchBookings()
-      setShowPastBookingsWarning(false)
-      setPastBookings([])
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to mark bookings as completed')
-    }
+  // Handle past bookings - open bulk completion wizard
+  const openBulkCompletionWizard = (): void => {
+    setShowPastBookingsWarning(false)
+    setShowBulkCompletionWizard(true)
+  }
+
+  // Handle bulk completion wizard close
+  const handleBulkCompletionComplete = async (): Promise<void> => {
+    await fetchBookings()
+    setShowBulkCompletionWizard(false)
+    setPastBookings([])
   }
 
   // Handle past bookings - dismiss warning
@@ -2137,157 +2136,8 @@ export function BookingDashboard(): React.ReactElement {
 
         {/* Reviews Management View */}
         {viewMode === 'reviews' && (
-          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md overflow-hidden`}>
-            {reviewsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <RefreshCw className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-                  <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Loading reviews...</p>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Filter Section */}
-                <div className={`p-4 border-b ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50'}`}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                        Approval Status
-                      </label>
-                      <select
-                        className={`block w-full border ${darkMode ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300'} rounded-md py-2 px-3 text-sm`}
-                        value={reviewsFilter.isApproved === undefined ? '' : reviewsFilter.isApproved.toString()}
-                        onChange={(e) => setReviewsFilter({
-                          ...reviewsFilter,
-                          isApproved: e.target.value === '' ? undefined : e.target.value === 'true'
-                        })}
-                      >
-                        <option value="">All Reviews</option>
-                        <option value="true">Approved</option>
-                        <option value="false">Pending Approval</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                        Rating
-                      </label>
-                      <select
-                        className={`block w-full border ${darkMode ? 'border-gray-600 bg-gray-700 text-white' : 'border-gray-300'} rounded-md py-2 px-3 text-sm`}
-                        value={reviewsFilter.rating || ''}
-                        onChange={(e) => setReviewsFilter({
-                          ...reviewsFilter,
-                          rating: e.target.value ? parseInt(e.target.value) : undefined
-                        })}
-                      >
-                        <option value="">All Ratings</option>
-                        <option value="5">5 Stars</option>
-                        <option value="4">4 Stars</option>
-                        <option value="3">3 Stars</option>
-                        <option value="2">2 Stars</option>
-                        <option value="1">1 Star</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Reviews Grid */}
-                <div className="p-3 sm:p-6 overflow-y-auto max-h-[calc(100vh-20rem)]">
-                  {reviews.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-4 sm:gap-6">
-                      {reviews.map((review) => (
-                        <div key={review._id} className={`border ${darkMode ? 'border-gray-700 bg-gray-900' : 'border-gray-200'} rounded-lg p-4 sm:p-6 hover:shadow-md transition`}>
-                          {/* Header */}
-                          <div className="flex flex-col sm:flex-row items-start sm:items-start sm:justify-between gap-3 mb-4">
-                            <div className="flex-1 w-full">
-                              <div className="flex items-center gap-1 sm:gap-2 mb-2">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <Star
-                                    key={star}
-                                    className={`h-5 w-5 ${
-                                      star <= review.rating
-                                        ? 'text-yellow-400 fill-yellow-400'
-                                        : darkMode ? 'text-gray-600' : 'text-gray-300'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                              <h3 className={`font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>{review.userName}</h3>
-                              {review.company && (
-                                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>{review.company}</p>
-                              )}
-                              <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'} mt-1`}>
-                                {new Date(review.createdAt).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                })}
-                              </p>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                              {review.isApproved ? (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Approved
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                  <AlertCircle className="h-3 w-3 mr-1" />
-                                  Pending
-                                </span>
-                              )}
-                              {review.isPublic ? (
-                                <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>Public</span>
-                              ) : (
-                                <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>Private</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Comment */}
-                          <p className={`${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-4 leading-relaxed`}>
-                            "{review.comment}"
-                          </p>
-
-                          {/* Actions */}
-                          <div className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            {!review.isApproved && (
-                              <button
-                                onClick={() => handleApproveReview(review._id, true)}
-                                className="inline-flex items-center justify-center px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition"
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Approve
-                              </button>
-                            )}
-                            {review.isApproved && (
-                              <button
-                                onClick={() => handleApproveReview(review._id, false)}
-                                className="inline-flex items-center justify-center px-3 py-2 bg-yellow-600 text-white text-sm font-medium rounded-md hover:bg-yellow-700 transition"
-                              >
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Unapprove
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDeleteReview(review._id, review.userName)}
-                              className="inline-flex items-center justify-center px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition"
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <Award className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500">No reviews found matching your criteria</p>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
+          <AdminReviewsManager darkMode={darkMode} />
+        )}
 
             {/* OLD reports View - DISABLED */}
             {false && viewMode === 'reports_old' && (
@@ -2586,12 +2436,10 @@ export function BookingDashboard(): React.ReactElement {
                 )}
               </>
             )}
-          </div>
-        )}
 
         {/* Reports View */}
         {viewMode === 'reports' && (
-          <SimpleReportsTab darkMode={darkMode} />
+          <EnhancedReportsTab darkMode={darkMode} />
         )}
 
         {/* Dashboard Overview */}
@@ -3531,9 +3379,9 @@ export function BookingDashboard(): React.ReactElement {
                 <button
                   type="button"
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                  onClick={markAllPastAsCompleted}
+                  onClick={openBulkCompletionWizard}
                 >
-                  Mark All as Complete
+                  Complete All with Verification
                 </button>
                 <button
                   type="button"
@@ -3558,6 +3406,15 @@ export function BookingDashboard(): React.ReactElement {
           onClose={() => setUserHistoryModalOpen(false)}
         />
       )}
+
+      {/* Bulk Completion Wizard */}
+      <BulkCompletionWizard
+        isOpen={showBulkCompletionWizard}
+        onClose={() => setShowBulkCompletionWizard(false)}
+        onComplete={handleBulkCompletionComplete}
+        bookings={pastBookings}
+        darkMode={darkMode}
+      />
     </main>
   </div>
   )

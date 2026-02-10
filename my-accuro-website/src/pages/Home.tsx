@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2, Award, Users, TrendingUp } from 'lucide-react
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
+import { TestimonialsSection } from '../components/TestimonialsSection'
 
 export function Home() {
   return (
@@ -312,6 +313,35 @@ export function Home() {
               <Link to="/products">
                 View All Products
                 <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <TestimonialsSection maxReviews={6} />
+
+      {/* CTA Section */}
+      <section className="py-16 sm:py-24 bg-navy-900 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-900 to-blue-900 opacity-90" />
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+            Ready to Get Started?
+          </h2>
+          <p className="text-lg sm:text-xl text-gray-200 mb-8 max-w-2xl mx-auto">
+            Book a consultation with our experts and discover how we can help optimize your calibration processes
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild size="lg" className="bg-white text-navy-900 hover:bg-gray-100">
+              <Link to="/booking">
+                Book a Consultation
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="border-2 border-white bg-transparent text-white hover:bg-white hover:text-navy-900">
+              <Link to="/contact">
+                Contact Us
               </Link>
             </Button>
           </div>

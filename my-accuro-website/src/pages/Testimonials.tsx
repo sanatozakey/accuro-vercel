@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Star, Filter, TrendingUp, Users, Award, Send, X } from 'lucide-react';
+import { Star, Filter, TrendingUp, Users, Award, Send, X, ArrowUpDown } from 'lucide-react';
 import reviewService, { Review } from '../services/reviewService';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuth } from '../contexts/AuthContext';
@@ -15,11 +15,13 @@ import { Avatar, AvatarFallback } from '../components/ui/avatar';
 export function Testimonials() {
   const { isAuthenticated } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [allReviews, setAllReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
   const [averageRating, setAverageRating] = useState(0);
   const [totalReviews, setTotalReviews] = useState(0);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
 
   // Form state
   const [showForm, setShowForm] = useState(false);
@@ -34,28 +36,47 @@ export function Testimonials() {
   const fetchReviews = useCallback(async () => {
     try {
       setLoading(true);
-      // Fetch all reviews first
       const data = await reviewService.getPublicReviews(undefined);
-      let filteredReviews = data.data || [];
-
-      // Filter by selected ratings if any are selected
-      if (selectedRatings.length > 0) {
-        filteredReviews = filteredReviews.filter((review: Review) =>
-          selectedRatings.includes(review.rating)
-        );
-      }
-
-      setReviews(filteredReviews);
+      const reviewsData = data.data || [];
+      setAllReviews(reviewsData);
       setAverageRating(data.averageRating || 0);
       setTotalReviews(data.count || 0);
       setError('');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load reviews');
-      setReviews([]);
+      setAllReviews([]);
     } finally {
       setLoading(false);
     }
-  }, [selectedRatings]);
+  }, []);
+
+  // Apply filters and sorting
+  useEffect(() => {
+    let filtered = [...allReviews];
+
+    // Filter by selected ratings
+    if (selectedRatings.length > 0) {
+      filtered = filtered.filter((review) => selectedRatings.includes(review.rating));
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'oldest':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'highest':
+          return b.rating - a.rating;
+        case 'lowest':
+          return a.rating - b.rating;
+        default:
+          return 0;
+      }
+    });
+
+    setReviews(filtered);
+  }, [allReviews, selectedRatings, sortBy]);
 
   useEffect(() => {
     fetchReviews();
@@ -112,7 +133,7 @@ export function Testimonials() {
 
   const getRatingDistribution = () => {
     const distribution: { [key: number]: number } = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    reviews.forEach((review) => {
+    allReviews.forEach((review) => {
       if (review.rating >= 1 && review.rating <= 5) {
         distribution[review.rating]++;
       }
@@ -350,21 +371,68 @@ export function Testimonials() {
         </div>
       </section>
 
-      {/* Filter Section */}
+      {/* Rating Distribution */}
+      <section className="py-6 bg-gray-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-6xl mx-auto">
+            <Card className="border-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Rating Distribution</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {[5, 4, 3, 2, 1].map((rating) => {
+                  const count = distribution[rating];
+                  const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+                  return (
+                    <button
+                      key={rating}
+                      onClick={() => {
+                        if (selectedRatings.includes(rating)) {
+                          setSelectedRatings(selectedRatings.filter(r => r !== rating));
+                        } else {
+                          setSelectedRatings([...selectedRatings, rating]);
+                        }
+                      }}
+                      className={`flex items-center gap-3 w-full p-2 rounded-lg transition hover:bg-gray-100 ${
+                        selectedRatings.includes(rating) ? 'bg-blue-50 ring-2 ring-blue-500' : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-1 w-16">
+                        <span className="text-sm font-medium">{rating}</span>
+                        <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                      </div>
+                      <div className="flex-1 h-3 rounded-full bg-gray-200">
+                        <div
+                          className="h-3 rounded-full bg-yellow-400 transition-all duration-500"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-gray-600 w-12 text-right">{count}</span>
+                    </button>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Filter & Sort Section */}
       <section className="py-6 bg-gray-50 border-b">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
             <Card className="border-2">
               <CardContent className="pt-6">
-                <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4">
+                <div className="flex flex-col lg:flex-row flex-wrap items-start lg:items-center gap-4">
+                  {/* Filters */}
                   <div className="flex items-center gap-2">
                     <Filter className="h-5 w-5 text-blue-600" />
-                    <span className="font-semibold text-gray-900">Filter by Rating:</span>
+                    <span className="font-semibold text-gray-900">Filter:</span>
                   </div>
-                  <Separator orientation="vertical" className="hidden sm:block h-6" />
-                  <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant={selectedRatings.length === 0 ? "default" : "outline"}
+                      size="sm"
                       onClick={() => setSelectedRatings([])}
                       className={selectedRatings.length === 0 ? "bg-blue-600 hover:bg-blue-700" : ""}
                     >
@@ -374,6 +442,7 @@ export function Testimonials() {
                       <Button
                         key={rating}
                         variant={selectedRatings.includes(rating) ? "default" : "outline"}
+                        size="sm"
                         onClick={() => {
                           if (selectedRatings.includes(rating)) {
                             setSelectedRatings(selectedRatings.filter(r => r !== rating));
@@ -384,10 +453,51 @@ export function Testimonials() {
                         className={selectedRatings.includes(rating) ? "bg-blue-600 hover:bg-blue-700" : ""}
                       >
                         <span>{rating}</span>
-                        <Star className="h-4 w-4 fill-current" />
-                        <Badge variant="secondary" className="ml-1">{distribution[rating]}</Badge>
+                        <Star className="h-3 w-3 fill-current" />
                       </Button>
                     ))}
+                  </div>
+
+                  <Separator orientation="vertical" className="hidden lg:block h-6" />
+
+                  {/* Sort */}
+                  <div className="flex items-center gap-2">
+                    <ArrowUpDown className="h-5 w-5 text-blue-600" />
+                    <span className="font-semibold text-gray-900">Sort:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={sortBy === 'newest' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSortBy('newest')}
+                      className={sortBy === 'newest' ? "bg-blue-600 hover:bg-blue-700" : ""}
+                    >
+                      Newest
+                    </Button>
+                    <Button
+                      variant={sortBy === 'oldest' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSortBy('oldest')}
+                      className={sortBy === 'oldest' ? "bg-blue-600 hover:bg-blue-700" : ""}
+                    >
+                      Oldest
+                    </Button>
+                    <Button
+                      variant={sortBy === 'highest' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSortBy('highest')}
+                      className={sortBy === 'highest' ? "bg-blue-600 hover:bg-blue-700" : ""}
+                    >
+                      Highest Rated
+                    </Button>
+                    <Button
+                      variant={sortBy === 'lowest' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSortBy('lowest')}
+                      className={sortBy === 'lowest' ? "bg-blue-600 hover:bg-blue-700" : ""}
+                    >
+                      Lowest Rated
+                    </Button>
                   </div>
                 </div>
               </CardContent>
