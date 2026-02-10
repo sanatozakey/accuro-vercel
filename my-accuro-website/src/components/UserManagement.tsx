@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import {
   Users,
@@ -26,7 +26,18 @@ import {
   Calendar,
   Clock,
   LogIn,
+  TrendingUp,
+  UserPlus,
+  UserCheck,
+  Activity,
+  AlertTriangle,
+  Crown,
+  Star,
+  CalendarDays,
+  BarChart3,
+  List,
 } from 'lucide-react';
+import bookingService from '../services/bookingService';
 import userService, {
   User,
   UserRole,
@@ -72,9 +83,17 @@ type RoleFilter = 'all' | UserRole;
 
 const ITEMS_PER_PAGE = 10;
 
+type ViewTab = 'overview' | 'users';
+
+interface UserWithBookings extends User {
+  bookingCount?: number;
+}
+
 export function UserManagement({ darkMode = false }: UserManagementProps) {
   const { user: currentUser } = useAuth();
+  const [activeTab, setActiveTab] = useState<ViewTab>('overview');
   const [users, setUsers] = useState<User[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -129,8 +148,12 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await userService.getAll();
-      setUsers(response.data || []);
+      const [usersResponse, bookingsResponse] = await Promise.all([
+        userService.getAll(),
+        bookingService.getAll().catch(() => ({ data: [] })),
+      ]);
+      setUsers(usersResponse.data || []);
+      setBookings(bookingsResponse.data || []);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to load users');
       console.error('Error loading users:', err);
@@ -138,6 +161,83 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
       setLoading(false);
     }
   };
+
+  // Computed statistics
+  const stats = useMemo(() => {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    return {
+      total: users.length,
+      newThisMonth: users.filter(u => new Date(u.createdAt) >= thisMonth).length,
+      activeRecently: users.filter(u => u.lastLoginAt && new Date(u.lastLoginAt) >= sevenDaysAgo).length,
+      verified: users.filter(u => u.isEmailVerified).length,
+      admins: users.filter(u => u.role === 'admin' || u.role === 'superadmin').length,
+      inactive: users.filter(u => !u.lastLoginAt || new Date(u.lastLoginAt) < thirtyDaysAgo).length,
+    };
+  }, [users]);
+
+  // User booking counts
+  const userBookingCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    bookings.forEach(booking => {
+      if (booking.userId) {
+        counts[booking.userId] = (counts[booking.userId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [bookings]);
+
+  // Top users lists
+  const topLists = useMemo(() => {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // Most logins
+    const mostLogins = [...users]
+      .filter(u => (u.loginCount || 0) > 0)
+      .sort((a, b) => (b.loginCount || 0) - (a.loginCount || 0))
+      .slice(0, 5);
+
+    // Most bookings
+    const mostBookings = [...users]
+      .map(u => ({ ...u, bookingCount: userBookingCounts[u._id] || 0 }))
+      .filter(u => u.bookingCount > 0)
+      .sort((a, b) => b.bookingCount - a.bookingCount)
+      .slice(0, 5);
+
+    // Recently joined
+    const recentlyJoined = [...users]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+
+    // Recently active
+    const recentlyActive = [...users]
+      .filter(u => u.lastLoginAt)
+      .sort((a, b) => new Date(b.lastLoginAt!).getTime() - new Date(a.lastLoginAt!).getTime())
+      .slice(0, 5);
+
+    // Inactive users (no login in 30+ days)
+    const inactive = [...users]
+      .filter(u => !u.lastLoginAt || new Date(u.lastLoginAt) < thirtyDaysAgo)
+      .sort((a, b) => {
+        if (!a.lastLoginAt && !b.lastLoginAt) return 0;
+        if (!a.lastLoginAt) return -1;
+        if (!b.lastLoginAt) return 1;
+        return new Date(a.lastLoginAt).getTime() - new Date(b.lastLoginAt).getTime();
+      })
+      .slice(0, 5);
+
+    // Unverified users
+    const unverified = [...users]
+      .filter(u => !u.isEmailVerified)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+
+    return { mostLogins, mostBookings, recentlyJoined, recentlyActive, inactive, unverified };
+  }, [users, userBookingCounts]);
 
   const filterUsers = useCallback(() => {
     let filtered = [...users];
@@ -400,6 +500,32 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
     );
   }
 
+  const UserMiniCard = ({ user, metric, metricLabel, icon: Icon }: { user: User | UserWithBookings; metric: string | number; metricLabel: string; icon?: any }) => (
+    <div
+      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${darkMode ? 'bg-gray-700/50 hover:bg-gray-700' : 'bg-gray-50 hover:bg-gray-100'}`}
+      onClick={() => openViewDialog(user)}
+    >
+      {user.profilePicture ? (
+        <img src={user.profilePicture} alt={user.name} className="h-9 w-9 rounded-full object-cover flex-shrink-0" />
+      ) : (
+        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+          <span className="text-xs font-bold text-white">{getInitials(user.name)}</span>
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-medium truncate ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{user.name}</p>
+        <p className={`text-xs truncate ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{user.email}</p>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <div className="flex items-center gap-1">
+          {Icon && <Icon className={`h-3.5 w-3.5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />}
+          <span className={`text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{metric}</span>
+        </div>
+        <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{metricLabel}</p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -428,9 +554,248 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
             </Button>
           </div>
         </div>
+
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <Button
+            variant={activeTab === 'overview' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveTab('overview')}
+            className={activeTab === 'overview' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Overview
+          </Button>
+          <Button
+            variant={activeTab === 'users' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveTab('users')}
+            className={activeTab === 'users' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+          >
+            <List className="h-4 w-4 mr-2" />
+            All Users
+          </Button>
+        </div>
       </div>
 
-      {/* Main Content */}
+      {/* Overview Tab */}
+      {activeTab === 'overview' && (
+        <>
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-blue-900/50' : 'bg-blue-100'}`}>
+                  <Users className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.total}</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Users</p>
+                </div>
+              </div>
+            </div>
+
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-green-900/50' : 'bg-green-100'}`}>
+                  <UserPlus className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.newThisMonth}</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>New This Month</p>
+                </div>
+              </div>
+            </div>
+
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-purple-900/50' : 'bg-purple-100'}`}>
+                  <Activity className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.activeRecently}</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Active (7 days)</p>
+                </div>
+              </div>
+            </div>
+
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-emerald-900/50' : 'bg-emerald-100'}`}>
+                  <UserCheck className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.verified}</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Verified</p>
+                </div>
+              </div>
+            </div>
+
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-amber-900/50' : 'bg-amber-100'}`}>
+                  <Shield className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.admins}</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Admins</p>
+                </div>
+              </div>
+            </div>
+
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${darkMode ? 'bg-red-900/50' : 'bg-red-100'}`}>
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{stats.inactive}</p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Inactive (30d)</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Top User Lists */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Most Logins */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}>
+              <div className="flex items-center gap-2 mb-4">
+                <Crown className="h-5 w-5 text-yellow-500" />
+                <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Most Logins</h3>
+              </div>
+              <div className="space-y-2">
+                {topLists.mostLogins.length > 0 ? (
+                  topLists.mostLogins.map((user, idx) => (
+                    <UserMiniCard
+                      key={user._id}
+                      user={user}
+                      metric={user.loginCount || 0}
+                      metricLabel="logins"
+                      icon={LogIn}
+                    />
+                  ))
+                ) : (
+                  <p className={`text-sm text-center py-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>No login data yet</p>
+                )}
+              </div>
+            </div>
+
+            {/* Most Bookings */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}>
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="h-5 w-5 text-blue-500" />
+                <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Most Bookings</h3>
+              </div>
+              <div className="space-y-2">
+                {topLists.mostBookings.length > 0 ? (
+                  topLists.mostBookings.map((user) => (
+                    <UserMiniCard
+                      key={user._id}
+                      user={user}
+                      metric={(user as UserWithBookings).bookingCount || 0}
+                      metricLabel="bookings"
+                      icon={CalendarDays}
+                    />
+                  ))
+                ) : (
+                  <p className={`text-sm text-center py-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>No booking data yet</p>
+                )}
+              </div>
+            </div>
+
+            {/* Recently Joined */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}>
+              <div className="flex items-center gap-2 mb-4">
+                <UserPlus className="h-5 w-5 text-green-500" />
+                <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Recently Joined</h3>
+              </div>
+              <div className="space-y-2">
+                {topLists.recentlyJoined.map((user) => (
+                  <UserMiniCard
+                    key={user._id}
+                    user={user}
+                    metric={getRelativeTime(user.createdAt)}
+                    metricLabel="joined"
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Recently Active */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}>
+              <div className="flex items-center gap-2 mb-4">
+                <Activity className="h-5 w-5 text-purple-500" />
+                <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Recently Active</h3>
+              </div>
+              <div className="space-y-2">
+                {topLists.recentlyActive.length > 0 ? (
+                  topLists.recentlyActive.map((user) => (
+                    <UserMiniCard
+                      key={user._id}
+                      user={user}
+                      metric={getRelativeTime(user.lastLoginAt)}
+                      metricLabel="last seen"
+                    />
+                  ))
+                ) : (
+                  <p className={`text-sm text-center py-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>No activity data yet</p>
+                )}
+              </div>
+            </div>
+
+            {/* Inactive Users */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}>
+              <div className="flex items-center gap-2 mb-4">
+                <AlertTriangle className="h-5 w-5 text-orange-500" />
+                <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Inactive Users</h3>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${darkMode ? 'bg-orange-900/50 text-orange-300' : 'bg-orange-100 text-orange-700'}`}>
+                  30+ days
+                </span>
+              </div>
+              <div className="space-y-2">
+                {topLists.inactive.length > 0 ? (
+                  topLists.inactive.map((user) => (
+                    <UserMiniCard
+                      key={user._id}
+                      user={user}
+                      metric={user.lastLoginAt ? getRelativeTime(user.lastLoginAt) : 'Never'}
+                      metricLabel="last seen"
+                    />
+                  ))
+                ) : (
+                  <p className={`text-sm text-center py-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>All users are active!</p>
+                )}
+              </div>
+            </div>
+
+            {/* Unverified Users */}
+            <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-4`}>
+              <div className="flex items-center gap-2 mb-4">
+                <Mail className="h-5 w-5 text-red-500" />
+                <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Unverified Email</h3>
+              </div>
+              <div className="space-y-2">
+                {topLists.unverified.length > 0 ? (
+                  topLists.unverified.map((user) => (
+                    <UserMiniCard
+                      key={user._id}
+                      user={user}
+                      metric={getRelativeTime(user.createdAt)}
+                      metricLabel="joined"
+                    />
+                  ))
+                ) : (
+                  <p className={`text-sm text-center py-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>All users verified!</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* All Users Tab - Main Content */}
+      {activeTab === 'users' && (
       <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md`}>
         {/* Toolbar */}
         <div className={`p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -741,6 +1106,7 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
           </div>
         )}
       </div>
+      )}
 
       {/* Add User Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
