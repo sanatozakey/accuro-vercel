@@ -41,7 +41,6 @@ import { Badge } from './ui/badge';
 import bookingService from '../services/bookingService';
 import userService from '../services/userService';
 import quoteService from '../services/quoteService';
-import contactService from '../services/contactService';
 import activityLogService from '../services/activityLogService';
 import analyticsService from '../services/analyticsService';
 import jsPDF from 'jspdf';
@@ -104,6 +103,7 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
   const [generating, setGenerating] = useState(false);
   const [reportData, setReportData] = useState<any>(null);
   const [error, setError] = useState('');
+  const [fetchError, setFetchError] = useState('');
 
   const bgClass = darkMode ? 'bg-gray-800' : 'bg-white';
   const textClass = darkMode ? 'text-white' : 'text-gray-900';
@@ -115,21 +115,20 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
+      setFetchError('');
 
       // Fetch all data in parallel
-      const [bookingsRes, usersRes, quotesRes, contactsRes, activityRes] = await Promise.all([
+      const [bookingsRes, usersRes, activityRes, dashboardRes] = await Promise.all([
         bookingService.getAll(),
         userService.getAll(),
-        quoteService.getAll().catch(() => ({ data: [] })),
-        contactService.getAll().catch(() => ({ data: [] })),
         activityLogService.getAllActivityLogs({ limit: 10 }).catch(() => ({ data: [] })),
+        analyticsService.getDashboardAnalytics().catch(() => ({ totalQuotes: 0, totalContacts: 0 })),
       ]);
 
       const bookings = bookingsRes.data || [];
       const users = usersRes.data || [];
-      const quotes = quotesRes.data || [];
-      const contacts = contactsRes.data || [];
       const activity = activityRes.data || [];
+      const dashboardData = dashboardRes || { totalQuotes: 0, totalContacts: 0 };
 
       // Calculate KPIs
       const now = new Date();
@@ -157,14 +156,14 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
       setKpiData({
         totalBookings: bookings.length,
         totalUsers: users.length,
-        totalQuotes: quotes.length,
-        totalContacts: contacts.length,
+        totalQuotes: dashboardData.totalQuotes || 0,
+        totalContacts: dashboardData.totalContacts || 0,
         pendingBookings: bookings.filter((b: any) => b.status === 'pending').length,
         confirmedBookings: bookings.filter((b: any) => b.status === 'confirmed').length,
         completedBookings: bookings.filter((b: any) => b.status === 'completed' || b.isCompleted).length,
         cancelledBookings: bookings.filter((b: any) => b.status === 'cancelled').length,
-        pendingQuotes: quotes.filter((q: any) => q.status === 'pending').length,
-        unreadContacts: contacts.filter((c: any) => c.status === 'pending' || !c.isRead).length,
+        pendingQuotes: 0, // Will be fetched from dashboard if available
+        unreadContacts: 0, // Will be fetched from dashboard if available
         bookingsTrend,
         usersTrend,
       });
@@ -177,7 +176,7 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
         { name: 'Cancelled', value: bookings.filter((b: any) => b.status === 'cancelled').length, color: '#EF4444' },
       ]);
 
-      // Generate trend data for last 7 days
+      // Generate trend data for last 7 days (bookings only since we don't have quote/contact arrays)
       const trends: TrendData[] = [];
       for (let i = 6; i >= 0; i--) {
         const date = new Date(now);
@@ -193,21 +192,16 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
             const d = new Date(b.createdAt);
             return d >= dayStart && d < dayEnd;
           }).length,
-          quotes: quotes.filter((q: any) => {
-            const d = new Date(q.createdAt);
-            return d >= dayStart && d < dayEnd;
-          }).length,
-          contacts: contacts.filter((c: any) => {
-            const d = new Date(c.createdAt);
-            return d >= dayStart && d < dayEnd;
-          }).length,
+          quotes: 0,
+          contacts: 0,
         });
       }
       setTrendData(trends);
 
       setRecentActivity(activity.slice(0, 5));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to fetch dashboard data:', err);
+      setFetchError(err.response?.data?.message || 'Failed to load analytics data. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -322,12 +316,12 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
           break;
 
         case 'contacts':
-          const contactsResponse = await contactService.getAll();
-          data = contactsResponse.data || [];
+          // Contact list endpoint not available - use analytics data instead
+          const contactAnalytics = await analyticsService.getContactAnalytics({ startDate, endDate }).catch(() => null);
+          data = [];
           summary = {
-            totalRecords: data.length,
-            pending: data.filter((c: any) => c.status === 'pending').length,
-            responded: data.filter((c: any) => c.status === 'responded').length,
+            totalRecords: contactAnalytics?.totalContacts || 0,
+            note: 'Detailed contact list not available',
           };
           break;
 
@@ -613,8 +607,43 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
         </div>
       </div>
 
-      {activeTab === 'overview' && kpiData && (
+      {activeTab === 'overview' && (
         <>
+          {fetchError && (
+            <Card className={`${bgClass} border border-red-300 dark:border-red-700`}>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
+                  <AlertCircle className="h-6 w-6" />
+                  <div>
+                    <p className="font-medium">Failed to load analytics</p>
+                    <p className="text-sm">{fetchError}</p>
+                  </div>
+                  <Button variant="outline" onClick={handleRefresh} className="ml-auto">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Retry
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {!fetchError && !kpiData && (
+            <Card className={`${bgClass} border ${borderClass}`}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-center gap-3">
+                  <AlertCircle className={`h-6 w-6 ${mutedClass}`} />
+                  <p className={mutedClass}>No analytics data available. Click refresh to try again.</p>
+                  <Button variant="outline" onClick={handleRefresh}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {kpiData && (
+          <>
           {/* KPI Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className={`${bgClass} border ${borderClass}`}>
@@ -825,6 +854,8 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
                 </div>
               </CardContent>
             </Card>
+          )}
+          </>
           )}
         </>
       )}
