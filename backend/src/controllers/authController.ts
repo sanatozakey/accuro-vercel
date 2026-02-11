@@ -1,10 +1,13 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
-import { generateToken } from '../utils/generateToken';
+import { generateToken, generateRefreshToken } from '../utils/generateToken';
 import { AuthRequest } from '../middleware/auth';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import emailService from '../utils/emailService';
 import ActivityLog from '../models/ActivityLog';
+import RefreshToken from '../models/RefreshToken';
+import { jwtConfig } from '../config/jwt';
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -50,6 +53,15 @@ export const register = async (req: Request, res: Response) => {
 
     // @ts-ignore
     const token = generateToken(user._id.toString());
+    const refreshToken = generateRefreshToken(user._id.toString());
+
+    // Save refresh token to database
+    try {
+      await saveRefreshToken(user._id.toString(), refreshToken, req);
+    } catch (tokenError) {
+      console.error('Failed to save refresh token:', tokenError);
+      // Continue registration even if refresh token save fails
+    }
 
     // Log activity
     try {
@@ -81,6 +93,7 @@ export const register = async (req: Request, res: Response) => {
         profilePicture: user.profilePicture,
         isEmailVerified: user.isEmailVerified,
         token,
+        refreshToken,
       },
     });
   } catch (error: any) {
@@ -180,6 +193,15 @@ export const login = async (req: Request, res: Response) => {
 
     // @ts-ignore
     const token = generateToken(user._id.toString());
+    const refreshToken = generateRefreshToken(user._id.toString());
+
+    // Save refresh token to database
+    try {
+      await saveRefreshToken(user._id.toString(), refreshToken, req);
+    } catch (tokenError) {
+      console.error('Failed to save refresh token:', tokenError);
+      // Continue login even if refresh token save fails
+    }
 
     // Log activity
     try {
@@ -210,6 +232,7 @@ export const login = async (req: Request, res: Response) => {
         profilePicture: user.profilePicture,
         isEmailVerified: user.isEmailVerified,
         token,
+        refreshToken,
       },
     });
   } catch (error: any) {
@@ -649,6 +672,343 @@ export const resetPassword = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       message: 'Password reset successful! You can now log in with your new password.',
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// Helper function to save refresh token
+const saveRefreshToken = async (
+  userId: string,
+  refreshToken: string,
+  req: Request
+): Promise<void> => {
+  // Parse expiry from config (e.g., '7d' -> 7 days)
+  const expiryDays = parseInt(jwtConfig.refreshTokenExpiry) || 7;
+  const expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
+
+  await RefreshToken.create({
+    token: refreshToken,
+    user: userId,
+    expiresAt,
+    userAgent: req.headers['user-agent'],
+    ipAddress: req.ip || (req.headers['x-forwarded-for'] as string),
+  });
+};
+
+// @desc    Refresh access token using refresh token
+// @route   POST /api/auth/refresh-token
+// @access  Public (requires valid refresh token)
+export const refreshAccessToken = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Refresh token is required',
+      });
+    }
+
+    // Verify the refresh token JWT
+    let decoded: any;
+    try {
+      decoded = jwt.verify(refreshToken, jwtConfig.secret);
+    } catch (jwtError: any) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token',
+      });
+    }
+
+    // Check if it's actually a refresh token
+    if (decoded.type !== 'refresh') {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid token type',
+      });
+    }
+
+    // Find the refresh token in database
+    const storedToken = await RefreshToken.findOne({
+      token: refreshToken,
+      isRevoked: false,
+    });
+
+    if (!storedToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token not found or has been revoked',
+      });
+    }
+
+    // Check if token is expired
+    if (storedToken.expiresAt < new Date()) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token has expired',
+      });
+    }
+
+    // Get user
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Generate new access token
+    const newAccessToken = generateToken(user._id.toString());
+
+    // Optionally rotate refresh token for added security
+    // For now, we'll keep the same refresh token
+
+    res.status(200).json({
+      success: true,
+      data: {
+        token: newAccessToken,
+        // Include user data for frontend convenience
+        user: {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Logout - invalidate refresh token
+// @route   POST /api/auth/logout
+// @access  Private
+export const logout = async (req: AuthRequest, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (refreshToken) {
+      // Revoke the specific refresh token
+      await RefreshToken.findOneAndUpdate(
+        { token: refreshToken, user: req.user!._id },
+        { isRevoked: true, revokedAt: new Date(), revokedReason: 'User logged out' }
+      );
+    }
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: req.user!._id,
+        userName: req.user!.name,
+        userEmail: req.user!.email,
+        action: 'LOGOUT',
+        resourceType: 'auth',
+        resourceId: req.user!._id.toString(),
+        details: `User logged out: ${req.user!.email}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Logout from all devices - invalidate all refresh tokens
+// @route   POST /api/auth/logout-all
+// @access  Private
+export const logoutAll = async (req: AuthRequest, res: Response) => {
+  try {
+    // Revoke all refresh tokens for the user
+    await RefreshToken.updateMany(
+      { user: req.user!._id, isRevoked: false },
+      { isRevoked: true, revokedAt: new Date(), revokedReason: 'User logged out from all devices' }
+    );
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: req.user!._id,
+        userName: req.user!.name,
+        userEmail: req.user!.email,
+        action: 'LOGOUT_ALL',
+        resourceType: 'auth',
+        resourceId: req.user!._id.toString(),
+        details: `User logged out from all devices: ${req.user!.email}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged out from all devices successfully',
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Get active sessions (refresh tokens) for user
+// @route   GET /api/auth/sessions
+// @access  Private
+export const getSessions = async (req: AuthRequest, res: Response) => {
+  try {
+    const sessions = await RefreshToken.find({
+      user: req.user!._id,
+      isRevoked: false,
+      expiresAt: { $gt: new Date() },
+    })
+      .select('userAgent ipAddress createdAt')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: sessions,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Request account deletion
+// @route   POST /api/auth/delete-account-request
+// @access  Private
+export const deleteAccountRequest = async (req: AuthRequest, res: Response) => {
+  try {
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password is required to confirm account deletion',
+      });
+    }
+
+    // Verify password
+    const user = await User.findById(req.user!._id).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Incorrect password',
+      });
+    }
+
+    // Mark user for deletion (soft delete)
+    user.isDeleted = true;
+    user.deletedAt = new Date();
+    await user.save();
+
+    // Revoke all refresh tokens
+    await RefreshToken.updateMany(
+      { user: user._id, isRevoked: false },
+      { isRevoked: true, revokedAt: new Date(), revokedReason: 'Account deletion requested' }
+    );
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: user._id,
+        userName: user.name,
+        userEmail: user.email,
+        action: 'ACCOUNT_DELETION_REQUESTED',
+        resourceType: 'auth',
+        resourceId: user._id.toString(),
+        details: `Account deletion requested for: ${user.email}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Account deletion request submitted. Your account has been deactivated.',
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Revoke a specific session
+// @route   DELETE /api/auth/sessions/:sessionId
+// @access  Private
+export const revokeSession = async (req: AuthRequest, res: Response) => {
+  try {
+    const { sessionId } = req.params;
+
+    const session = await RefreshToken.findOneAndUpdate(
+      { _id: sessionId, user: req.user!._id, isRevoked: false },
+      { isRevoked: true, revokedAt: new Date(), revokedReason: 'User revoked session' }
+    );
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        message: 'Session not found or already revoked',
+      });
+    }
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: req.user!._id,
+        userName: req.user!.name,
+        userEmail: req.user!.email,
+        action: 'SESSION_REVOKED',
+        resourceType: 'auth',
+        resourceId: sessionId,
+        details: `Session revoked by user: ${req.user!.email}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Session revoked successfully',
     });
   } catch (error: any) {
     res.status(500).json({

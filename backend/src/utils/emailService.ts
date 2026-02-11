@@ -308,6 +308,42 @@ class EmailService {
       html,
     });
   }
+  // Send bulk email to multiple recipients
+  async sendBulkEmail(recipients: { email: string; name: string }[], subject: string, htmlContent: string): Promise<{ sent: number; failed: number; errors: string[] }> {
+    const results = {
+      sent: 0,
+      failed: 0,
+      errors: [] as string[],
+    };
+
+    for (const recipient of recipients) {
+      try {
+        // Personalize the email with recipient name
+        const personalizedHtml = htmlContent.replace(/\{\{name\}\}/g, recipient.name);
+
+        await this.sendEmail({
+          to: recipient.email,
+          subject,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              ${personalizedHtml}
+
+              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+                <p>This email was sent from Accuro.</p>
+                <p>If you wish to unsubscribe, please contact us at info@accuro.com.ph</p>
+              </div>
+            </div>
+          `,
+        });
+        results.sent++;
+      } catch (error: any) {
+        results.failed++;
+        results.errors.push(`Failed to send to ${recipient.email}: ${error.message}`);
+      }
+    }
+
+    return results;
+  }
 }
 
 export default new EmailService();

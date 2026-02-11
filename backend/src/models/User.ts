@@ -27,6 +27,13 @@ export interface IUser extends Document {
   lastLoginAt?: Date;
   lastLoginIP?: string;
   loginHistory: ILoginHistoryEntry[];
+  // Account deletion
+  isDeleted: boolean;
+  deletedAt?: Date;
+  // Two-factor authentication
+  twoFactorEnabled: boolean;
+  twoFactorSecret?: string;
+  twoFactorBackupCodes?: string[];
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -117,6 +124,27 @@ const UserSchema: Schema = new Schema(
       ipAddress: String,
       userAgent: String,
     }],
+    // Account deletion
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+    },
+    // Two-factor authentication
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorSecret: {
+      type: String,
+      select: false,
+    },
+    twoFactorBackupCodes: {
+      type: [String],
+      select: false,
+    },
   },
   {
     timestamps: true,
