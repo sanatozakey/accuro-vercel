@@ -75,6 +75,14 @@ import { AdminSettings } from '../components/AdminSettings'
 import { DashboardOverview } from '../components/DashboardOverview'
 import { ProductManagement } from './ProductManagement'
 import { UserManagement } from '../components/UserManagement'
+import { SessionManagement } from '../components/SessionManagement'
+import { ActivityLogViewer } from '../components/ActivityLogViewer'
+import { DataExportPanel } from '../components/DataExportPanel'
+import { BulkEmailPanel } from '../components/BulkEmailPanel'
+import { RateLimitDashboard } from '../components/RateLimitDashboard'
+import { BookingCalendarView } from '../components/BookingCalendarView'
+import { TwoFactorSetup } from '../components/TwoFactorSetup'
+import { AccountSettings } from '../components/AccountSettings'
 // Define types for our booking data
 interface Booking {
   _id: string
@@ -183,7 +191,7 @@ export function BookingDashboard(): React.ReactElement {
     useState<boolean>(false)
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
-  const [viewMode, setViewMode] = useState<'dashboard' | 'table' | 'calendar' | 'products' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings'>(
+  const [viewMode, setViewMode] = useState<'dashboard' | 'table' | 'calendar' | 'products' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings' | 'dataExport' | 'bulkEmail' | 'rateLimits' | 'security'>(
     'dashboard',
   )
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
@@ -1329,6 +1337,82 @@ export function BookingDashboard(): React.ReactElement {
             <Settings className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
             {!sidebarCollapsed && 'Settings'}
           </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('dataExport')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'dataExport' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'dataExport'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Data Export"
+          >
+            <Download className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Data Export'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('bulkEmail')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'bulkEmail' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'bulkEmail'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Bulk Email"
+          >
+            <Mail className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Bulk Email'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('rateLimits')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'rateLimits' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'rateLimits'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Rate Limits"
+          >
+            <Shield className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Rate Limits'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('security')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'security' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'security'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Security"
+          >
+            <Shield className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Security'}
+          </Button>
         </nav>
 
         {/* Bottom Actions */}
@@ -2458,6 +2542,30 @@ export function BookingDashboard(): React.ReactElement {
         {/* Settings View */}
         {viewMode === 'settings' && (
           <AdminSettings darkMode={darkMode} />
+        )}
+
+        {/* Data Export View */}
+        {viewMode === 'dataExport' && (
+          <DataExportPanel darkMode={darkMode} />
+        )}
+
+        {/* Bulk Email View */}
+        {viewMode === 'bulkEmail' && (
+          <BulkEmailPanel darkMode={darkMode} />
+        )}
+
+        {/* Rate Limits View */}
+        {viewMode === 'rateLimits' && (
+          <RateLimitDashboard darkMode={darkMode} />
+        )}
+
+        {/* Security View (Sessions & 2FA) */}
+        {viewMode === 'security' && (
+          <div className="space-y-6">
+            <SessionManagement darkMode={darkMode} />
+            <TwoFactorSetup darkMode={darkMode} />
+            <AccountSettings darkMode={darkMode} />
+          </div>
         )}
           </>
         )}
