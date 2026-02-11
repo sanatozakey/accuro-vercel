@@ -1,15 +1,37 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X, Send } from 'lucide-react'
 import { useCart, CartItem } from '../../contexts/CartContext'
 import { CartIcon } from './CartIcon'
 import { useNavigate } from 'react-router-dom'
 import { ConfirmModal } from '../ConfirmModal'
 
-export function MiniCart() {
+interface MiniCartProps {
+  darkMode?: boolean
+}
+
+export function MiniCart({ darkMode: propDarkMode }: MiniCartProps) {
   const { cart, getCartTotal, removeFromCart, clearCart } = useCart()
   const [isOpen, setIsOpen] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const navigate = useNavigate()
+
+  // Use prop or detect from localStorage/system preference
+  const [darkMode, setDarkMode] = useState(propDarkMode ?? false)
+
+  useEffect(() => {
+    if (propDarkMode !== undefined) {
+      setDarkMode(propDarkMode)
+    } else {
+      // Check localStorage for dark mode preference
+      const stored = localStorage.getItem('darkMode')
+      if (stored !== null) {
+        setDarkMode(stored === 'true')
+      } else {
+        // Fallback to system preference
+        setDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches)
+      }
+    }
+  }, [propDarkMode])
 
   const handleRequestQuote = () => {
     // Store cart data in localStorage for the booking page
@@ -60,9 +82,11 @@ export function MiniCart() {
           />
 
           {/* Cart Panel */}
-          <div className="fixed right-0 top-0 h-full w-full sm:max-w-md bg-white shadow-2xl z-50 flex flex-col animate-slide-in">
+          <div className={`fixed right-0 top-0 h-full w-full sm:max-w-md shadow-2xl z-50 flex flex-col animate-slide-in ${
+            darkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
             {/* Header */}
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-blue-600 text-white">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-blue-600 text-white">
               <div>
                 <h3 className="font-bold text-lg">Your Quote Cart</h3>
                 <p className="text-xs text-blue-100">{cart.length} item{cart.length !== 1 ? 's' : ''} selected</p>
@@ -80,27 +104,41 @@ export function MiniCart() {
               {cart.map((item: CartItem) => (
                 <div
                   key={item.id}
-                  className="p-4 border-b border-gray-100 hover:bg-gray-50 transition"
+                  className={`p-4 border-b transition ${
+                    darkMode
+                      ? 'border-gray-700 hover:bg-gray-700/50'
+                      : 'border-gray-100 hover:bg-gray-50'
+                  }`}
                 >
                   <div className="flex gap-3">
                     <img
                       src={item.image}
                       alt={item.name}
-                      className="w-20 h-20 object-contain bg-white border border-gray-200 rounded p-1"
+                      className={`w-20 h-20 object-contain border rounded p-1 ${
+                        darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
+                      }`}
                     />
                     <div className="flex-1">
-                      <h4 className="font-medium text-sm mb-1">{item.name}</h4>
-                      <p className="text-xs text-gray-500 mb-2">{item.category}</p>
+                      <h4 className={`font-medium text-sm mb-1 ${
+                        darkMode ? 'text-gray-200' : 'text-gray-900'
+                      }`}>{item.name}</h4>
+                      <p className={`text-xs mb-2 ${
+                        darkMode ? 'text-gray-400' : 'text-gray-500'
+                      }`}>{item.category}</p>
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="text-xs text-gray-600">Qty: {item.quantity}</p>
-                          <p className="text-sm font-semibold text-blue-600">
+                          <p className={`text-xs ${
+                            darkMode ? 'text-gray-400' : 'text-gray-600'
+                          }`}>Qty: {item.quantity}</p>
+                          <p className="text-sm font-semibold text-blue-500">
                             {formatPrice(item.price * item.quantity)}
                           </p>
                         </div>
                         <button
                           onClick={() => removeFromCart(item.id)}
-                          className="text-red-600 hover:text-red-800 text-xs font-medium px-2 py-1 hover:bg-red-50 rounded transition"
+                          className={`text-red-500 hover:text-red-600 text-xs font-medium px-2 py-1 rounded transition ${
+                            darkMode ? 'hover:bg-red-900/30' : 'hover:bg-red-50'
+                          }`}
                         >
                           Remove
                         </button>
@@ -111,23 +149,39 @@ export function MiniCart() {
               ))}
 
               {/* Informational Note */}
-              <div className="p-4 m-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs text-blue-800">
+              <div className={`p-4 m-4 border rounded-lg ${
+                darkMode
+                  ? 'bg-blue-900/30 border-blue-700'
+                  : 'bg-blue-50 border-blue-200'
+              }`}>
+                <p className={`text-xs ${
+                  darkMode ? 'text-blue-200' : 'text-blue-800'
+                }`}>
                   <strong>Note:</strong> Prices shown are estimated. Final pricing will be confirmed in your personalized quote.
                 </p>
               </div>
             </div>
 
             {/* Footer / Totals */}
-            <div className="border-t border-gray-200 bg-gray-50 p-4">
+            <div className={`border-t p-4 ${
+              darkMode
+                ? 'border-gray-700 bg-gray-900/50'
+                : 'border-gray-200 bg-gray-50'
+            }`}>
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">Subtotal:</span>
-                  <span className="text-lg font-bold text-gray-900">
+                  <span className={`text-sm ${
+                    darkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}>Subtotal:</span>
+                  <span className={`text-lg font-bold ${
+                    darkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
                     {formatPrice(getCartTotal())}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500">Estimated total (excluding taxes & shipping)</p>
+                <p className={`text-xs ${
+                  darkMode ? 'text-gray-500' : 'text-gray-500'
+                }`}>Estimated total (excluding taxes & shipping)</p>
               </div>
 
               <button
@@ -140,7 +194,11 @@ export function MiniCart() {
 
               <button
                 onClick={() => setShowClearConfirm(true)}
-                className="w-full bg-white text-gray-700 border border-gray-300 py-2 rounded-lg font-medium hover:bg-gray-50 transition-all text-sm"
+                className={`w-full border py-2 rounded-lg font-medium transition-all text-sm ${
+                  darkMode
+                    ? 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
               >
                 Clear Cart
               </button>
@@ -159,6 +217,7 @@ export function MiniCart() {
         confirmText="Clear Cart"
         cancelText="Keep Items"
         confirmStyle="danger"
+        darkMode={darkMode}
       />
     </>
   )
