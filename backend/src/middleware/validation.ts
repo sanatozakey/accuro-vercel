@@ -468,3 +468,194 @@ export const validateMongoId = (paramName: string = 'id'): ValidationChain[] => 
     .isMongoId()
     .withMessage(`Invalid ${paramName} format`),
 ];
+
+// ==================== QUOTE VALIDATIONS ====================
+
+export const validateCreateQuote: ValidationChain[] = [
+  body('customerName')
+    .trim()
+    .notEmpty()
+    .withMessage('Customer name is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Customer name must be between 2 and 100 characters'),
+  body('customerEmail')
+    .trim()
+    .notEmpty()
+    .withMessage('Customer email is required')
+    .isEmail()
+    .withMessage('Please provide a valid email')
+    .normalizeEmail(),
+  body('customerPhone')
+    .trim()
+    .notEmpty()
+    .withMessage('Customer phone is required'),
+  body('company')
+    .trim()
+    .notEmpty()
+    .withMessage('Company is required')
+    .isLength({ max: 200 })
+    .withMessage('Company name must not exceed 200 characters'),
+  body('items')
+    .isArray({ min: 1 })
+    .withMessage('At least one item is required'),
+  body('items.*.productId')
+    .notEmpty()
+    .withMessage('Product ID is required for each item'),
+  body('items.*.productName')
+    .trim()
+    .notEmpty()
+    .withMessage('Product name is required for each item'),
+  body('items.*.quantity')
+    .isInt({ min: 1 })
+    .withMessage('Quantity must be at least 1'),
+  body('totalEstimatedPrice')
+    .isFloat({ min: 0 })
+    .withMessage('Total estimated price must be a positive number'),
+  body('message')
+    .optional()
+    .trim()
+    .isLength({ max: 2000 })
+    .withMessage('Message must not exceed 2000 characters'),
+];
+
+// ==================== QUOTATION VALIDATIONS ====================
+
+export const validateCreateQuotation: ValidationChain[] = [
+  body('customerName')
+    .trim()
+    .notEmpty()
+    .withMessage('Customer name is required')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Customer name must be between 2 and 100 characters'),
+  body('customerEmail')
+    .trim()
+    .notEmpty()
+    .withMessage('Customer email is required')
+    .isEmail()
+    .withMessage('Please provide a valid email')
+    .normalizeEmail(),
+  body('customerPhone')
+    .trim()
+    .notEmpty()
+    .withMessage('Customer phone is required'),
+  body('company')
+    .trim()
+    .notEmpty()
+    .withMessage('Company is required'),
+  body('items')
+    .isArray({ min: 1 })
+    .withMessage('At least one item is required'),
+  body('items.*.name')
+    .trim()
+    .notEmpty()
+    .withMessage('Item name is required'),
+  body('items.*.quantity')
+    .isInt({ min: 1 })
+    .withMessage('Quantity must be at least 1'),
+  body('items.*.unitPrice')
+    .isFloat({ min: 0 })
+    .withMessage('Unit price must be a positive number'),
+  body('validUntil')
+    .optional()
+    .isISO8601()
+    .withMessage('Valid until must be a valid date'),
+  body('notes')
+    .optional()
+    .trim()
+    .isLength({ max: 2000 })
+    .withMessage('Notes must not exceed 2000 characters'),
+];
+
+// ==================== PURCHASE HISTORY VALIDATIONS ====================
+
+export const validateCreatePurchase: ValidationChain[] = [
+  body('items')
+    .isArray({ min: 1 })
+    .withMessage('At least one item is required'),
+  body('items.*.product')
+    .notEmpty()
+    .withMessage('Product ID is required for each item'),
+  body('items.*.quantity')
+    .isInt({ min: 1 })
+    .withMessage('Quantity must be at least 1'),
+  body('items.*.price')
+    .isFloat({ min: 0 })
+    .withMessage('Price must be a positive number'),
+  body('paymentMethod')
+    .isIn(['credit_card', 'debit_card', 'paypal', 'bank_transfer', 'cash', 'other'])
+    .withMessage('Invalid payment method'),
+  body('shippingAddress')
+    .optional()
+    .isObject()
+    .withMessage('Shipping address must be an object'),
+  body('shippingAddress.street')
+    .optional()
+    .trim()
+    .isLength({ max: 200 })
+    .withMessage('Street must not exceed 200 characters'),
+  body('shippingAddress.city')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('City must not exceed 100 characters'),
+  body('shippingAddress.state')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('State must not exceed 100 characters'),
+  body('shippingAddress.postalCode')
+    .optional()
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage('Postal code must not exceed 20 characters'),
+  body('shippingAddress.country')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Country must not exceed 100 characters'),
+  body('notes')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Notes must not exceed 1000 characters'),
+];
+
+// ==================== COMPLETION PROOF VALIDATIONS ====================
+
+export const validateCreateCompletionProof: ValidationChain[] = [
+  body('bookingId')
+    .notEmpty()
+    .withMessage('Booking ID is required')
+    .isMongoId()
+    .withMessage('Invalid booking ID format'),
+  body('workPerformed')
+    .trim()
+    .notEmpty()
+    .withMessage('Work performed description is required')
+    .isLength({ min: 10, max: 2000 })
+    .withMessage('Work performed must be between 10 and 2000 characters'),
+  body('findings')
+    .optional()
+    .trim()
+    .isLength({ max: 2000 })
+    .withMessage('Findings must not exceed 2000 characters'),
+  body('recommendations')
+    .optional()
+    .trim()
+    .isLength({ max: 2000 })
+    .withMessage('Recommendations must not exceed 2000 characters'),
+  body('technicianName')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Technician name must not exceed 100 characters'),
+  body('completionDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Completion date must be a valid date'),
+  body('clientSignature')
+    .optional()
+    .trim()
+    .isLength({ max: 50000 })
+    .withMessage('Signature data too large'),
+];

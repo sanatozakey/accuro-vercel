@@ -8,12 +8,13 @@ import {
   cancelPurchase,
 } from '../controllers/purchaseHistoryController';
 import { protect, authorize } from '../middleware/auth';
+import { validateCreatePurchase, handleValidationErrors } from '../middleware/validation';
 
 const router = express.Router();
 
 // Public/User routes
 router.route('/my-purchases').get(protect, getMyPurchases);
-router.route('/').post(protect, createPurchase);
+router.route('/').post(protect, validateCreatePurchase, handleValidationErrors, createPurchase);
 router.route('/:id').get(protect, getPurchase);
 router.route('/:id/cancel').put(protect, cancelPurchase);
 

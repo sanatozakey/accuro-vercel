@@ -17,13 +17,14 @@ import {
   validateUpdateBooking,
   handleValidationErrors,
 } from '../middleware/validation';
+import { bookingLimiter } from '../middleware/rateLimiter';
 
 const router = express.Router();
 
 router
   .route('/')
   .get(protect, authorize('admin', 'superadmin'), getBookings)
-  .post(protect, validateCreateBooking, handleValidationErrors, createBooking);
+  .post(protect, bookingLimiter, validateCreateBooking, handleValidationErrors, createBooking);
 
 router.get('/upcoming', getBookings); // Public endpoint for calendar view
 router.get('/check-availability', checkAvailability); // Public endpoint to check slot availability

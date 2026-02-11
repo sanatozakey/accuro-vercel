@@ -1,6 +1,7 @@
 import express, { Application } from 'express';
 import { createServer } from 'http';
 import cors from 'cors';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 import { connectDB } from './config/database';
@@ -9,6 +10,7 @@ import { seedAdminUser } from './utils/seedAdmin';
 import { corsConfig } from './config/cors';
 import { createIndexes } from './config/indexes';
 import { socketService } from './services/socketService';
+import { generalLimiter } from './middleware/rateLimiter';
 
 // Load env vars
 dotenv.config();
@@ -58,6 +60,23 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // CORS middleware
 app.use(cors(corsConfig));
+
+// Security headers middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin for images
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+      connectSrc: ["'self'", 'https://api.cloudinary.com'],
+    },
+  },
+}));
+
+// General rate limiting (applies to all routes)
+app.use(generalLimiter);
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));

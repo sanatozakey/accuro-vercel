@@ -8,13 +8,15 @@ import {
   getMyQuotes,
 } from '../controllers/quoteController';
 import { protect, authorize } from '../middleware/auth';
+import { validateCreateQuote, handleValidationErrors } from '../middleware/validation';
+import { quoteRequestLimiter } from '../middleware/rateLimiter';
 
 const router = express.Router();
 
 router
   .route('/')
   .get(protect, authorize('admin', 'superadmin'), getQuotes)
-  .post(createQuote);
+  .post(quoteRequestLimiter, validateCreateQuote, handleValidationErrors, createQuote);
 
 router.route('/my').get(protect, getMyQuotes);
 

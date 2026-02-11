@@ -9,6 +9,7 @@ import {
 } from '../controllers/completionProofController';
 import { protect, authorize } from '../middleware/auth';
 import { proofUpload } from '../middleware/upload';
+import { validateCreateCompletionProof, handleValidationErrors } from '../middleware/validation';
 
 const router = express.Router();
 
@@ -23,6 +24,8 @@ router.post(
   '/',
   authorize('admin', 'superadmin'),
   proofUpload.array('attachments', 5),
+  validateCreateCompletionProof,
+  handleValidationErrors,
   createCompletionProof
 );
 

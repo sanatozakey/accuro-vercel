@@ -10,6 +10,7 @@ import {
   getQuotationStats,
 } from '../controllers/quotationController';
 import { protect, adminOnly } from '../middleware/auth';
+import { validateCreateQuotation, handleValidationErrors } from '../middleware/validation';
 
 const router = express.Router();
 
@@ -17,7 +18,7 @@ const router = express.Router();
 router.use(protect);
 
 // Customer routes
-router.post('/', createQuotation);
+router.post('/', validateCreateQuotation, handleValidationErrors, createQuotation);
 router.get('/', getQuotations);
 router.get('/:id', getQuotationById);
 

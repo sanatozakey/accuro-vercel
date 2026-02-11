@@ -11,10 +11,13 @@ import {
   validateContactForm,
   handleValidationErrors,
 } from '../middleware/validation';
+import { contactFormLimiter } from '../middleware/rateLimiter';
 
 const router = express.Router();
 
-router.route('/').get(protect, authorize('admin', 'superadmin'), getContacts).post(validateContactForm, handleValidationErrors, createContact);
+router.route('/')
+  .get(protect, authorize('admin', 'superadmin'), getContacts)
+  .post(contactFormLimiter, validateContactForm, handleValidationErrors, createContact);
 
 router
   .route('/:id')
