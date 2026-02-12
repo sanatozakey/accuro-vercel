@@ -191,7 +191,7 @@ export function BookingDashboard(): React.ReactElement {
     useState<boolean>(false)
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
-  const [viewMode, setViewMode] = useState<'dashboard' | 'table' | 'calendar' | 'products' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings' | 'dataExport' | 'bulkEmail' | 'rateLimits' | 'security'>(
+  const [viewMode, setViewMode] = useState<'dashboard' | 'table' | 'calendar' | 'products' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings' | 'rateLimits' | 'security'>(
     'dashboard',
   )
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
@@ -1340,44 +1340,6 @@ export function BookingDashboard(): React.ReactElement {
 
           <Button
             onClick={() => {
-              setViewMode('dataExport')
-              setSidebarOpen(false)
-            }}
-            variant={viewMode === 'dataExport' ? 'default' : 'ghost'}
-            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
-              viewMode === 'dataExport'
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : darkMode
-                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-            title="Data Export"
-          >
-            <Download className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
-            {!sidebarCollapsed && 'Data Export'}
-          </Button>
-
-          <Button
-            onClick={() => {
-              setViewMode('bulkEmail')
-              setSidebarOpen(false)
-            }}
-            variant={viewMode === 'bulkEmail' ? 'default' : 'ghost'}
-            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
-              viewMode === 'bulkEmail'
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : darkMode
-                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-            title="Bulk Email"
-          >
-            <Mail className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
-            {!sidebarCollapsed && 'Bulk Email'}
-          </Button>
-
-          <Button
-            onClick={() => {
               setViewMode('rateLimits')
               setSidebarOpen(false)
             }}
@@ -1983,7 +1945,10 @@ export function BookingDashboard(): React.ReactElement {
           />
         )}
         {viewMode === 'users' && (
-          <UserManagement darkMode={darkMode} />
+          <div className="space-y-6">
+            <UserManagement darkMode={darkMode} />
+            <BulkEmailPanel darkMode={darkMode} />
+          </div>
         )}
         {viewMode === 'analytics' && (
           <AnalyticsDashboard darkMode={darkMode} />
@@ -2523,7 +2488,10 @@ export function BookingDashboard(): React.ReactElement {
 
         {/* Reports View */}
         {viewMode === 'reports' && (
-          <EnhancedReportsTab darkMode={darkMode} />
+          <div className="space-y-6">
+            <EnhancedReportsTab darkMode={darkMode} />
+            <DataExportPanel darkMode={darkMode} />
+          </div>
         )}
 
         {/* Dashboard Overview */}
@@ -2544,15 +2512,6 @@ export function BookingDashboard(): React.ReactElement {
           <AdminSettings darkMode={darkMode} />
         )}
 
-        {/* Data Export View */}
-        {viewMode === 'dataExport' && (
-          <DataExportPanel darkMode={darkMode} />
-        )}
-
-        {/* Bulk Email View */}
-        {viewMode === 'bulkEmail' && (
-          <BulkEmailPanel darkMode={darkMode} />
-        )}
 
         {/* Rate Limits View */}
         {viewMode === 'rateLimits' && (
