@@ -51,6 +51,8 @@ export type AdminDrawerParamList = {
   Analytics: undefined;
   Reports: undefined;
   UserManagement: undefined;
+  ReviewManagement: undefined;
+  ActivityLogs: undefined;
   RecommendationsMonitor: undefined;
 };
 

@@ -8,6 +8,7 @@ import emailService from '../utils/emailService';
 import ActivityLog from '../models/ActivityLog';
 import RefreshToken from '../models/RefreshToken';
 import { jwtConfig } from '../config/jwt';
+import { verifyTOTP, verifyBackupCode } from '../utils/totp';
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -109,7 +110,7 @@ export const register = async (req: Request, res: Response) => {
 // @access  Public
 export const login = async (req: Request, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, twoFactorCode } = req.body;
 
     // Validate email & password
     if (!email || !password) {
@@ -119,8 +120,8 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    // Check for user - include 2FA fields
+    const user = await User.findOne({ email }).select('+password +twoFactorSecret +twoFactorBackupCodes');
 
     if (!user) {
       return res.status(401).json({
@@ -161,6 +162,46 @@ export const login = async (req: Request, res: Response) => {
         success: false,
         message: 'Invalid credentials',
       });
+    }
+
+    // Check if 2FA is enabled
+    if (user.twoFactorEnabled) {
+      // If no 2FA code provided, return 2FA required response
+      if (!twoFactorCode) {
+        return res.status(200).json({
+          success: true,
+          requiresTwoFactor: true,
+          message: 'Two-factor authentication required',
+        });
+      }
+
+      // Verify 2FA code (could be TOTP or backup code)
+      let twoFactorValid = false;
+      let usedBackupCode = false;
+
+      // First try TOTP verification
+      if (user.twoFactorSecret && verifyTOTP(user.twoFactorSecret, twoFactorCode)) {
+        twoFactorValid = true;
+      }
+
+      // If TOTP fails, try backup code
+      if (!twoFactorValid && user.twoFactorBackupCodes && user.twoFactorBackupCodes.length > 0) {
+        const backupCodeIndex = verifyBackupCode(twoFactorCode, user.twoFactorBackupCodes);
+        if (backupCodeIndex !== -1) {
+          twoFactorValid = true;
+          usedBackupCode = true;
+          // Remove the used backup code
+          user.twoFactorBackupCodes.splice(backupCodeIndex, 1);
+          await user.save();
+        }
+      }
+
+      if (!twoFactorValid) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid two-factor authentication code',
+        });
+      }
     }
 
     // Reset login attempts on successful login
@@ -212,7 +253,7 @@ export const login = async (req: Request, res: Response) => {
         action: 'LOGIN',
         resourceType: 'auth',
         resourceId: user._id.toString(),
-        details: `User logged in: ${user.email}`,
+        details: `User logged in: ${user.email}${user.twoFactorEnabled ? ' (with 2FA)' : ''}`,
         ipAddress: req.ip,
         userAgent: req.headers['user-agent'],
       });
@@ -231,6 +272,7 @@ export const login = async (req: Request, res: Response) => {
         company: user.company,
         profilePicture: user.profilePicture,
         isEmailVerified: user.isEmailVerified,
+        twoFactorEnabled: user.twoFactorEnabled,
         token,
         refreshToken,
       },

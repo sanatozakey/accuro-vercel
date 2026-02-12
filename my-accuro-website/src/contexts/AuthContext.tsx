@@ -12,10 +12,14 @@ interface User {
   isEmailVerified?: boolean;
 }
 
+interface LoginResponse {
+  requiresTwoFactor?: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (data: LoginData) => Promise<void>;
+  login: (data: LoginData) => Promise<LoginResponse | void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
@@ -49,10 +53,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initAuth();
   }, []);
 
-  const login = async (data: LoginData) => {
+  const login = async (data: LoginData): Promise<LoginResponse | void> => {
     try {
       const response = await authService.login(data);
-      setUser(response.data);
+
+      // If 2FA is required, return without setting user
+      if (response.requiresTwoFactor) {
+        return { requiresTwoFactor: true };
+      }
+
+      if (response.data) {
+        setUser(response.data);
+      }
     } catch (error) {
       throw error;
     }

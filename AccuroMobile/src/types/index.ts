@@ -37,6 +37,10 @@ export interface Product {
   imageUrl?: string;
   discontinued?: boolean;
   status: 'active' | 'inactive' | 'archived';
+  features?: string[];
+  beamexUrl?: string;
+  estimatedPricePhp?: string;
+  estimatedPriceUsd?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -107,10 +111,13 @@ export interface CartItem {
 export interface Review {
   _id: string;
   user: string | User;
-  booking: string;
+  booking?: string;
   rating: number;
   comment: string;
-  featured: boolean;
+  featured?: boolean;
+  isPublic?: boolean;
+  approved?: boolean;
+  companyName?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -11,13 +11,19 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [userExplicitlySet, setUserExplicitlySet] = useState(() => {
+    return localStorage.getItem('theme') !== null
+  })
+
   const [theme, setThemeState] = useState<Theme>(() => {
-    // Check localStorage for saved theme preference
     const savedTheme = localStorage.getItem('theme') as Theme
     if (savedTheme) {
       return savedTheme
     }
-    // Default to light mode regardless of system preference
+    // Detect OS preference when no localStorage value exists
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark'
+    }
     return 'light'
   })
 
@@ -29,15 +35,31 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } else {
       root.classList.remove('dark')
     }
-    // Save to localStorage
-    localStorage.setItem('theme', theme)
-  }, [theme])
+    // Save to localStorage only if user explicitly set it
+    if (userExplicitlySet) {
+      localStorage.setItem('theme', theme)
+    }
+  }, [theme, userExplicitlySet])
+
+  // Listen for OS theme changes (only if user hasn't explicitly toggled)
+  useEffect(() => {
+    if (userExplicitlySet) return
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = (e: MediaQueryListEvent) => {
+      setThemeState(e.matches ? 'dark' : 'light')
+    }
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [userExplicitlySet])
 
   const toggleTheme = () => {
+    setUserExplicitlySet(true)
     setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'))
   }
 
   const setTheme = (newTheme: Theme) => {
+    setUserExplicitlySet(true)
     setThemeState(newTheme)
   }
 

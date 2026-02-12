@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { Calendar, FileText, CheckCircle, Clock, XCircle, AlertCircle, ArrowRight } from 'lucide-react';
 import bookingService, { Booking } from '../services/bookingService';
 import quotationService, { Quotation } from '../services/quotationService';
@@ -25,6 +26,7 @@ export function ServiceQuotationProgress() {
       setQuotations(quotationsRes.data.slice(0, 5));
     } catch (error) {
       console.error('Failed to load progress data:', error);
+      toast.error('Failed to load progress data');
     } finally {
       setLoading(false);
     }

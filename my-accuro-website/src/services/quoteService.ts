@@ -1,3 +1,5 @@
+// quoteService - Customer-facing cart-to-quote submission flow
+// For admin quotation management (CRUD, approve/reject, stats), see quotationService.ts
 import api from './api';
 
 export interface QuoteItem {

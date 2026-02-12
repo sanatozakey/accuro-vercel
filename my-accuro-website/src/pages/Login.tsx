@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Mail, Lock, AlertCircle, Eye, EyeOff, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -22,6 +22,10 @@ export function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+
+  // 2FA state
+  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState('');
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -83,13 +87,31 @@ export function Login() {
     setLoading(true);
 
     try {
-      await login(formData);
+      const loginData = requiresTwoFactor
+        ? { ...formData, twoFactorCode }
+        : formData;
+
+      const response = await login(loginData);
+
+      // Check if 2FA is required
+      if (response?.requiresTwoFactor) {
+        setRequiresTwoFactor(true);
+        setLoading(false);
+        return;
+      }
+
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to login. Please check your credentials.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBackToLogin = () => {
+    setRequiresTwoFactor(false);
+    setTwoFactorCode('');
+    setError('');
   };
 
   return (
@@ -128,70 +150,117 @@ export function Login() {
                   </Alert>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        className={`pl-10 ${fieldErrors.email ? 'border-red-500' : ''}`}
-                        placeholder="your@email.com"
-                      />
+                {!requiresTwoFactor ? (
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email Address</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          type="email"
+                          id="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          className={`pl-10 ${fieldErrors.email ? 'border-red-500' : ''}`}
+                          placeholder="your@email.com"
+                        />
+                      </div>
+                      {fieldErrors.email && (
+                        <p className="text-sm text-red-600">{fieldErrors.email}</p>
+                      )}
                     </div>
-                    {fieldErrors.email && (
-                      <p className="text-sm text-red-600">{fieldErrors.email}</p>
-                    )}
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        type={showPassword ? 'text' : 'password'}
-                        id="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        className={`pl-10 pr-12 ${fieldErrors.password ? 'border-red-500' : ''}`}
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          type={showPassword ? 'text' : 'password'}
+                          id="password"
+                          name="password"
+                          value={formData.password}
+                          onChange={handleChange}
+                          className={`pl-10 pr-12 ${fieldErrors.password ? 'border-red-500' : ''}`}
+                          placeholder="••••••••"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
+                      </div>
+                      {fieldErrors.password && (
+                        <p className="text-sm text-red-600">{fieldErrors.password}</p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-end">
+                      <Link
+                        to="/forgot-password"
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                       >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
+                        Forgot password?
+                      </Link>
                     </div>
-                    {fieldErrors.password && (
-                      <p className="text-sm text-red-600">{fieldErrors.password}</p>
-                    )}
-                  </div>
 
-                  <div className="flex items-center justify-end">
-                    <Link
-                      to="/forgot-password"
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      size="lg"
+                      className="w-full bg-blue-600 hover:bg-blue-700"
                     >
-                      Forgot password?
-                    </Link>
-                  </div>
+                      {loading ? 'Signing in...' : 'Sign In'}
+                    </Button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="text-center mb-6">
+                      <div className="h-16 w-16 mx-auto rounded-full bg-green-100 flex items-center justify-center mb-4">
+                        <Shield className="h-8 w-8 text-green-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-foreground">Two-Factor Authentication</h3>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Enter the 6-digit code from your authenticator app or a backup code
+                      </p>
+                    </div>
 
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    size="lg"
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                  >
-                    {loading ? 'Signing in...' : 'Sign In'}
-                  </Button>
-                </form>
+                    <div className="space-y-2">
+                      <Label htmlFor="twoFactorCode">Verification Code</Label>
+                      <Input
+                        type="text"
+                        id="twoFactorCode"
+                        value={twoFactorCode}
+                        onChange={(e) => setTwoFactorCode(e.target.value.replace(/[^A-Za-z0-9-]/g, '').slice(0, 9))}
+                        className="text-center text-2xl font-mono tracking-widest"
+                        placeholder="000000"
+                        autoFocus
+                      />
+                      <p className="text-xs text-muted-foreground text-center">
+                        Enter a 6-digit code or backup code (XXXX-XXXX)
+                      </p>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={loading || twoFactorCode.length < 6}
+                      size="lg"
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      {loading ? 'Verifying...' : 'Verify'}
+                    </Button>
+
+                    <button
+                      type="button"
+                      onClick={handleBackToLogin}
+                      className="w-full text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      Back to login
+                    </button>
+                  </form>
+                )}
 
                 <div className="mt-6 text-center">
                   <p className="text-muted-foreground">

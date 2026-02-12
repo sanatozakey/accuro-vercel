@@ -36,6 +36,8 @@ import googleCalendarRoutes from './routes/googleCalendarRoutes';
 import completionProofRoutes from './routes/completionProofRoutes';
 import emailRoutes from './routes/emailRoutes';
 import rateLimitRoutes from './routes/rateLimitRoutes';
+import activityRoutes from './routes/activityRoutes';
+import quotationRoutes from './routes/quotationRoutes';
 
 // Initialize app
 const app: Application = express();
@@ -104,6 +106,8 @@ app.use('/api/google-calendar', googleCalendarRoutes);
 app.use('/api/completion-proofs', completionProofRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/rate-limits', rateLimitRoutes);
+app.use('/api/activity', activityRoutes);
+app.use('/api/quotations', quotationRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

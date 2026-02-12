@@ -14,6 +14,7 @@ import {
 import api from '../services/api';
 import authService from '../services/authService';
 import { useAuth } from '../contexts/AuthContext';
+import { TwoFactorSetup } from './TwoFactorSetup';
 
 interface AccountSettingsProps {
   darkMode?: boolean;
@@ -310,6 +311,9 @@ export function AccountSettings({ darkMode = false }: AccountSettingsProps) {
           </div>
         </div>
       )}
+
+      {/* Two-Factor Authentication Section */}
+      <TwoFactorSetup darkMode={darkMode} />
 
       {/* Account Deletion Section */}
       <div className={`rounded-lg border ${darkMode ? 'bg-gray-800 border-red-900/50' : 'bg-white border-red-200'}`}>

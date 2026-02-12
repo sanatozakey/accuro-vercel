@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   Platform,
   Image,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -34,6 +35,24 @@ const SignupScreen = () => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  const slideAnim = useState(new Animated.Value(30))[0];
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const passwordRequirements: PasswordRequirement[] = [
     { label: 'At least 8 characters', test: (pwd) => pwd.length >= 8 },
@@ -105,30 +124,41 @@ const SignupScreen = () => {
     }
   };
 
+  const styleSheet = styles(theme);
+
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={styleSheet.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
+      <ScrollView contentContainerStyle={styleSheet.scrollContent}>
+        <Animated.View
+          style={[
+            styleSheet.header,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            }
+          ]}
+        >
           <Image
             source={require('../../assets/accuro_logo.png')}
-            style={styles.logo}
+            style={styleSheet.logo}
             resizeMode="contain"
           />
-          <Text variant="displaySmall" style={styles.title}>
+          <Text variant="displaySmall" style={styleSheet.title}>
             Create Account
           </Text>
-          <Text variant="titleMedium" style={styles.subtitle}>
+          <Text variant="titleMedium" style={styleSheet.subtitle}>
             Join Accuro to manage your bookings and quotes
           </Text>
-        </View>
+        </Animated.View>
 
-        <Card style={styles.card}>
+        <Animated.View style={{ opacity: fadeAnim }}>
+        <Card style={styleSheet.card} elevation={4}>
           <Card.Content>
             {error ? (
-              <Text style={[styles.error, { color: theme.colors.error }]}>
+              <Text style={[styleSheet.error, { color: theme.colors.error }]}>
                 {error}
               </Text>
             ) : null}
@@ -167,27 +197,27 @@ const SignupScreen = () => {
             />
 
             {password ? (
-              <View style={styles.passwordFeedback}>
+              <View style={styleSheet.passwordFeedback}>
                 <Text
                   variant="bodySmall"
                   style={[
-                    styles.strengthText,
+                    styleSheet.strengthText,
                     { color: getPasswordStrengthColor(getPasswordStrength(password)) }
                   ]}
                 >
                   Password strength: {getPasswordStrength(password)}
                 </Text>
-                <Text variant="bodySmall" style={styles.requirementsHeader}>
+                <Text variant="bodySmall" style={styleSheet.requirementsHeader}>
                   Password must contain:
                 </Text>
                 {passwordRequirements.map((req, index) => {
                   const isMet = req.test(password);
                   return (
-                    <View key={index} style={styles.requirementRow}>
+                    <View key={index} style={styleSheet.requirementRow}>
                       <Text
                         style={[
-                          styles.requirementText,
-                          { color: isMet ? COLORS.success : COLORS.gray[500] }
+                          styleSheet.requirementText,
+                          { color: isMet ? COLORS.success : theme.colors.onSurfaceVariant }
                         ]}
                       >
                         {isMet ? '✓' : '○'} {req.label}
@@ -214,7 +244,7 @@ const SignupScreen = () => {
             />
 
             {confirmPassword && password === confirmPassword ? (
-              <Text style={styles.matchText}>✓ Passwords match</Text>
+              <Text style={styleSheet.matchText}>✓ Passwords match</Text>
             ) : null}
 
             <Button
@@ -222,14 +252,15 @@ const SignupScreen = () => {
               onPress={handleSignup}
               loading={loading}
               disabled={loading}
-              style={styles.signupButton}
+              style={styleSheet.signupButton}
             >
               Sign Up
             </Button>
           </Card.Content>
         </Card>
+        </Animated.View>
 
-        <View style={styles.footer}>
+        <Animated.View style={[styleSheet.footer, { opacity: fadeAnim }]}>
           <Text variant="bodyMedium">Already have an account?</Text>
           <Button
             mode="text"
@@ -237,32 +268,32 @@ const SignupScreen = () => {
           >
             Sign In
           </Button>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 };
 
-const styles = StyleSheet.create({
+const styles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.gray[50],
+    backgroundColor: theme.colors.background,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: 20,
+    padding: 24,
     justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 40,
     backgroundColor: COLORS.secondary,
-    marginHorizontal: -20,
-    marginTop: -20,
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    marginHorizontal: -24,
+    marginTop: -24,
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   logo: {
     width: 180,
@@ -280,52 +311,60 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
-    marginBottom: 16,
-    marginTop: 24,
-    borderRadius: 12,
-    elevation: 4,
+    marginBottom: 20,
+    marginTop: 28,
+    borderRadius: 16,
   },
   error: {
-    marginBottom: 16,
+    marginBottom: 20,
     textAlign: 'center',
+    fontSize: 14,
   },
   signupButton: {
-    marginTop: 8,
-    borderRadius: 8,
+    marginTop: 16,
+    borderRadius: 10,
+    paddingVertical: 4,
   },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16,
+    marginTop: 24,
+    marginBottom: 20,
   },
   passwordFeedback: {
-    marginTop: 8,
-    marginBottom: 8,
-    padding: 12,
-    backgroundColor: COLORS.gray[50],
-    borderRadius: 8,
+    marginTop: 16,
+    marginBottom: 16,
+    padding: 18,
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.colors.outline,
   },
   strengthText: {
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontWeight: '700',
+    marginBottom: 12,
+    fontSize: 14,
   },
   requirementsHeader: {
-    color: COLORS.gray[700],
-    marginBottom: 6,
-    fontWeight: '500',
+    color: theme.colors.onSurfaceVariant,
+    marginBottom: 8,
+    fontWeight: '600',
+    fontSize: 13,
   },
   requirementRow: {
-    marginBottom: 4,
+    marginBottom: 6,
   },
   requirementText: {
-    fontSize: 12,
+    fontSize: 13,
+    lineHeight: 18,
   },
   matchText: {
     fontSize: 14,
     color: COLORS.success,
-    marginTop: 4,
+    marginTop: 8,
     marginBottom: 8,
+    fontWeight: '500',
   },
 });
 

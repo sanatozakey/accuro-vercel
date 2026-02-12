@@ -12,11 +12,14 @@ export interface RegisterData {
 export interface LoginData {
   email: string;
   password: string;
+  twoFactorCode?: string;
 }
 
 export interface AuthResponse {
   success: boolean;
-  data: {
+  requiresTwoFactor?: boolean;
+  message?: string;
+  data?: {
     _id: string;
     name: string;
     email: string;
@@ -25,6 +28,7 @@ export interface AuthResponse {
     company?: string;
     profilePicture?: string;
     isEmailVerified?: boolean;
+    twoFactorEnabled?: boolean;
     token: string;
     refreshToken?: string;
   };
@@ -73,7 +77,13 @@ class AuthService {
 
   async login(data: LoginData): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/login', data);
-    if (response.data.success && response.data.data.token) {
+
+    // If 2FA is required, return without storing tokens
+    if (response.data.success && response.data.requiresTwoFactor) {
+      return response.data;
+    }
+
+    if (response.data.success && response.data.data?.token) {
       localStorage.setItem('token', response.data.data.token);
       if (response.data.data.refreshToken) {
         localStorage.setItem('refreshToken', response.data.data.refreshToken);
@@ -116,6 +126,7 @@ class AuthService {
         await api.post('/auth/logout', { refreshToken });
       }
     } catch (error) {
+      // Intentionally silent - user is being redirected to login anyway
       console.error('Error during logout:', error);
     } finally {
       // Always clear local storage

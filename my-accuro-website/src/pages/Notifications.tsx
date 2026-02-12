@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { Bell, Check, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
@@ -64,6 +65,7 @@ export default function Notifications() {
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
+      toast.error('Failed to load notifications');
     } finally {
       setIsLoading(false);
     }
@@ -92,6 +94,7 @@ export default function Notifications() {
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
+      toast.error('Failed to mark notification as read');
     }
   };
 
@@ -116,6 +119,7 @@ export default function Notifications() {
       setUnreadCount(0);
     } catch (error) {
       console.error('Failed to mark all as read:', error);
+      toast.error('Failed to mark all as read');
     }
   };
 
@@ -133,6 +137,7 @@ export default function Notifications() {
       setNotifications(prev => prev.filter(n => n._id !== notificationId));
     } catch (error) {
       console.error('Failed to delete notification:', error);
+      toast.error('Failed to delete notification');
     }
   };
 

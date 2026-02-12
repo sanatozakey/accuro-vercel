@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ExternalLink, Search, Filter, X } from 'lucide-react'
 import { productCategories, getProductsByCategory, Product } from '../data/products'
 import { LazyImage } from '../components/LazyImage'
@@ -13,23 +14,53 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 
 export function Products() {
-  const [selectedCategory, setSelectedCategory] = useState('All Products')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [currency, setCurrency] = useState<'PHP' | 'USD'>('PHP')
-  const [showDiscontinued, setShowDiscontinued] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Read filters from URL params (with defaults)
+  const selectedCategory = searchParams.get('category') || 'All Products'
+  const searchQuery = searchParams.get('search') || ''
+  const currency = (searchParams.get('currency') as 'PHP' | 'USD') || 'PHP'
+  const showDiscontinued = searchParams.get('discontinued') === 'true'
+
+  // Helper to update URL params - omits default values for clean URLs
+  const updateParams = useCallback((updates: Record<string, string | null>) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === null) {
+          next.delete(key)
+        } else {
+          next.set(key, value)
+        }
+      }
+      // Clean defaults
+      if (next.get('category') === 'All Products') next.delete('category')
+      if (next.get('search') === '') next.delete('search')
+      if (next.get('currency') === 'PHP') next.delete('currency')
+      if (next.get('discontinued') === 'false') next.delete('discontinued')
+      return next
+    }, { replace: true })
+  }, [setSearchParams])
+
+  const setSelectedCategory = (val: string) => updateParams({ category: val })
+  const setSearchQuery = (val: string) => updateParams({ search: val })
+  const setCurrency = (val: 'PHP' | 'USD') => updateParams({ currency: val })
+  const setShowDiscontinued = (val: boolean) => updateParams({ discontinued: val ? 'true' : null })
 
   // Filter products based on category, search query, and discontinued status
-  const filteredProducts = getProductsByCategory(selectedCategory).filter((product) => {
-    const matchesSearch =
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredProducts = useMemo(() => {
+    return getProductsByCategory(selectedCategory).filter((product) => {
+      const matchesSearch =
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const isDiscontinued = product.description.toLowerCase().includes('discontinued')
-    const matchesDiscontinuedFilter = showDiscontinued || !isDiscontinued
+      const isDiscontinued = product.description.toLowerCase().includes('discontinued')
+      const matchesDiscontinuedFilter = showDiscontinued || !isDiscontinued
 
-    return matchesSearch && matchesDiscontinuedFilter
-  })
+      return matchesSearch && matchesDiscontinuedFilter
+    })
+  }, [selectedCategory, searchQuery, showDiscontinued])
 
   return (
     <div className="w-full bg-background dark:bg-gray-950">
@@ -202,11 +233,7 @@ export function Products() {
                   Try adjusting your search or filter criteria
                 </p>
                 <Button
-                  onClick={() => {
-                    setSearchQuery('')
-                    setSelectedCategory('All Products')
-                    setShowDiscontinued(false)
-                  }}
+                  onClick={() => setSearchParams({}, { replace: true })}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   Clear All Filters
@@ -263,7 +290,7 @@ export function Products() {
 }
 
 // Product Card Component
-function ProductCard({ product, currency }: { product: Product; currency: 'PHP' | 'USD' }) {
+const ProductCard = React.memo(function ProductCard({ product, currency }: { product: Product; currency: 'PHP' | 'USD' }) {
   const { isAuthenticated } = useAuth();
   const [hasRecordedView, setHasRecordedView] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -396,4 +423,4 @@ function ProductCard({ product, currency }: { product: Product; currency: 'PHP' 
       </CardContent>
     </Card>
   )
-}
+})

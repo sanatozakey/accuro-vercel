@@ -11,6 +11,7 @@ import {
   Key,
   X,
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import api from '../services/api';
 
 interface TwoFactorSetupProps {
@@ -240,10 +241,17 @@ export function TwoFactorSetup({ darkMode = false }: TwoFactorSetupProps) {
               Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
             </p>
 
-            {/* QR Code placeholder - frontend should generate this from otpAuthUri */}
+            {/* QR Code */}
             <div className={`p-4 rounded-lg text-center ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+              {otpAuthUri && (
+                <div className="flex justify-center mb-4">
+                  <div className="p-3 bg-white rounded-lg">
+                    <QRCodeSVG value={otpAuthUri} size={180} />
+                  </div>
+                </div>
+              )}
               <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Use the secret key below if you can't scan:
+                Or enter this secret key manually:
               </p>
               <div className="flex items-center justify-center gap-2">
                 <code className={`font-mono text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>

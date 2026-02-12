@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, Building, Camera, Save, AlertCircle, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import authService from '../services/authService';
+import { compressImage } from '../utils/imageCompression';
 
 export function Profile() {
   const { user, updateUser } = useAuth();
@@ -30,12 +31,11 @@ export function Profile() {
     }));
   };
 
-  const processImageFile = (file: File) => {
-    // Validate file size (max 1MB to account for base64 encoding overhead)
-    // Base64 encoding increases size by ~33%, so 1MB file becomes ~1.33MB
-    const maxFileSize = 1 * 1024 * 1024; // 1MB
+  const processImageFile = async (file: File) => {
+    // Validate file size (max 5MB input - will be auto-compressed)
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxFileSize) {
-      setError('Image size must be less than 1MB');
+      setError('Image size must be less than 5MB');
       return;
     }
 
@@ -45,28 +45,14 @@ export function Profile() {
       return;
     }
 
-    // Convert to base64
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-
-      // Additional check: validate base64 size (accounting for encoding overhead)
-      // Roughly estimate: base64 string should be < 2MB for database compatibility
-      const base64SizeInBytes = base64String.length * 0.75; // Approximate size
-      const maxBase64Size = 2 * 1024 * 1024; // 2MB
-
-      if (base64SizeInBytes > maxBase64Size) {
-        setError('Encoded image is too large. Please use a smaller image or compress it.');
-        return;
-      }
-
-      setProfilePicture(base64String);
+    try {
+      // Auto-compress: resize to 800x800 max, JPEG quality 0.8
+      const compressed = await compressImage(file);
+      setProfilePicture(compressed);
       setError('');
-    };
-    reader.onerror = () => {
-      setError('Failed to read image file');
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      setError('Failed to process image file');
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -222,7 +208,7 @@ export function Profile() {
                 Click the camera icon or drag & drop an image to upload a new profile picture
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                Max size: 1MB. Supported formats: JPG, PNG, GIF
+                Max size: 5MB (auto-compressed). Supported formats: JPG, PNG, GIF
               </p>
             </div>
           </div>

@@ -8,6 +8,8 @@ import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { validatePassword, getPasswordStrength } from '../utils/passwordValidation';
+import { PasswordStrengthMeter } from '../components/PasswordStrengthMeter';
 
 export function Signup() {
   const navigate = useNavigate();
@@ -35,41 +37,6 @@ export function Signup() {
     password?: string[];
     confirmPassword?: string;
   }>({});
-
-  const validatePassword = (password: string) => {
-    const errors: string[] = [];
-
-    if (password.length < 8) {
-      errors.push('At least 8 characters');
-    }
-    if (!/[A-Z]/.test(password)) {
-      errors.push('At least one uppercase letter');
-    }
-    if (!/[a-z]/.test(password)) {
-      errors.push('At least one lowercase letter');
-    }
-    if (!/[0-9]/.test(password)) {
-      errors.push('At least one number');
-    }
-    if (!/[!@#$%^&*]/.test(password)) {
-      errors.push('At least one special character (!@#$%^&*)');
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
-  };
-
-  const getPasswordStrength = (password: string) => {
-    const validation = validatePassword(password);
-    if (password.length === 0) return '';
-
-    const errorCount = validation.errors.length;
-    if (errorCount === 0) return 'Strong';
-    if (errorCount <= 2) return 'Medium';
-    return 'Weak';
-  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -360,37 +327,7 @@ export function Signup() {
                         )}
                       </button>
                     </div>
-                    {formData.password && (
-                      <div>
-                        <p className={`text-xs font-medium ${
-                          getPasswordStrength(formData.password) === 'Strong' ? 'text-green-600' :
-                          getPasswordStrength(formData.password) === 'Medium' ? 'text-yellow-600' :
-                          'text-red-600'
-                        }`}>
-                          Password strength: {getPasswordStrength(formData.password)}
-                        </p>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium mb-1">Password must contain:</p>
-                      <ul className="text-xs space-y-1">
-                        <li className={formData.password.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}>
-                          {formData.password.length >= 8 ? '✓' : '○'} At least 8 characters
-                        </li>
-                        <li className={/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-muted-foreground'}>
-                          {/[A-Z]/.test(formData.password) ? '✓' : '○'} At least one uppercase letter
-                        </li>
-                        <li className={/[a-z]/.test(formData.password) ? 'text-green-600' : 'text-muted-foreground'}>
-                          {/[a-z]/.test(formData.password) ? '✓' : '○'} At least one lowercase letter
-                        </li>
-                        <li className={/[0-9]/.test(formData.password) ? 'text-green-600' : 'text-muted-foreground'}>
-                          {/[0-9]/.test(formData.password) ? '✓' : '○'} At least one number
-                        </li>
-                        <li className={/[!@#$%^&*]/.test(formData.password) ? 'text-green-600' : 'text-muted-foreground'}>
-                          {/[!@#$%^&*]/.test(formData.password) ? '✓' : '○'} At least one special character (!@#$%^&*)
-                        </li>
-                      </ul>
-                    </div>
+                    <PasswordStrengthMeter password={formData.password} />
                   </div>
 
                   <div className="space-y-2">

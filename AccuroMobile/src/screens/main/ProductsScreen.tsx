@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet, FlatList, Image, ScrollView } from 'react-native';
 import { Text, Searchbar, Chip } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Toast from 'react-native-toast-message';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import MiniCart from '../../components/cart/MiniCart';
+import CartModal from '../../components/cart/CartModal';
 import { useCart } from '../../contexts/CartContext';
 import api from '../../services/api';
 import { API_ENDPOINTS } from '../../constants/api';
 import { Product } from '../../types';
 import { APP_CONFIG } from '../../constants/config';
+import { COLORS } from '../../constants/colors';
 
 const ProductsScreen = () => {
   const { addToCart } = useCart();
@@ -16,6 +21,7 @@ const ProductsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [cartModalVisible, setCartModalVisible] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -46,32 +52,67 @@ const ProductsScreen = () => {
 
   const handleAddToCart = (product: Product) => {
     addToCart(product, 1);
+    Toast.show({
+      type: 'success',
+      text1: 'Added to Cart',
+      text2: `${product.name} has been added to your cart`,
+      visibilityTime: 2000,
+    });
   };
 
   const renderProduct = ({ item }: { item: Product }) => (
     <Card style={styles.productCard}>
+      {/* Product Image */}
+      <View style={styles.productImageContainer}>
+        <Image
+          source={{
+            uri: item.imageUrl || 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400',
+          }}
+          style={styles.productImage}
+          resizeMode="contain"
+        />
+      </View>
+
       <Card.Content>
-        <Text variant="titleMedium" style={styles.productName}>
+        <Text variant="titleLarge" style={styles.productName}>
           {item.name}
         </Text>
-        <Chip style={styles.categoryChip} compact>
-          {item.category}
-        </Chip>
+
+        <View style={styles.categoryBadge}>
+          <Text style={styles.categoryBadgeText}>{item.category}</Text>
+        </View>
+
         <Text variant="bodyMedium" style={styles.description}>
           {item.description}
         </Text>
-        <Text variant="titleSmall" style={styles.price}>
+
+        {/* Features List */}
+        {item.features && item.features.length > 0 && (
+          <View style={styles.featuresList}>
+            {item.features.slice(0, 3).map((feature, index) => (
+              <View key={index} style={styles.featureItem}>
+                <Icon name="check-circle" size={16} color={COLORS.success} />
+                <Text style={styles.featureText}>{feature}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        <Text variant="titleMedium" style={styles.price}>
           {item.price
             ? `₱${item.price.toLocaleString()}`
             : item.priceRange || 'Contact for price'}
         </Text>
       </Card.Content>
-      <Card.Actions>
-        <Button mode="outlined" onPress={() => handleAddToCart(item)}>
+
+      <Card.Actions style={styles.cardActions}>
+        <Button
+          mode="outlined"
+          onPress={() => handleAddToCart(item)}
+          style={styles.addToCartButton}
+          icon="cart-plus"
+        >
           Add to Cart
-        </Button>
-        <Button mode="contained" onPress={() => handleAddToCart(item)}>
-          Request Quote
         </Button>
       </Card.Actions>
     </Card>
@@ -82,91 +123,277 @@ const ProductsScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <Searchbar
-        placeholder="Search products..."
-        onChangeText={setSearchQuery}
-        value={searchQuery}
-        style={styles.searchbar}
-      />
-
-      <View style={styles.categories}>
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={['All', ...APP_CONFIG.PRODUCT_CATEGORIES]}
-          keyExtractor={(item) => item}
-          renderItem={({ item }) => (
-            <Chip
-              selected={
-                item === 'All'
-                  ? !selectedCategory
-                  : selectedCategory === item
-              }
-              onPress={() => setSelectedCategory(item === 'All' ? '' : item)}
-              style={styles.chip}
-            >
-              {item}
-            </Chip>
-          )}
-        />
+    <>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Header Section */}
+      <View style={styles.header}>
+        <View style={styles.headerBadge}>
+          <Text style={styles.headerBadgeText}>Products Catalog</Text>
+        </View>
+        <Text style={styles.headerTitle}>Beamex Products</Text>
+        <Text style={styles.headerSubtitle}>
+          Complete range of calibration solutions for all your calibration needs.
+        </Text>
       </View>
 
-      <FlatList
-        data={filteredProducts}
-        renderItem={renderProduct}
-        keyExtractor={(item) => item._id}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text variant="bodyLarge">No products found</Text>
+      {/* Search and Filter Section */}
+      <View style={styles.searchFilterSection}>
+        <View style={styles.searchContainer}>
+          <Icon
+            name="magnify"
+            size={20}
+            color={COLORS.text.secondary}
+            style={styles.searchIcon}
+          />
+          <Searchbar
+            placeholder="Search products by name, category, or description..."
+            onChangeText={setSearchQuery}
+            value={searchQuery}
+            style={styles.searchbar}
+            elevation={0}
+          />
+        </View>
+
+        {/* Category Filter */}
+        <View style={styles.filterRow}>
+          <Icon name="filter" size={20} color={COLORS.text.secondary} />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoriesScrollView}
+          >
+            <Chip
+              selected={!selectedCategory}
+              onPress={() => setSelectedCategory('')}
+              style={styles.chip}
+              selectedColor={COLORS.primary}
+            >
+              All Products
+            </Chip>
+            {APP_CONFIG.PRODUCT_CATEGORIES.map((category) => (
+              <Chip
+                key={category}
+                selected={selectedCategory === category}
+                onPress={() => setSelectedCategory(category)}
+                style={styles.chip}
+                selectedColor={COLORS.primary}
+              >
+                {category}
+              </Chip>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Results Count */}
+        <View style={styles.resultsCount}>
+          <View style={styles.resultsBadge}>
+            <Text style={styles.resultsText}>
+              {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+            </Text>
           </View>
-        }
-      />
-    </View>
+        </View>
+      </View>
+
+      {/* Products List */}
+      <View style={styles.productsContainer}>
+        {filteredProducts.length === 0 ? (
+          <View style={styles.empty}>
+            <Icon name="package-variant-closed" size={64} color={COLORS.gray[300]} />
+            <Text variant="titleLarge" style={styles.emptyTitle}>
+              No products found
+            </Text>
+            <Text variant="bodyMedium" style={styles.emptyText}>
+              Try adjusting your search or filter criteria
+            </Text>
+          </View>
+        ) : (
+          filteredProducts.map((product) => (
+            <View key={product._id}>{renderProduct({ item: product })}</View>
+          ))
+        )}
+      </View>
+    </ScrollView>
+
+    {/* Mini Cart */}
+    <MiniCart onPress={() => setCartModalVisible(true)} />
+
+    {/* Cart Modal */}
+    <CartModal
+      visible={cartModalVisible}
+      onClose={() => setCartModalVisible(false)}
+    />
+    </>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.white,
+  },
+  header: {
+    backgroundColor: '#1e3a8a',
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+  },
+  headerBadge: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+  },
+  headerBadgeText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: COLORS.white,
+    marginBottom: 8,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 24,
+  },
+  searchFilterSection: {
+    backgroundColor: COLORS.gray[50],
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray[200],
+  },
+  searchContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 12,
+    top: 18,
+    zIndex: 1,
   },
   searchbar: {
-    margin: 16,
-    marginBottom: 8,
+    backgroundColor: COLORS.white,
+    borderRadius: 8,
+    paddingLeft: 40,
   },
-  categories: {
-    paddingHorizontal: 16,
-    marginBottom: 8,
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  categoriesScrollView: {
+    flex: 1,
   },
   chip: {
     marginRight: 8,
   },
-  list: {
-    padding: 16,
+  resultsCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  resultsBadge: {
+    backgroundColor: COLORS.gray[200],
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  resultsText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+  },
+  productsContainer: {
+    padding: 20,
   },
   productCard: {
-    marginBottom: 16,
+    marginBottom: 20,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  productImageContainer: {
+    height: 200,
+    backgroundColor: COLORS.gray[50],
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
   },
   productName: {
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 12,
+    color: COLORS.text.primary,
   },
-  categoryChip: {
+  categoryBadge: {
+    backgroundColor: COLORS.gray[200],
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 4,
     alignSelf: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  categoryBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.text.primary,
   },
   description: {
-    marginBottom: 12,
-    opacity: 0.8,
+    marginBottom: 16,
+    color: COLORS.text.primary,
+    lineHeight: 22,
+  },
+  featuresList: {
+    marginBottom: 16,
+    gap: 8,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  featureText: {
+    fontSize: 14,
+    color: COLORS.text.primary,
+    flex: 1,
   },
   price: {
     fontWeight: 'bold',
-    color: '#007AFF',
+    color: COLORS.primary,
+    fontSize: 20,
+  },
+  cardActions: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  addToCartButton: {
+    flex: 1,
+    borderColor: COLORS.primary,
   },
   empty: {
-    padding: 40,
+    padding: 60,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    marginTop: 16,
+    marginBottom: 8,
+    color: COLORS.text.primary,
+    fontWeight: 'bold',
+  },
+  emptyText: {
+    color: COLORS.text.secondary,
+    textAlign: 'center',
   },
 });
 

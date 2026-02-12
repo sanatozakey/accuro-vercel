@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Lock, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import api from '../services/api';
+import { validatePassword } from '../utils/passwordValidation';
+import { PasswordStrengthMeter } from '../components/PasswordStrengthMeter';
 
 export function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -23,8 +25,9 @@ export function ResetPassword() {
     setError('');
 
     // Validation
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    const passwordCheck = validatePassword(formData.password);
+    if (!passwordCheck.isValid) {
+      setError('Password does not meet requirements: ' + passwordCheck.errors[0]);
       return;
     }
 
@@ -138,7 +141,7 @@ export function ResetPassword() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
-                minLength={6}
+                minLength={8}
                 className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter new password"
               />
@@ -154,7 +157,9 @@ export function ResetPassword() {
                 )}
               </button>
             </div>
-            <p className="mt-1 text-xs text-gray-500">Must be at least 6 characters</p>
+            <div className="mt-2">
+              <PasswordStrengthMeter password={formData.password} />
+            </div>
           </div>
 
           <div className="mb-6">

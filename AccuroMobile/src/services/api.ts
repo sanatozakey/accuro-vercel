@@ -2,9 +2,12 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API Base URL - Update this to your backend URL
-const API_BASE_URL = __DEV__
-  ? 'http://10.0.2.2:5000/api'  // Android emulator localhost
-  : 'https://accuro-backend.onrender.com/api';
+// Temporarily forcing production URL for testing
+const API_BASE_URL = 'https://accuro-backend.onrender.com/api';
+// Original code:
+// const API_BASE_URL = __DEV__
+//   ? 'http://10.0.2.2:5000/api'  // Android emulator localhost
+//   : 'https://accuro-backend.onrender.com/api';
 
 // Create axios instance
 const api = axios.create({

@@ -24,7 +24,7 @@ export function UserDashboard() {
       setStats(response.data);
     } catch (error: any) {
       console.error('Failed to load stats:', error);
-      // Don't show error toast, just fail silently
+      toast.error('Failed to load dashboard stats');
     } finally {
       setLoadingStats(false);
     }

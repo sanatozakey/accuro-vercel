@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, cloneElement } from 'react'
+import React, { useEffect, useState, useCallback, useMemo, cloneElement } from 'react'
 import toast from 'react-hot-toast'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -78,6 +78,7 @@ import { UserManagement } from '../components/UserManagement'
 import { SessionManagement } from '../components/SessionManagement'
 import { ActivityLogViewer } from '../components/ActivityLogViewer'
 import { DataExportPanel } from '../components/DataExportPanel'
+import { Pagination } from '../components/Pagination'
 import { BulkEmailPanel } from '../components/BulkEmailPanel'
 import { RateLimitDashboard } from '../components/RateLimitDashboard'
 import { BookingCalendarView } from '../components/BookingCalendarView'
@@ -200,6 +201,10 @@ export function BookingDashboard(): React.ReactElement {
   const [darkMode, setDarkMode] = useState<boolean>(false) // Default to light mode
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false) // Mobile sidebar state
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false) // Desktop sidebar collapsed state
+
+  // Booking pagination state
+  const BOOKINGS_PER_PAGE = 15
+  const [bookingPage, setBookingPage] = useState(1)
 
   // Bulk actions state
   const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set())
@@ -527,7 +532,15 @@ export function BookingDashboard(): React.ReactElement {
       )
     }
     setFilteredBookings(result)
+    setBookingPage(1) // Reset to first page on filter change
   }, [searchTerm, statusFilter, completionFilter, bookings])
+
+  // Client-side pagination for booking table view
+  const bookingTotalPages = Math.ceil(filteredBookings.length / BOOKINGS_PER_PAGE)
+  const paginatedBookings = filteredBookings.slice(
+    (bookingPage - 1) * BOOKINGS_PER_PAGE,
+    bookingPage * BOOKINGS_PER_PAGE
+  )
   // Handle status change
   const updateBookingStatus = async (id: string, newStatus: string): Promise<void> => {
     try {
@@ -1076,6 +1089,31 @@ export function BookingDashboard(): React.ReactElement {
       </div>
     )
   }
+
+  // Memoize sidebar navigation items to avoid re-creating on every render
+  const sidebarNavItems = useMemo(() => [
+    { section: 'MAIN', items: [
+      { key: 'dashboard', icon: Home, label: 'Dashboard' },
+      { key: 'table', icon: List, label: 'Bookings' },
+      { key: 'calendar', icon: CalendarDays, label: 'Calendar' },
+    ]},
+    { section: 'MANAGEMENT', items: [
+      { key: 'products', icon: Package, label: 'Products' },
+      { key: 'users', icon: Users, label: 'Users' },
+    ]},
+    { section: 'INSIGHTS', items: [
+      { key: 'analytics', icon: BarChart3, label: 'Analytics' },
+      { key: 'reports', icon: TrendingUp, label: 'Reports' },
+      { key: 'reviews', icon: Award, label: 'Reviews' },
+      { key: 'activityLogs', icon: Shield, label: 'Activity' },
+    ]},
+    { section: 'SYSTEM', items: [
+      { key: 'settings', icon: Settings, label: 'Settings' },
+      { key: 'rateLimits', icon: Shield, label: 'Rate Limits' },
+      { key: 'security', icon: Shield, label: 'Security' },
+    ]},
+  ] as const, []);
+
   return (
     <div className={`flex min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Mobile Overlay */}
@@ -1731,8 +1769,8 @@ export function BookingDashboard(): React.ReactElement {
                   </tr>
                 </thead>
                 <tbody className={`${darkMode ? 'bg-gray-800' : 'bg-white'} divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                  {filteredBookings.length > 0 ? (
-                    filteredBookings.map((booking) => (
+                  {paginatedBookings.length > 0 ? (
+                    paginatedBookings.map((booking) => (
                       <tr key={booking._id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} ${selectedBookings.has(booking._id) ? (darkMode ? 'bg-blue-900/30' : 'bg-blue-50') : ''}`}>
                         <td className="px-2 py-3 w-10">
                           <button
@@ -1856,8 +1894,8 @@ export function BookingDashboard(): React.ReactElement {
                 </div>
               )}
 
-              {filteredBookings.length > 0 ? (
-                filteredBookings.map((booking) => (
+              {paginatedBookings.length > 0 ? (
+                paginatedBookings.map((booking) => (
                   <div
                     key={booking._id}
                     className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} ${selectedBookings.has(booking._id) ? (darkMode ? 'border-blue-500 bg-blue-900/20' : 'border-blue-500 bg-blue-50') : ''} border rounded-lg p-4 shadow-sm`}
@@ -1935,6 +1973,17 @@ export function BookingDashboard(): React.ReactElement {
                 </div>
               )}
             </div>
+
+            {/* Booking Pagination */}
+            <Pagination
+              currentPage={bookingPage}
+              totalPages={bookingTotalPages}
+              totalItems={filteredBookings.length}
+              itemsPerPage={BOOKINGS_PER_PAGE}
+              onPageChange={setBookingPage}
+              darkMode={darkMode}
+              itemLabel="bookings"
+            />
           </>
         )}
         {viewMode === 'calendar' && (

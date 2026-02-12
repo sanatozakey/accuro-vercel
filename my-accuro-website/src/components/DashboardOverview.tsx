@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { memo } from 'react';
 import {
   Calendar,
   Clock,
@@ -16,9 +16,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import bookingService from '../services/bookingService';
-import activityLogService, { ActivityLog } from '../services/activityLogService';
-import productService from '../services/productService';
+import { ActivityLog } from '../services/activityLogService';
+import { useDashboardData } from '../hooks/useDashboardData';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface DashboardOverviewProps {
   darkMode: boolean;
@@ -35,26 +35,31 @@ interface Booking {
   isCompleted?: boolean;
 }
 
-interface LowStockProduct {
-  _id: string;
-  name: string;
-  stockQuantity: number;
-  stockStatus: string;
-}
-
-interface DashboardStats {
-  todayBookings: Booking[];
-  pendingBookings: Booking[];
-  confirmedBookings: Booking[];
-  lowStockProducts: LowStockProduct[];
-  recentActivity: ActivityLog[];
-  totalBookingsThisMonth: number;
-  completedThisMonth: number;
-}
+const StatCard = memo(function StatCard({ label, value, valueClass, icon, iconBg, bgClass, borderClass, mutedClass }: {
+  label: string; value: number; valueClass: string; icon: React.ReactNode; iconBg: string; bgClass: string; borderClass: string; mutedClass: string;
+}) {
+  return (
+    <Card className={`${bgClass} ${borderClass} border`}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className={`text-sm ${mutedClass}`}>{label}</p>
+            <p className={`text-3xl font-bold ${valueClass}`}>{value}</p>
+          </div>
+          <div className={`h-12 w-12 rounded-full ${iconBg} flex items-center justify-center`}>
+            {icon}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
 
 export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewProps): React.ReactElement {
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardStats>({
+  const queryClient = useQueryClient();
+  const { data: stats, isLoading: loading } = useDashboardData();
+
+  const defaultStats = {
     todayBookings: [],
     pendingBookings: [],
     confirmedBookings: [],
@@ -62,78 +67,13 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
     recentActivity: [],
     totalBookingsThisMonth: 0,
     completedThisMonth: 0,
-  });
+  };
 
-  const fetchDashboardData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
+  const s = stats || defaultStats;
 
-      // Fetch all data in parallel
-      const [bookingsRes, activityRes, lowStockRes] = await Promise.all([
-        bookingService.getAll(),
-        activityLogService.getAll({ limit: 10 }),
-        productService.getLowStockProducts().catch(() => ({ data: [] })),
-      ]);
-
-      const allBookings = bookingsRes.data || [];
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const todayEnd = new Date(today);
-      todayEnd.setHours(23, 59, 59, 999);
-
-      // Get start of current month
-      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-
-      // Filter bookings
-      const todayBookings = allBookings.filter((b: Booking) => {
-        const bookingDate = new Date(b.date);
-        return bookingDate >= today && bookingDate <= todayEnd;
-      });
-
-      const pendingBookings = allBookings.filter((b: Booking) => b.status === 'pending');
-      const confirmedBookings = allBookings.filter((b: Booking) =>
-        b.status === 'confirmed' && new Date(b.date) >= today
-      );
-
-      // This month stats
-      const thisMonthBookings = allBookings.filter((b: Booking) => {
-        const bookingDate = new Date(b.date);
-        return bookingDate >= monthStart;
-      });
-
-      const completedThisMonth = thisMonthBookings.filter((b: Booking) =>
-        b.isCompleted === true
-      ).length;
-
-      setStats({
-        todayBookings,
-        pendingBookings,
-        confirmedBookings,
-        lowStockProducts: lowStockRes.data || [],
-        recentActivity: activityRes.data || [],
-        totalBookingsThisMonth: thisMonthBookings.length,
-        completedThisMonth,
-      });
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchDashboardData();
-
-    // Auto-refresh every 2 minutes for real-time updates
-    const refreshInterval = setInterval(() => {
-      fetchDashboardData();
-    }, 2 * 60 * 1000);
-
-    return () => clearInterval(refreshInterval);
-  }, [fetchDashboardData]);
+  const fetchDashboardData = () => {
+    queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
+  };
 
   const bgClass = darkMode ? 'bg-gray-800' : 'bg-white';
   const textClass = darkMode ? 'text-white' : 'text-gray-900';
@@ -183,65 +123,10 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
     <div className="space-y-6">
       {/* Quick Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className={`${bgClass} ${borderClass} border`}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-sm ${mutedClass}`}>Today's Bookings</p>
-                <p className={`text-3xl font-bold ${textClass}`}>{stats.todayBookings.length}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className={`${bgClass} ${borderClass} border`}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-sm ${mutedClass}`}>Pending Approval</p>
-                <p className={`text-3xl font-bold ${stats.pendingBookings.length > 0 ? 'text-yellow-500' : textClass}`}>
-                  {stats.pendingBookings.length}
-                </p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-yellow-100 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className={`${bgClass} ${borderClass} border`}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-sm ${mutedClass}`}>Low Stock Items</p>
-                <p className={`text-3xl font-bold ${stats.lowStockProducts.length > 0 ? 'text-red-500' : textClass}`}>
-                  {stats.lowStockProducts.length}
-                </p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
-                <Package className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className={`${bgClass} ${borderClass} border`}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-sm ${mutedClass}`}>Completed (Month)</p>
-                <p className={`text-3xl font-bold text-green-500`}>{stats.completedThisMonth}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard label="Today's Bookings" value={s.todayBookings.length} valueClass={textClass} icon={<Calendar className="h-6 w-6 text-blue-600" />} iconBg="bg-blue-100" bgClass={bgClass} borderClass={borderClass} mutedClass={mutedClass} />
+        <StatCard label="Pending Approval" value={s.pendingBookings.length} valueClass={s.pendingBookings.length > 0 ? 'text-yellow-500' : textClass} icon={<Clock className="h-6 w-6 text-yellow-600" />} iconBg="bg-yellow-100" bgClass={bgClass} borderClass={borderClass} mutedClass={mutedClass} />
+        <StatCard label="Low Stock Items" value={s.lowStockProducts.length} valueClass={s.lowStockProducts.length > 0 ? 'text-red-500' : textClass} icon={<Package className="h-6 w-6 text-red-600" />} iconBg="bg-red-100" bgClass={bgClass} borderClass={borderClass} mutedClass={mutedClass} />
+        <StatCard label="Completed (Month)" value={s.completedThisMonth} valueClass="text-green-500" icon={<CheckCircle className="h-6 w-6 text-green-600" />} iconBg="bg-green-100" bgClass={bgClass} borderClass={borderClass} mutedClass={mutedClass} />
       </div>
 
       {/* Main Content Grid */}
@@ -260,14 +145,14 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
             </div>
           </CardHeader>
           <CardContent>
-            {stats.todayBookings.length === 0 ? (
+            {s.todayBookings.length === 0 ? (
               <div className={`text-center py-8 ${mutedClass}`}>
                 <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>No bookings scheduled for today</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {stats.todayBookings.slice(0, 5).map((booking) => (
+                {s.todayBookings.slice(0, 5).map((booking) => (
                   <div
                     key={booking._id}
                     className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
@@ -306,14 +191,14 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
             </div>
           </CardHeader>
           <CardContent>
-            {stats.pendingBookings.length === 0 ? (
+            {s.pendingBookings.length === 0 ? (
               <div className={`text-center py-8 ${mutedClass}`}>
                 <CheckCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>No pending bookings to review</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {stats.pendingBookings.slice(0, 5).map((booking) => (
+                {s.pendingBookings.slice(0, 5).map((booking) => (
                   <div
                     key={booking._id}
                     className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
@@ -348,14 +233,14 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
             </div>
           </CardHeader>
           <CardContent>
-            {stats.recentActivity.length === 0 ? (
+            {s.recentActivity.length === 0 ? (
               <div className={`text-center py-8 ${mutedClass}`}>
                 <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>No recent activity</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {stats.recentActivity.slice(0, 6).map((log) => (
+                {s.recentActivity.slice(0, 6).map((log) => (
                   <div key={log._id} className="flex items-start gap-3">
                     <div className={`mt-1 h-2 w-2 rounded-full ${getActionColor(log.action).replace('text-', 'bg-')}`} />
                     <div className="flex-1 min-w-0">
@@ -387,14 +272,14 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
             </div>
           </CardHeader>
           <CardContent>
-            {stats.lowStockProducts.length === 0 ? (
+            {s.lowStockProducts.length === 0 ? (
               <div className={`text-center py-8 ${mutedClass}`}>
                 <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>All products are well-stocked</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {stats.lowStockProducts.slice(0, 5).map((product) => (
+                {s.lowStockProducts.slice(0, 5).map((product) => (
                   <div
                     key={product._id}
                     className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}

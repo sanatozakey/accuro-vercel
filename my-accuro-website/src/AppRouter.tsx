@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { LoadingSpinner } from './components/LoadingSpinner'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 // Lazy load pages for better performance
 const Home = lazy(() => import('./pages/Home').then(module => ({ default: module.Home })))
@@ -34,6 +35,7 @@ export function AppRouter({ showSplash }: AppRouterProps) {
   return (
     <BrowserRouter>
       <Suspense fallback={<LoadingSpinner size="lg" text="Loading..." />}>
+        <ErrorBoundary>
         <Routes>
           <Route
             path="/"
@@ -200,6 +202,7 @@ export function AppRouter({ showSplash }: AppRouterProps) {
             }
           />
         </Routes>
+        </ErrorBoundary>
       </Suspense>
     </BrowserRouter>
   )

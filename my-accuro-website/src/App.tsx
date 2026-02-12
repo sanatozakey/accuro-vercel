@@ -6,6 +6,9 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { SocketProvider } from './contexts/SocketContext';
 import { SplashScreen } from './components/SplashScreen';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/queryClient';
 import './services/sessionTrackingService'; // Initialize session tracking
 
 // Force fresh deployment - build timestamp
@@ -17,6 +20,8 @@ export function App() {
   };
 
   return (
+    <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
         <SocketProvider>
@@ -53,5 +58,7 @@ export function App() {
         </SocketProvider>
       </AuthProvider>
     </ThemeProvider>
+    </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

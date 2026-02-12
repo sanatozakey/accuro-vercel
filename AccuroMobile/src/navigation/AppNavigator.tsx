@@ -2,12 +2,11 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import AuthNavigator from './AuthNavigator';
-import MainNavigator from './MainNavigator';
-import AdminNavigator from './AdminNavigator';
+import DrawerNavigator from './DrawerNavigator';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const AppNavigator = () => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) {
     return <LoadingSpinner fullScreen message="Loading..." />;
@@ -15,13 +14,7 @@ const AppNavigator = () => {
 
   return (
     <NavigationContainer>
-      {!user ? (
-        <AuthNavigator />
-      ) : isAdmin ? (
-        <AdminNavigator />
-      ) : (
-        <MainNavigator />
-      )}
+      {!user ? <AuthNavigator /> : <DrawerNavigator />}
     </NavigationContainer>
   );
 };

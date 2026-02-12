@@ -1,6 +1,6 @@
-import axios from 'axios';
-
-const API_URL = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '');
+// quotationService - Admin-facing quotation management (CRUD, approve/reject, stats)
+// For customer-facing cart-to-quote flow, see quoteService.ts
+import api from './api';
 
 export interface QuotationItem {
   productId: string;
@@ -58,22 +58,8 @@ export interface UpdateQuotationData {
 }
 
 class QuotationService {
-  private getAuthHeader() {
-    const token = localStorage.getItem('token');
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    };
-  }
-
   async createQuotation(data: CreateQuotationData) {
-    const response = await axios.post(
-      `${API_URL}/api/quotations`,
-      data,
-      this.getAuthHeader()
-    );
+    const response = await api.post('/quotations', data);
     return response.data;
   }
 
@@ -83,61 +69,37 @@ class QuotationService {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.status && params.status !== 'all') queryParams.append('status', params.status);
 
-    const response = await axios.get(
-      `${API_URL}/api/quotations?${queryParams.toString()}`,
-      this.getAuthHeader()
-    );
+    const response = await api.get(`/quotations?${queryParams.toString()}`);
     return response.data;
   }
 
   async getQuotationById(id: string) {
-    const response = await axios.get(
-      `${API_URL}/api/quotations/${id}`,
-      this.getAuthHeader()
-    );
+    const response = await api.get(`/quotations/${id}`);
     return response.data;
   }
 
   async updateQuotation(id: string, data: UpdateQuotationData) {
-    const response = await axios.put(
-      `${API_URL}/api/quotations/${id}`,
-      data,
-      this.getAuthHeader()
-    );
+    const response = await api.put(`/quotations/${id}`, data);
     return response.data;
   }
 
   async approveQuotation(id: string, data: UpdateQuotationData) {
-    const response = await axios.put(
-      `${API_URL}/api/quotations/${id}/approve`,
-      data,
-      this.getAuthHeader()
-    );
+    const response = await api.put(`/quotations/${id}/approve`, data);
     return response.data;
   }
 
   async rejectQuotation(id: string, adminNotes?: string) {
-    const response = await axios.put(
-      `${API_URL}/api/quotations/${id}/reject`,
-      { adminNotes },
-      this.getAuthHeader()
-    );
+    const response = await api.put(`/quotations/${id}/reject`, { adminNotes });
     return response.data;
   }
 
   async deleteQuotation(id: string) {
-    const response = await axios.delete(
-      `${API_URL}/api/quotations/${id}`,
-      this.getAuthHeader()
-    );
+    const response = await api.delete(`/quotations/${id}`);
     return response.data;
   }
 
   async getQuotationStats() {
-    const response = await axios.get(
-      `${API_URL}/api/quotations/stats/overview`,
-      this.getAuthHeader()
-    );
+    const response = await api.get('/quotations/stats/overview');
     return response.data;
   }
 }

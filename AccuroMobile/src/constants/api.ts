@@ -37,6 +37,7 @@ export const API_ENDPOINTS = {
   // Notifications
   NOTIFICATIONS: {
     BASE: '/notifications',
+    UNREAD_COUNT: '/notifications/unread-count',
     READ: (id: string) => `/notifications/${id}/read`,
     READ_ALL: '/notifications/read-all',
     DELETE: (id: string) => `/notifications/${id}`,
@@ -55,6 +56,12 @@ export const API_ENDPOINTS = {
   REVIEWS: {
     BASE: '/reviews',
     BY_ID: (id: string) => `/reviews/${id}`,
+    APPROVE: (id: string) => `/reviews/${id}/approve`,
+  },
+
+  // Activity Logs
+  ACTIVITY_LOGS: {
+    BASE: '/activity-logs',
   },
 
   // Recommendations

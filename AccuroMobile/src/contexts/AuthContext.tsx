@@ -38,8 +38,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const token = await AsyncStorage.getItem('token');
       if (token) {
         // Verify token and get user data
-        const response = await api.get<AuthResponse>(API_ENDPOINTS.AUTH.ME);
-        setUser(response.data.user);
+        const response = await api.get<any>(API_ENDPOINTS.AUTH.ME);
+        setUser(response.data.data || response.data.user);
       }
     } catch (error) {
       console.error('Failed to initialize auth:', error);
@@ -52,12 +52,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (credentials: LoginCredentials) => {
     try {
-      const response = await api.post<AuthResponse>(
+      const response = await api.post<any>(
         API_ENDPOINTS.AUTH.LOGIN,
         credentials
       );
 
-      const { token, user } = response.data;
+      // Backend response structure: { success: true, data: { token, _id, name, email, role, ... } }
+      const { token, ...userData } = response.data.data;
+      const user = userData as User;
 
       // Store token and user data
       await AsyncStorage.setItem('token', token);
@@ -73,12 +75,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const register = async (data: RegisterData) => {
     try {
-      const response = await api.post<AuthResponse>(
+      const response = await api.post<any>(
         API_ENDPOINTS.AUTH.REGISTER,
         data
       );
 
-      const { token, user } = response.data;
+      // Backend response structure: { success: true, data: { token, _id, name, email, role, ... } }
+      const { token, ...userData } = response.data.data;
+      const user = userData as User;
 
       // Store token and user data
       await AsyncStorage.setItem('token', token);
