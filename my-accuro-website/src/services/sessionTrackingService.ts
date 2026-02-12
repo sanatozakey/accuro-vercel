@@ -36,10 +36,10 @@ class SessionTrackingService {
     // Track session on page load
     this.trackSession();
 
-    // Set up heartbeat to keep session active (every 30 seconds)
+    // Set up heartbeat to keep session active (every 5 minutes)
     this.heartbeatInterval = setInterval(() => {
       this.trackSession();
-    }, 30000);
+    }, 5 * 60 * 1000);
 
     // Track page navigation
     window.addEventListener('popstate', () => {

@@ -127,10 +127,10 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
   useEffect(() => {
     fetchDashboardData();
 
-    // Auto-refresh every 30 seconds for real-time updates
+    // Auto-refresh every 2 minutes for real-time updates
     const refreshInterval = setInterval(() => {
       fetchDashboardData();
-    }, 30000);
+    }, 2 * 60 * 1000);
 
     return () => clearInterval(refreshInterval);
   }, [fetchDashboardData]);

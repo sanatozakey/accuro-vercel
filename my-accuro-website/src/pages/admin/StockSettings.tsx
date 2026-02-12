@@ -24,7 +24,7 @@ import { StockBadge } from '../../components/StockBadge';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_URL = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '');
 
 interface StockSettingsData {
   stockDisplayMode: 'labels_only' | 'exact_quantities';
