@@ -3,6 +3,7 @@ export const corsConfig = {
     'http://localhost:3000',
     'http://localhost:3001',
     'https://accuro-vercel-sfom.vercel.app',
+    'https://my-accuro-website.vercel.app',
     process.env.FRONTEND_URL,
   ].filter(Boolean),
   credentials: true,
