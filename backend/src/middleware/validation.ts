@@ -625,37 +625,8 @@ export const validateCreatePurchase: ValidationChain[] = [
 export const validateCreateCompletionProof: ValidationChain[] = [
   body('bookingId')
     .notEmpty()
-    .withMessage('Booking ID is required')
-    .isMongoId()
-    .withMessage('Invalid booking ID format'),
-  body('workPerformed')
-    .trim()
+    .withMessage('Booking ID is required'),
+  body('serviceReport')
     .notEmpty()
-    .withMessage('Work performed description is required')
-    .isLength({ min: 10, max: 2000 })
-    .withMessage('Work performed must be between 10 and 2000 characters'),
-  body('findings')
-    .optional()
-    .trim()
-    .isLength({ max: 2000 })
-    .withMessage('Findings must not exceed 2000 characters'),
-  body('recommendations')
-    .optional()
-    .trim()
-    .isLength({ max: 2000 })
-    .withMessage('Recommendations must not exceed 2000 characters'),
-  body('technicianName')
-    .optional()
-    .trim()
-    .isLength({ max: 100 })
-    .withMessage('Technician name must not exceed 100 characters'),
-  body('completionDate')
-    .optional()
-    .isISO8601()
-    .withMessage('Completion date must be a valid date'),
-  body('clientSignature')
-    .optional()
-    .trim()
-    .isLength({ max: 50000 })
-    .withMessage('Signature data too large'),
+    .withMessage('Service report is required'),
 ];
