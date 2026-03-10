@@ -10,9 +10,6 @@ export function About() {
       <section className="bg-navy-900 text-white py-16 sm:py-24 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-900 to-blue-900 opacity-90" />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <Badge className="mb-4 bg-blue-600 hover:bg-blue-700 text-white border-0">
-            About Accuro
-          </Badge>
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold">About Us</h1>
           <p className="mt-6 max-w-3xl text-lg sm:text-xl text-gray-200">
             Learn more about Accuro and our commitment to providing high-quality
