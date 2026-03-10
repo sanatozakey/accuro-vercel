@@ -63,13 +63,27 @@ export const sendBulkEmail = async (req: AuthRequest, res: Response) => {
       console.error('Failed to log activity:', logError);
     }
 
+    // If all emails failed due to SMTP issues, return error
+    if (results.sent === 0 && results.failed > 0) {
+      return res.status(503).json({
+        success: false,
+        message: results.errors[0] || 'Failed to send emails. Email service may be unavailable.',
+        data: {
+          totalRecipients: recipients.length,
+          sent: results.sent,
+          failed: results.failed,
+          errors: results.errors.slice(0, 10),
+        },
+      });
+    }
+
     res.status(200).json({
       success: true,
       data: {
         totalRecipients: recipients.length,
         sent: results.sent,
         failed: results.failed,
-        errors: results.errors.slice(0, 10), // Only return first 10 errors
+        errors: results.errors.slice(0, 10),
       },
     });
   } catch (error: any) {

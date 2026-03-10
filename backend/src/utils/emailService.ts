@@ -16,6 +16,9 @@ class EmailService {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD,
       },
+      connectionTimeout: 10000, // 10s connection timeout
+      socketTimeout: 15000,     // 15s socket timeout
+      greetingTimeout: 10000,   // 10s greeting timeout
     });
   }
 
@@ -308,7 +311,7 @@ class EmailService {
       html,
     });
   }
-  // Send bulk email to multiple recipients
+  // Send bulk email to multiple recipients (parallel with batching)
   async sendBulkEmail(recipients: { email: string; name: string }[], subject: string, htmlContent: string): Promise<{ sent: number; failed: number; errors: string[] }> {
     const results = {
       sent: 0,
@@ -316,29 +319,56 @@ class EmailService {
       errors: [] as string[],
     };
 
-    for (const recipient of recipients) {
-      try {
-        // Personalize the email with recipient name
-        const personalizedHtml = htmlContent.replace(/\{\{name\}\}/g, recipient.name);
+    // First, verify SMTP connection before attempting to send
+    try {
+      await Promise.race([
+        this.transporter.verify(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP connection verification timed out')), 10000)),
+      ]);
+    } catch (verifyError: any) {
+      console.error('SMTP connection failed:', verifyError.message);
+      return {
+        sent: 0,
+        failed: recipients.length,
+        errors: [`SMTP connection failed: ${verifyError.message}. Email sending is unavailable - the server may block outbound SMTP connections.`],
+      };
+    }
 
-        await this.sendEmail({
-          to: recipient.email,
-          subject,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              ${personalizedHtml}
+    // Send in parallel batches of 5
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+      const batch = recipients.slice(i, i + BATCH_SIZE);
 
-              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
-                <p>This email was sent from Accuro.</p>
-                <p>If you wish to unsubscribe, please contact us at info@accuro.com.ph</p>
+      const batchResults = await Promise.allSettled(
+        batch.map(async (recipient) => {
+          const personalizedHtml = htmlContent.replace(/\{\{name\}\}/g, recipient.name);
+
+          await this.sendEmail({
+            to: recipient.email,
+            subject,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                ${personalizedHtml}
+
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+                  <p>This email was sent from Accuro.</p>
+                  <p>If you wish to unsubscribe, please contact us at info@accuro.com.ph</p>
+                </div>
               </div>
-            </div>
-          `,
-        });
-        results.sent++;
-      } catch (error: any) {
-        results.failed++;
-        results.errors.push(`Failed to send to ${recipient.email}: ${error.message}`);
+            `,
+          });
+
+          return recipient.email;
+        })
+      );
+
+      for (const result of batchResults) {
+        if (result.status === 'fulfilled') {
+          results.sent++;
+        } else {
+          results.failed++;
+          results.errors.push(result.reason?.message || 'Unknown error');
+        }
       }
     }
 
