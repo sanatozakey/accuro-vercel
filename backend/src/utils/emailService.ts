@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 interface EmailOptions {
   to: string;
@@ -6,36 +6,34 @@ interface EmailOptions {
   html: string;
 }
 
+const FROM_EMAIL = process.env.EMAIL_FROM || 'Accuro <noreply@accuro.com.ph>';
+const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL || 'iynubauhsoj@gmail.com';
+
 class EmailService {
-  private transporter: nodemailer.Transporter;
+  private resend: Resend;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-      connectionTimeout: 10000, // 10s connection timeout
-      socketTimeout: 15000,     // 15s socket timeout
-      greetingTimeout: 10000,   // 10s greeting timeout
-    });
+    this.resend = new Resend(process.env.RESEND_API_KEY || '');
   }
 
   async sendEmail(options: EmailOptions): Promise<void> {
-    const mailOptions = {
-      from: `"Accuro Website" <${process.env.EMAIL_USER}>`,
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
-    };
-
     try {
-      await this.transporter.sendMail(mailOptions);
+      const { error } = await this.resend.emails.send({
+        from: FROM_EMAIL,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+      });
+
+      if (error) {
+        console.error(`Resend error for ${options.to}:`, error);
+        throw new Error(error.message);
+      }
+
       console.log(`Email sent successfully to ${options.to}`);
-    } catch (error) {
-      console.error('Error sending email:', error);
-      throw error;
+    } catch (err) {
+      console.error('Error sending email:', err);
+      throw err;
     }
   }
 
@@ -75,7 +73,7 @@ class EmailService {
     `;
 
     await this.sendEmail({
-      to: process.env.NOTIFICATION_EMAIL || 'iynubauhsoj@gmail.com',
+      to: NOTIFICATION_EMAIL,
       subject: `New Contact Form Submission from ${contactData.name}`,
       html,
     });
@@ -249,7 +247,7 @@ class EmailService {
     `;
 
     await this.sendEmail({
-      to: process.env.NOTIFICATION_EMAIL || 'iynubauhsoj@gmail.com',
+      to: NOTIFICATION_EMAIL,
       subject: `New Meeting Request - ${bookingData.company} (${new Date(bookingData.date).toLocaleDateString()})`,
       html,
     });
@@ -311,6 +309,7 @@ class EmailService {
       html,
     });
   }
+
   // Send bulk email to multiple recipients (parallel with batching)
   async sendBulkEmail(recipients: { email: string; name: string }[], subject: string, htmlContent: string): Promise<{ sent: number; failed: number; errors: string[] }> {
     const results = {
@@ -319,18 +318,11 @@ class EmailService {
       errors: [] as string[],
     };
 
-    // First, verify SMTP connection before attempting to send
-    try {
-      await Promise.race([
-        this.transporter.verify(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP connection verification timed out')), 10000)),
-      ]);
-    } catch (verifyError: any) {
-      console.error('SMTP connection failed:', verifyError.message);
+    if (!process.env.RESEND_API_KEY) {
       return {
         sent: 0,
         failed: recipients.length,
-        errors: [`SMTP connection failed: ${verifyError.message}. Email sending is unavailable - the server may block outbound SMTP connections.`],
+        errors: ['Email service is not configured. RESEND_API_KEY is missing.'],
       };
     }
 
