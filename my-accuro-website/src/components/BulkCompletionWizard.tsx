@@ -26,7 +26,7 @@ interface BulkCompletionWizardProps {
 interface CompletionResult {
   bookingId: string;
   company: string;
-  status: 'completed' | 'skipped' | 'failed';
+  status: 'completed' | 'pending_review' | 'skipped' | 'failed';
   error?: string;
 }
 
@@ -77,13 +77,16 @@ export function BulkCompletionWizard({
         serviceReport,
       });
 
+      const resultStatus = response?.data?.proof?.status === 'approved' ? 'completed' : 'pending_review';
       setResults(prev => [...prev, {
         bookingId: currentBooking._id,
         company: currentBooking.company,
-        status: 'completed',
+        status: resultStatus,
       }]);
 
-      toast.success(`Completed: ${currentBooking.company}`);
+      toast.success(resultStatus === 'completed'
+        ? `Completed: ${currentBooking.company}`
+        : `Report submitted for review: ${currentBooking.company}`);
       moveToNext();
     } catch (error: any) {
       const message = error.response?.data?.message || 'Failed to complete booking';
@@ -233,6 +236,12 @@ export function BulkCompletionWizard({
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                                 <Check className="h-3 w-3 mr-1" />
                                 Completed
+                              </span>
+                            )}
+                            {result.status === 'pending_review' && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
+                                <Check className="h-3 w-3 mr-1" />
+                                Submitted for Review
                               </span>
                             )}
                             {result.status === 'skipped' && (

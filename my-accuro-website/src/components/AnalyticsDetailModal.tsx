@@ -397,7 +397,9 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
             <td className="px-6 py-4 whitespace-nowrap text-sm">
               <span
                 className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                  item.role === 'admin'
+                  item.role === 'superadmin'
+                    ? 'bg-red-100 text-red-800'
+                    : item.role === 'admin'
                     ? 'bg-purple-100 text-purple-800'
                     : 'bg-gray-100 text-gray-800'
                 }`}

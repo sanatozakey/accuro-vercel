@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { X, Upload, FileText, Image, Trash2, Check, ChevronRight, ChevronLeft, Loader2, PenTool } from 'lucide-react';
+import { X, Upload, FileText, Image, Trash2, Check, ChevronRight, ChevronLeft, Loader2, PenTool, AlertTriangle } from 'lucide-react';
 import { Button } from './ui/button';
-import completionProofService, { ServiceReport } from '../services/completionProofService';
+import completionProofService, { ServiceReport, CompletionProof } from '../services/completionProofService';
 import toast from 'react-hot-toast';
 
 interface CompletionProofModalProps {
@@ -18,6 +18,10 @@ interface CompletionProofModalProps {
     product: string;
   };
   darkMode?: boolean;
+  // Revision mode props
+  mode?: 'create' | 'revise';
+  existingProof?: CompletionProof;
+  rejectionFeedback?: string;
 }
 
 type Step = 'report' | 'attachments' | 'signature' | 'review';
@@ -41,16 +45,19 @@ export function CompletionProofModal({
   onComplete,
   booking,
   darkMode = false,
+  mode = 'create',
+  existingProof,
+  rejectionFeedback,
 }: CompletionProofModalProps): React.ReactElement | null {
   const [currentStep, setCurrentStep] = useState<Step>('report');
   const [loading, setLoading] = useState(false);
 
-  // Service Report state
+  // Service Report state - pre-populate if revising
   const [serviceReport, setServiceReport] = useState<ServiceReport>({
-    workPerformed: '',
-    equipmentUsed: '',
-    issuesFound: '',
-    recommendations: '',
+    workPerformed: existingProof?.serviceReport?.workPerformed || '',
+    equipmentUsed: existingProof?.serviceReport?.equipmentUsed || '',
+    issuesFound: existingProof?.serviceReport?.issuesFound || '',
+    recommendations: existingProof?.serviceReport?.recommendations || '',
   });
 
   // Attachments state
@@ -237,12 +244,17 @@ export function CompletionProofModal({
         };
       }
 
-      await completionProofService.createCompletionProof(data);
-      toast.success('Booking completed with proof successfully');
+      if (mode === 'revise' && existingProof) {
+        await completionProofService.revise(existingProof._id, data);
+        toast.success('Completion report revised and resubmitted for review');
+      } else {
+        await completionProofService.createCompletionProof(data);
+        toast.success('Completion report submitted successfully');
+      }
       onComplete();
       onClose();
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to create completion proof';
+      const message = error.response?.data?.message || 'Failed to submit completion report';
       toast.error(message);
     } finally {
       setLoading(false);
@@ -268,7 +280,9 @@ export function CompletionProofModal({
           {/* Header */}
           <div className={`flex items-center justify-between p-4 border-b ${borderClass}`}>
             <div>
-              <h2 className={`text-lg font-semibold ${textClass}`}>Complete Booking</h2>
+              <h2 className={`text-lg font-semibold ${textClass}`}>
+                {mode === 'revise' ? 'Revise Completion Report' : 'Submit Completion Report'}
+              </h2>
               <p className={`text-sm ${mutedClass}`}>
                 {booking.company} - {new Date(booking.date).toLocaleDateString()} at {booking.time}
               </p>
@@ -310,6 +324,23 @@ export function CompletionProofModal({
 
           {/* Content */}
           <div className="p-6 max-h-[60vh] overflow-y-auto">
+            {/* Rejection Feedback Banner */}
+            {mode === 'revise' && rejectionFeedback && (
+              <div className="mb-4 p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-orange-800 dark:text-orange-300">
+                      Report Rejected - Revision Required
+                    </p>
+                    <p className="text-sm text-orange-700 dark:text-orange-400 mt-1">
+                      {rejectionFeedback}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Step 1: Service Report */}
             {currentStep === 'report' && (
               <div className="space-y-4">
@@ -591,7 +622,7 @@ export function CompletionProofModal({
                 ) : (
                   <>
                     <Check className="h-4 w-4 mr-1" />
-                    Complete Booking
+                    {mode === 'revise' ? 'Resubmit Report' : 'Submit Report'}
                   </>
                 )}
               </Button>

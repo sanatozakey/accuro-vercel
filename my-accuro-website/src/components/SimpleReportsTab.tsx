@@ -140,7 +140,7 @@ export function SimpleReportsTab({ darkMode = false }: SimpleReportsTabProps) {
           data = usersResponse.data;
           summary = {
             totalRecords: data.length,
-            admins: data.filter(u => u.role === 'admin').length,
+            admins: data.filter(u => u.role === 'admin' || u.role === 'superadmin').length,
             users: data.filter(u => u.role === 'user').length,
           };
           break;

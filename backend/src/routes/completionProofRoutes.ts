@@ -6,6 +6,10 @@ import {
   updateCompletionProof,
   deleteAttachment,
   getAllCompletionProofs,
+  approveCompletionProof,
+  rejectCompletionProof,
+  reviseCompletionProof,
+  getPendingReviewProofs,
 } from '../controllers/completionProofController';
 import { protect, authorize } from '../middleware/auth';
 import { proofUpload } from '../middleware/upload';
@@ -18,6 +22,9 @@ router.use(protect);
 
 // Get all completion proofs (admin only)
 router.get('/', authorize('admin', 'superadmin'), getAllCompletionProofs);
+
+// Get proofs pending review (superadmin only) - must be before /:id
+router.get('/pending-review', authorize('superadmin'), getPendingReviewProofs);
 
 // Create completion proof with file uploads (admin only)
 router.post(
@@ -41,6 +48,20 @@ router.put(
   authorize('admin', 'superadmin'),
   proofUpload.array('attachments', 5),
   updateCompletionProof
+);
+
+// Approve a completion proof (superadmin only)
+router.put('/:id/approve', authorize('superadmin'), approveCompletionProof);
+
+// Reject a completion proof (superadmin only)
+router.put('/:id/reject', authorize('superadmin'), rejectCompletionProof);
+
+// Revise a rejected completion proof (admin resubmits)
+router.put(
+  '/:id/revise',
+  authorize('admin', 'superadmin'),
+  proofUpload.array('attachments', 5),
+  reviseCompletionProof
 );
 
 // Delete attachment from proof (admin only)

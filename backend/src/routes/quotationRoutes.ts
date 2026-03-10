@@ -20,13 +20,13 @@ router.use(protect);
 // Customer routes
 router.post('/', validateCreateQuotation, handleValidationErrors, createQuotation);
 router.get('/', getQuotations);
-router.get('/:id', getQuotationById);
 
-// Admin-only routes
+// Admin-only routes (static paths must come before /:id param route)
+router.get('/stats/overview', adminOnly, getQuotationStats);
+router.get('/:id', getQuotationById);
 router.put('/:id', adminOnly, updateQuotation);
 router.put('/:id/approve', adminOnly, approveQuotation);
 router.put('/:id/reject', adminOnly, rejectQuotation);
 router.delete('/:id', adminOnly, deleteQuotation);
-router.get('/stats/overview', adminOnly, getQuotationStats);
 
 export default router;

@@ -21,7 +21,7 @@ export interface IBooking extends Document {
   location: string;
   product: string;
   additionalInfo?: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled' | 'pending_review';
   statusHistory: IStatusHistoryEntry[];
   conclusion?: string;
   cancellationReason?: string;
@@ -91,7 +91,7 @@ const BookingSchema: Schema = new Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'completed', 'cancelled', 'rescheduled'],
+      enum: ['pending', 'confirmed', 'completed', 'cancelled', 'rescheduled', 'pending_review'],
       default: 'pending',
     },
     statusHistory: [{

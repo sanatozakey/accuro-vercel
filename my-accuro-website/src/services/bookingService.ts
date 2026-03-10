@@ -16,7 +16,7 @@ export interface BookingData {
 export interface Booking extends BookingData {
   _id: string;
   userId?: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled' | 'pending_review';
   conclusion?: string;
   rescheduleReason?: string;
   originalDate?: string;

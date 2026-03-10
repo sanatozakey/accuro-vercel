@@ -1,4 +1,5 @@
 import Notification from '../models/Notification';
+import User from '../models/User';
 import mongoose from 'mongoose';
 
 // Conditional socket import for serverless compatibility
@@ -75,6 +76,10 @@ export class NotificationService {
       'in-progress': {
         title: 'Meeting In Progress',
         message: `Your meeting with ${bookingDetails.company} is currently in progress.`,
+      },
+      pending_review: {
+        title: 'Report Under Review',
+        message: `A completion report for your meeting with ${bookingDetails.company} on ${bookingDetails.date} has been submitted and is under review.`,
       },
       completed: {
         title: 'Meeting Completed',
@@ -225,5 +230,61 @@ export class NotificationService {
    */
   static async deleteNotification(notificationId: mongoose.Types.ObjectId | string) {
     return await Notification.findByIdAndDelete(notificationId);
+  }
+
+  /**
+   * Notify all superadmins about a new completion report pending review
+   */
+  static async notifySuperAdminsNewReport(
+    bookingId: mongoose.Types.ObjectId | string,
+    submitterName: string,
+    bookingDetails: { company: string; date: string; time: string }
+  ) {
+    try {
+      const superAdmins = await User.find({ role: 'superadmin' }).select('_id').lean();
+      for (const sa of superAdmins) {
+        await this.createNotification({
+          userId: (sa as any)._id,
+          type: 'booking',
+          title: 'Completion Report Pending Review',
+          message: `${submitterName} submitted a completion report for ${bookingDetails.company} (${bookingDetails.date} at ${bookingDetails.time}). Review required.`,
+          relatedId: bookingId,
+          relatedType: 'booking',
+          actionUrl: `/admin/bookings?tab=pending-review`,
+        });
+      }
+    } catch (error) {
+      console.error('Error notifying superadmins:', error);
+    }
+  }
+
+  /**
+   * Notify an admin about their completion report decision
+   */
+  static async notifyReportDecision(
+    adminUserId: mongoose.Types.ObjectId | string,
+    bookingId: mongoose.Types.ObjectId | string,
+    decision: 'approved' | 'rejected',
+    bookingDetails: { company: string; date: string; time: string },
+    feedback?: string
+  ) {
+    const titles: Record<string, string> = {
+      approved: 'Completion Report Approved',
+      rejected: 'Completion Report Rejected',
+    };
+    const messages: Record<string, string> = {
+      approved: `Your completion report for ${bookingDetails.company} (${bookingDetails.date} at ${bookingDetails.time}) has been approved.`,
+      rejected: `Your completion report for ${bookingDetails.company} (${bookingDetails.date} at ${bookingDetails.time}) was rejected. Feedback: ${feedback || 'No feedback provided.'}`,
+    };
+
+    return this.createNotification({
+      userId: adminUserId,
+      type: 'booking',
+      title: titles[decision],
+      message: messages[decision],
+      relatedId: bookingId,
+      relatedType: 'booking',
+      actionUrl: `/admin/bookings`,
+    });
   }
 }

@@ -22,9 +22,20 @@ export interface Signature {
   signedAt: string;
 }
 
+export interface RevisionEntry {
+  serviceReport: ServiceReport;
+  attachments: Attachment[];
+  signature?: Signature;
+  rejectionFeedback: string;
+  revisedAt: string;
+  revisedBy: string;
+}
+
+export type CompletionProofStatus = 'pending_review' | 'approved' | 'rejected';
+
 export interface CompletionProof {
   _id: string;
-  bookingId: string;
+  bookingId: string | any;
   serviceReport: ServiceReport;
   attachments: Attachment[];
   signature?: Signature;
@@ -35,6 +46,17 @@ export interface CompletionProof {
   };
   completedByName: string;
   completedAt: string;
+  // Review workflow fields
+  status: CompletionProofStatus;
+  reviewedBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  reviewedByName?: string;
+  reviewedAt?: string;
+  reviewFeedback?: string;
+  revisionHistory: RevisionEntry[];
   createdAt: string;
   updatedAt: string;
 }
@@ -101,12 +123,71 @@ class CompletionProofService {
     startDate?: string;
     endDate?: string;
     completedBy?: string;
+    status?: string;
   }): Promise<{
     success: boolean;
     count: number;
     data: CompletionProof[];
   }> {
     const response = await api.get('/completion-proofs', { params });
+    return response.data;
+  }
+
+  // Get proofs pending review (superadmin only)
+  async getPendingReview(): Promise<{
+    success: boolean;
+    count: number;
+    data: CompletionProof[];
+  }> {
+    const response = await api.get('/completion-proofs/pending-review');
+    return response.data;
+  }
+
+  // Approve a completion proof (superadmin only)
+  async approve(id: string, feedback?: string): Promise<{
+    success: boolean;
+    message: string;
+    data: CompletionProof;
+  }> {
+    const response = await api.put(`/completion-proofs/${id}/approve`, { feedback });
+    return response.data;
+  }
+
+  // Reject a completion proof (superadmin only)
+  async reject(id: string, feedback: string): Promise<{
+    success: boolean;
+    message: string;
+    data: CompletionProof;
+  }> {
+    const response = await api.put(`/completion-proofs/${id}/reject`, { feedback });
+    return response.data;
+  }
+
+  // Revise a rejected completion proof (admin resubmits)
+  async revise(id: string, data: CreateCompletionProofData): Promise<{
+    success: boolean;
+    message: string;
+    data: CompletionProof;
+  }> {
+    const formData = new FormData();
+    formData.append('bookingId', data.bookingId);
+    formData.append('serviceReport', JSON.stringify(data.serviceReport));
+
+    if (data.signature) {
+      formData.append('signature', JSON.stringify(data.signature));
+    }
+
+    if (data.attachments && data.attachments.length > 0) {
+      data.attachments.forEach((file) => {
+        formData.append('attachments', file);
+      });
+    }
+
+    const response = await api.put(`/completion-proofs/${id}/revise`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   }
 

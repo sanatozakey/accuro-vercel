@@ -68,6 +68,8 @@ import { GoogleCalendarSettings } from '../components/GoogleCalendarSettings'
 import { EmbeddedGoogleCalendar } from '../components/EmbeddedGoogleCalendar'
 import { CompletionProofModal } from '../components/CompletionProofModal'
 import { BulkCompletionWizard } from '../components/BulkCompletionWizard'
+import { CompletionReviewModal } from '../components/CompletionReviewModal'
+import completionProofService, { CompletionProof } from '../services/completionProofService'
 import { AdminReviewsManager } from '../components/AdminReviewsManager'
 import { EnhancedReportsTab } from '../components/EnhancedReportsTab'
 import { CalendarView } from '../components/CalendarView'
@@ -190,6 +192,10 @@ export function BookingDashboard(): React.ReactElement {
     useState<boolean>(false)
   const [isCompletionModalOpen, setIsCompletionModalOpen] =
     useState<boolean>(false)
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false)
+  const [reviewProof, setReviewProof] = useState<CompletionProof | null>(null)
+  const [revisionMode, setRevisionMode] = useState<boolean>(false)
+  const [revisionProof, setRevisionProof] = useState<CompletionProof | null>(null)
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
   const [viewMode, setViewMode] = useState<'dashboard' | 'table' | 'calendar' | 'products' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings' | 'rateLimits' | 'security'>(
@@ -578,6 +584,45 @@ export function BookingDashboard(): React.ReactElement {
     setIsDetailModalOpen(false)
   }
 
+  // Open review modal (superadmin reviews a pending_review booking)
+  const openReviewModal = async (booking: Booking): Promise<void> => {
+    try {
+      const response = await completionProofService.getByBookingId(booking._id)
+      if (response.success && response.data) {
+        setSelectedBooking(booking)
+        setReviewProof(response.data)
+        setIsReviewModalOpen(true)
+      } else {
+        toast.error('Completion proof not found for this booking')
+      }
+    } catch (error: any) {
+      toast.error('Failed to load completion proof')
+    }
+  }
+
+  // Open revision modal (admin revises a rejected report)
+  const openRevisionModal = async (booking: Booking): Promise<void> => {
+    try {
+      const response = await completionProofService.getByBookingId(booking._id)
+      if (response.success && response.data && response.data.status === 'rejected') {
+        setSelectedBooking(booking)
+        setRevisionProof(response.data)
+        setRevisionMode(true)
+        setIsCompletionModalOpen(true)
+      } else {
+        toast.error('No rejected report found for this booking')
+      }
+    } catch (error: any) {
+      toast.error('Failed to load completion proof')
+    }
+  }
+
+  const handleReviewDecision = async (): Promise<void> => {
+    await fetchBookings()
+    setIsReviewModalOpen(false)
+    setReviewProof(null)
+  }
+
   // Bulk action handlers
   const toggleSelectBooking = (bookingId: string): void => {
     const newSelected = new Set(selectedBookings)
@@ -920,6 +965,13 @@ export function BookingDashboard(): React.ReactElement {
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
             <RotateCcw className="w-3 h-3 mr-1" />
             Rescheduled
+          </span>
+        )
+      case 'pending_review':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+            <Eye className="w-3 h-3 mr-1" />
+            Pending Review
           </span>
         )
       case 'completed':
@@ -1596,6 +1648,7 @@ export function BookingDashboard(): React.ReactElement {
                   <option value="all">All Statuses</option>
                   <option value="pending">Pending</option>
                   <option value="confirmed">Confirmed</option>
+                  <option value="pending_review">Pending Review</option>
                   <option value="rescheduled">Rescheduled</option>
                   <option value="cancelled">Cancelled</option>
                   <option value="completed">Completed</option>
@@ -2982,10 +3035,21 @@ export function BookingDashboard(): React.ReactElement {
                             <button
                               type="button"
                               className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:w-auto sm:text-sm"
-                              onClick={openCompletionModal}
+                              onClick={() => {
+                                // Check if there's a rejected proof to revise
+                                completionProofService.getByBookingId(selectedBooking._id)
+                                  .then(res => {
+                                    if (res.success && res.data && res.data.status === 'rejected') {
+                                      openRevisionModal(selectedBooking)
+                                    } else {
+                                      openCompletionModal()
+                                    }
+                                  })
+                                  .catch(() => openCompletionModal())
+                              }}
                             >
                               <CheckSquare className="h-4 w-4 mr-2" />
-                              Mark as Complete
+                              Submit Completion Report
                             </button>
                             <button
                               type="button"
@@ -2997,6 +3061,19 @@ export function BookingDashboard(): React.ReactElement {
                             </button>
                           </>
                         )}
+                      {selectedBooking.status === 'pending_review' && isSuperAdmin && (
+                        <button
+                          type="button"
+                          className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:w-auto sm:text-sm"
+                          onClick={() => {
+                            setIsDetailModalOpen(false)
+                            openReviewModal(selectedBooking)
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Review Report
+                        </button>
+                      )}
                       {selectedBooking.status === 'cancelled' && (
                         <button
                           type="button"
@@ -3292,9 +3369,30 @@ export function BookingDashboard(): React.ReactElement {
       {isCompletionModalOpen && selectedBooking && (
         <CompletionProofModal
           isOpen={isCompletionModalOpen}
-          onClose={() => setIsCompletionModalOpen(false)}
+          onClose={() => {
+            setIsCompletionModalOpen(false)
+            setRevisionMode(false)
+            setRevisionProof(null)
+          }}
           onComplete={handleBookingCompleted}
           booking={selectedBooking}
+          darkMode={darkMode}
+          mode={revisionMode ? 'revise' : 'create'}
+          existingProof={revisionProof || undefined}
+          rejectionFeedback={revisionProof?.reviewFeedback}
+        />
+      )}
+      {/* Completion Review Modal (superadmin) */}
+      {isReviewModalOpen && selectedBooking && reviewProof && (
+        <CompletionReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => {
+            setIsReviewModalOpen(false)
+            setReviewProof(null)
+          }}
+          onDecision={handleReviewDecision}
+          booking={selectedBooking}
+          proof={reviewProof}
           darkMode={darkMode}
         />
       )}

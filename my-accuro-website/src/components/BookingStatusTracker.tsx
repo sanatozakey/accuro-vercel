@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Check, Clock, Calendar, XCircle, RefreshCw } from 'lucide-react';
+import { Check, Clock, Calendar, XCircle, RefreshCw, Eye } from 'lucide-react';
 import { useSocket } from '../contexts/SocketContext';
 
-export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled';
+export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled' | 'pending_review';
 
 interface StatusHistoryEntry {
   status: string;
@@ -62,9 +62,16 @@ const STATUS_CONFIG: Record<BookingStatus, {
     bgColor: 'bg-purple-100 dark:bg-purple-900/30',
     borderColor: 'border-purple-300 dark:border-purple-700',
   },
+  pending_review: {
+    label: 'Pending Review',
+    icon: <Eye className="h-4 w-4" />,
+    color: 'text-orange-700 dark:text-orange-400',
+    bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+    borderColor: 'border-orange-300 dark:border-orange-700',
+  },
 };
 
-const TIMELINE_STEPS: BookingStatus[] = ['pending', 'confirmed', 'completed'];
+const TIMELINE_STEPS: BookingStatus[] = ['pending', 'confirmed', 'pending_review', 'completed'];
 
 export function BookingStatusTracker({
   bookingId,
@@ -164,8 +171,10 @@ export function BookingStatusTracker({
             className={`h-full rounded-full transition-all duration-500 ${
               isCancelledOrRescheduled
                 ? 'bg-gray-400'
-                : currentIndex >= 2
+                : currentIndex >= 3
                 ? 'bg-green-500'
+                : currentIndex >= 2
+                ? 'bg-orange-500'
                 : currentIndex >= 1
                 ? 'bg-blue-500'
                 : 'bg-yellow-500'
