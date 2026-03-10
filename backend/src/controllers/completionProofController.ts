@@ -555,16 +555,9 @@ export const getCompletionProofByBooking = async (req: Request, res: Response) =
       .populate('completedBy', 'name email')
       .populate('reviewedBy', 'name email');
 
-    if (!proof) {
-      return res.status(404).json({
-        success: false,
-        message: 'Completion proof not found for this booking',
-      });
-    }
-
     res.status(200).json({
       success: true,
-      data: proof,
+      data: proof, // null if no proof exists for this booking
     });
   } catch (error: any) {
     res.status(500).json({

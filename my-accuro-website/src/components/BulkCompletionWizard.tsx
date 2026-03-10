@@ -72,7 +72,7 @@ export function BulkCompletionWizard({
 
     setLoading(true);
     try {
-      await completionProofService.createCompletionProof({
+      const response = await completionProofService.createCompletionProof({
         bookingId: currentBooking._id,
         serviceReport,
       });
