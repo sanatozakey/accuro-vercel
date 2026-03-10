@@ -6,8 +6,9 @@ interface EmailOptions {
   html: string;
 }
 
-const FROM_EMAIL = process.env.EMAIL_FROM || 'Accuro <noreply@accuro.com.ph>';
-const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL || 'iynubauhsoj@gmail.com';
+const FROM_EMAIL = process.env.EMAIL_FROM || 'Accuro <onboarding@resend.dev>';
+const REPLY_TO_EMAIL = process.env.REPLY_TO_EMAIL || 'calibrex.emailer@gmail.com';
+const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL || 'calibrex.emailer@gmail.com';
 
 class EmailService {
   private resend: Resend;
@@ -20,6 +21,7 @@ class EmailService {
     try {
       const { error } = await this.resend.emails.send({
         from: FROM_EMAIL,
+        replyTo: REPLY_TO_EMAIL,
         to: options.to,
         subject: options.subject,
         html: options.html,
