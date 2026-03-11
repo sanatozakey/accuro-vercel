@@ -29,6 +29,28 @@ export default function Notifications() {
   const { socket, isConnected } = useSocket();
   const navigate = useNavigate();
 
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+
+  // Resolve actionUrl to valid routes
+  const resolveActionUrl = (notification: Notification): string | null => {
+    const url = notification.actionUrl;
+    if (!url) return null;
+
+    // Fix /account?tab=bookings URLs -> route to dashboard or admin bookings
+    if (url.startsWith('/account?tab=bookings') || url.startsWith('/account')) {
+      return isAdmin ? '/admin/bookings' : '/dashboard';
+    }
+    // Fix /quotations for admin
+    if (url === '/quotations') {
+      return isAdmin ? '/admin/quotations' : '/quotations';
+    }
+    // /admin/* URLs are fine for admins, redirect non-admins to dashboard
+    if (url.startsWith('/admin/') && !isAdmin) {
+      return '/dashboard';
+    }
+    return url;
+  };
+
   // Redirect if not logged in
   useEffect(() => {
     if (!user) {
@@ -347,9 +369,9 @@ export default function Notifications() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2">
-                      {notification.actionUrl && (
+                      {resolveActionUrl(notification) && (
                         <Link
-                          to={notification.actionUrl}
+                          to={resolveActionUrl(notification)!}
                           className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
                           onClick={() => {
                             if (!notification.isRead) {
