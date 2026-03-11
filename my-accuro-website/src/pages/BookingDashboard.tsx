@@ -358,7 +358,11 @@ export function BookingDashboard(): React.ReactElement {
 
     if (overdue.length > 0) {
       setPastBookings(overdue)
-      setShowPastBookingsWarning(true)
+      // Only show if not dismissed this session
+      const dismissed = sessionStorage.getItem('pastBookingsBannerDismissed')
+      if (!dismissed) {
+        setShowPastBookingsWarning(true)
+      }
     }
   }, [bookings])
 
@@ -818,6 +822,7 @@ export function BookingDashboard(): React.ReactElement {
   // Handle past bookings - dismiss warning
   const dismissPastBookingsWarning = (): void => {
     setShowPastBookingsWarning(false)
+    sessionStorage.setItem('pastBookingsBannerDismissed', 'true')
   }
 
   // Toggle edit mode
@@ -1640,6 +1645,44 @@ export function BookingDashboard(): React.ReactElement {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Past Bookings Banner */}
+          {showPastBookingsWarning && pastBookings.length > 0 && (
+            <div className={`mb-4 rounded-lg border ${darkMode ? 'bg-yellow-900/20 border-yellow-700' : 'bg-yellow-50 border-yellow-200'}`}>
+              <div className="px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+                  <p className={`text-sm font-medium ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
+                    {pastBookings.length} past booking{pastBookings.length > 1 ? 's' : ''} need attention
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                  <button
+                    onClick={openBulkCompletionWizard}
+                    className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                  >
+                    Review All
+                  </button>
+                  <button
+                    onClick={() => {
+                      setStatusFilter('all')
+                      setViewMode('table')
+                    }}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition ${darkMode ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
+                  >
+                    View in Table
+                  </button>
+                  <button
+                    onClick={dismissPastBookingsWarning}
+                    className={`p-1.5 rounded-md transition ${darkMode ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                    title="Dismiss"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Loading State */}
@@ -3587,105 +3630,7 @@ export function BookingDashboard(): React.ReactElement {
         </div>
       )}
 
-      {/* Past Bookings Warning Modal */}
-      {showPastBookingsWarning && pastBookings.length > 0 && (
-        <div className="fixed inset-0 overflow-y-auto z-50">
-          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
-              &#8203;
-            </span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <AlertCircle className="h-6 w-6 text-yellow-600" />
-                  </div>
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">
-                      Past Bookings Require Attention
-                    </h3>
-                    <div className="mt-4">
-                      <p className="text-sm text-gray-500 mb-4">
-                        You have {pastBookings.length} booking{pastBookings.length > 1 ? 's' : ''} that {pastBookings.length > 1 ? 'are' : 'is'} past the current date. Please review and take action:
-                      </p>
-                      <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {pastBookings.map((booking) => (
-                              <tr key={booking._id}>
-                                <td className="px-4 py-2 text-sm text-gray-900">
-                                  {new Date(booking.date).toLocaleDateString()}
-                                </td>
-                                <td className="px-4 py-2 text-sm text-gray-900">{booking.company}</td>
-                                <td className="px-4 py-2 text-sm">
-                                  {getStatusBadge(booking.status)}
-                                </td>
-                                <td className="px-4 py-2 text-sm">
-                                  <div className="flex space-x-2">
-                                    <button
-                                      onClick={() => {
-                                        setSelectedBooking(booking)
-                                        setEditedBooking({ ...booking })
-                                        setShowPastBookingsWarning(false)
-                                        openCompletionModal()
-                                      }}
-                                      className="text-blue-600 hover:text-blue-900 text-xs"
-                                    >
-                                      Complete
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setSelectedBooking(booking)
-                                        setEditedBooking({ ...booking })
-                                        setShowPastBookingsWarning(false)
-                                        openRescheduleModal()
-                                      }}
-                                      className="text-indigo-600 hover:text-indigo-900 text-xs"
-                                    >
-                                      Reschedule
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                  onClick={openBulkCompletionWizard}
-                >
-                  Complete All with Verification
-                </button>
-                <button
-                  type="button"
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                  onClick={dismissPastBookingsWarning}
-                >
-                  Dismiss for Now
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Past Bookings Warning - removed blocking modal, now inline banner */}
 
       {/* User History Modal */}
       {historyUser && (
