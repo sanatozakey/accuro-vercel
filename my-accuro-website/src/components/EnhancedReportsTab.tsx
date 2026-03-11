@@ -37,7 +37,6 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import bookingService from '../services/bookingService';
 import userService from '../services/userService';
 import quoteService from '../services/quoteService';
@@ -846,9 +845,9 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
                           {new Date(activity.createdAt).toLocaleString()}
                         </p>
                       </div>
-                      <Badge variant="secondary" className="text-xs">
+                      <span className="text-xs font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-700">
                         {activity.resourceType}
-                      </Badge>
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1039,14 +1038,14 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
                               <td className={`px-4 py-3 text-sm ${textClass}`}>{item.contactName}</td>
                               <td className={`px-4 py-3 text-sm ${textClass}`}>{item.product}</td>
                               <td className="px-4 py-3">
-                                <Badge className={
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded ${
                                   item.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
                                   item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                   item.status === 'completed' ? 'bg-green-100 text-green-800' :
                                   'bg-red-100 text-red-800'
-                                }>
+                                }`}>
                                   {item.status}
-                                </Badge>
+                                </span>
                               </td>
                             </>
                           )}
@@ -1081,7 +1080,7 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
                               <td className={`px-4 py-3 text-sm ${textClass}`}>{item.userName}</td>
                               <td className={`px-4 py-3 text-sm ${textClass}`}>{item.action}</td>
                               <td className="px-4 py-3">
-                                <Badge variant="secondary">{item.resourceType}</Badge>
+                                <span className="text-xs font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-700">{item.resourceType}</span>
                               </td>
                             </>
                           )}

@@ -14,7 +14,6 @@ import bookingService from '../services/bookingService'
 import { generateBookingReceipt } from '../utils/pdfGenerator'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
-import { Badge } from '../components/ui/badge'
 import { Alert, AlertDescription } from '../components/ui/alert'
 
 interface BookingItem {
@@ -127,9 +126,6 @@ export function Booking() {
       <section className="bg-navy-900 text-white py-12 sm:py-16 lg:py-20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-900 to-blue-900 opacity-90" />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <Badge className="mb-4 bg-blue-600 hover:bg-blue-700 text-white border-0">
-            Book Meeting
-          </Badge>
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4">Schedule a Meeting</h1>
           <p className="max-w-3xl text-lg text-gray-200">
             Book a consultation with our team to discuss your calibration and
@@ -282,16 +278,15 @@ export function Booking() {
                           <div className="flex items-center text-sm mt-1">
                             <Clock className="h-4 w-4 text-muted-foreground mr-2" />
                             <span className="text-muted-foreground">{booking.time}</span>
-                            <Badge
-                              className={`ml-auto ${
+                            <span
+                              className={`ml-auto text-xs font-medium px-2 py-0.5 rounded ${
                                 booking.status === 'confirmed'
-                                  ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                                  : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-yellow-100 text-yellow-800'
                               }`}
-                              variant="secondary"
                             >
                               {booking.status}
-                            </Badge>
+                            </span>
                           </div>
                         </div>
                       ))}

@@ -6,7 +6,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import { Textarea } from '../components/ui/textarea';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Separator } from '../components/ui/separator';
@@ -150,9 +149,6 @@ export function Testimonials() {
         <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-900 to-blue-900 opacity-90" />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <Badge className="mb-4 bg-blue-600 hover:bg-blue-700 text-white border-0">
-              Customer Reviews
-            </Badge>
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6">Customer Testimonials</h1>
             <p className="text-lg sm:text-xl text-gray-200">
               See what our satisfied clients have to say about our calibration services
@@ -547,13 +543,13 @@ export function Testimonials() {
                       {/* Rating */}
                       <div className="flex items-center justify-between mb-2">
                         {renderStars(review.rating)}
-                        <Badge variant="secondary" className="text-xs">
+                        <span className="text-xs text-gray-500">
                           {new Date(review.createdAt).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric',
                           })}
-                        </Badge>
+                        </span>
                       </div>
                     </CardHeader>
                     <CardContent>

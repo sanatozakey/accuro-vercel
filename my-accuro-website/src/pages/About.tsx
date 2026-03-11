@@ -1,7 +1,6 @@
 import React from 'react'
 import { Building2, Target, Users, Award, TrendingUp, Shield } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
-import { Badge } from '../components/ui/badge'
 
 export function About() {
   return (
@@ -22,7 +21,6 @@ export function About() {
       <section className="py-16 sm:py-24 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <Badge className="mb-4">Our Values</Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
               What Drives Us
             </h2>
@@ -79,7 +77,6 @@ export function About() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               <div>
-                <Badge className="mb-4">Our Story</Badge>
                 <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">Our Company</h2>
               </div>
               <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -149,7 +146,6 @@ export function About() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
-              <Badge className="mb-4">Our Mission</Badge>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">Why We Work at Accuro</h2>
             </div>
             <Card className="border-2 dark:bg-gray-800 dark:border-gray-700">
@@ -187,7 +183,6 @@ export function About() {
       <section className="py-16 sm:py-24 bg-white dark:bg-gray-950">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <Badge className="mb-4">Industries</Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Who We Serve</h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Providing calibration solutions across diverse industries with precision and reliability

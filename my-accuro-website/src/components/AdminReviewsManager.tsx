@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import reviewService, { Review } from '../services/reviewService';
 import toast from 'react-hot-toast';
 
@@ -520,23 +519,23 @@ export function AdminReviewsManager({ darkMode }: AdminReviewsManagerProps) {
                       {/* Badges */}
                       <div className="flex flex-wrap gap-2 mb-2">
                         {review.isApproved ? (
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                          <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Approved
-                          </Badge>
+                          </span>
                         ) : (
-                          <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                          <span className="inline-flex items-center text-xs font-medium px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
                             <Clock className="h-3 w-3 mr-1" />
                             Pending
-                          </Badge>
+                          </span>
                         )}
-                        <Badge variant="secondary" className="text-xs">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-700">
                           {review.isPublic ? 'Public' : 'Private'}
-                        </Badge>
+                        </span>
                         {review.reviewType === 'booking' && (
-                          <Badge variant="outline" className="text-xs">
+                          <span className="text-xs font-medium px-2 py-0.5 rounded border">
                             Booking Review
-                          </Badge>
+                          </span>
                         )}
                       </div>
 

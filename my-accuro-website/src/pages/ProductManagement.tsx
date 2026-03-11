@@ -26,7 +26,6 @@ import { useNavigate } from 'react-router-dom';
 import productService, { Product, CreateProductData } from '../services/productService';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Badge } from '../components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -552,24 +551,24 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
     switch (status) {
       case 'active':
         return (
-          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+          <span className="text-xs font-medium px-2 py-0.5 rounded bg-green-100 text-green-700">
             Active
-          </Badge>
+          </span>
         );
       case 'inactive':
         return (
-          <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">
+          <span className="text-xs font-medium px-2 py-0.5 rounded bg-yellow-100 text-yellow-700">
             Draft
-          </Badge>
+          </span>
         );
       case 'archived':
         return (
-          <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100">
+          <span className="text-xs font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-700">
             Archived
-          </Badge>
+          </span>
         );
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <span className="text-xs font-medium px-2 py-0.5 rounded border">{status}</span>;
     }
   };
 
@@ -1447,7 +1446,7 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                   </h3>
                   {getStatusBadge(viewingProduct.status)}
                 </div>
-                <Badge variant="outline" className={darkMode ? 'border-gray-600 text-gray-300' : ''}>{viewingProduct.category}</Badge>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded border ${darkMode ? 'border-gray-600 text-gray-300' : ''}`}>{viewingProduct.category}</span>
               </div>
 
               {/* Description */}

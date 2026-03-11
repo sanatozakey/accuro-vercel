@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import {
@@ -262,15 +261,15 @@ export function AdminSettings({ darkMode }: AdminSettingsProps): React.ReactElem
   const getStatusBadge = (logStatus: string) => {
     switch (logStatus) {
       case 'success':
-        return <Badge className="bg-green-100 text-green-800">Success</Badge>;
+        return <span className="text-xs font-medium px-2 py-0.5 rounded bg-green-100 text-green-800">Success</span>;
       case 'failed':
-        return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
+        return <span className="text-xs font-medium px-2 py-0.5 rounded bg-red-100 text-red-800">Failed</span>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+        return <span className="text-xs font-medium px-2 py-0.5 rounded bg-yellow-100 text-yellow-800">Pending</span>;
       case 'skipped':
-        return <Badge className="bg-gray-100 text-gray-800">Skipped</Badge>;
+        return <span className="text-xs font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-800">Skipped</span>;
       default:
-        return <Badge>{logStatus}</Badge>;
+        return <span className="text-xs font-medium px-2 py-0.5 rounded border">{logStatus}</span>;
     }
   };
 
@@ -309,9 +308,9 @@ export function AdminSettings({ darkMode }: AdminSettingsProps): React.ReactElem
           <Package className="h-4 w-4" />
           Inventory
           {lowStockProducts.length > 0 && (
-            <Badge variant="destructive" className="ml-1 h-5 px-1.5">
+            <span className="text-xs font-medium px-1.5 h-5 inline-flex items-center rounded bg-red-100 text-red-700 ml-1">
               {lowStockProducts.length}
-            </Badge>
+            </span>
           )}
         </button>
         <button
@@ -618,9 +617,9 @@ export function AdminSettings({ darkMode }: AdminSettingsProps): React.ReactElem
                     <AlertTriangle className="h-5 w-5 text-yellow-500" />
                     Low Stock Alerts
                     {lowStockProducts.length > 0 && (
-                      <Badge variant="destructive" className="ml-2">
+                      <span className="text-xs font-medium px-2 py-0.5 rounded bg-red-100 text-red-700 ml-2">
                         {lowStockProducts.length}
-                      </Badge>
+                      </span>
                     )}
                   </CardTitle>
                 </CardHeader>

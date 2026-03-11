@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Star, ChevronLeft, ChevronRight, Quote, ArrowRight } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import reviewService, { Review } from '../services/reviewService';
 
@@ -78,7 +77,6 @@ export function TestimonialsSection({ maxReviews = 6 }: TestimonialsSectionProps
       <section className="py-16 sm:py-24 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <Badge className="mb-4">Customer Reviews</Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
               What Our Clients Say
             </h2>
@@ -117,7 +115,6 @@ export function TestimonialsSection({ maxReviews = 6 }: TestimonialsSectionProps
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <Badge className="mb-4">Customer Reviews</Badge>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
             What Our Clients Say
           </h2>

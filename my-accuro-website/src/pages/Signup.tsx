@@ -4,7 +4,6 @@ import { UserPlus, Mail, Lock, User, Phone, Building, AlertCircle, CheckCircle, 
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Alert, AlertDescription } from '../components/ui/alert';
@@ -185,9 +184,6 @@ export function Signup() {
       <section className="bg-navy-900 text-white py-12 sm:py-16 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-900 to-blue-900 opacity-90" />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <Badge className="mb-4 bg-blue-600 hover:bg-blue-700 text-white border-0">
-            User Registration
-          </Badge>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Create Account</h1>
           <p className="text-lg text-gray-200">Join Accuro to manage your bookings and quotes</p>
         </div>

@@ -12,7 +12,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Badge } from '../../components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -249,9 +248,9 @@ export function StockSettings() {
               <AlertTriangle className="h-5 w-5 text-yellow-500" />
               Low Stock Alerts
               {lowStockProducts.length > 0 && (
-                <Badge variant="destructive" className="ml-2">
+                <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded bg-red-100 text-red-700">
                   {lowStockProducts.length}
-                </Badge>
+                </span>
               )}
             </h2>
 

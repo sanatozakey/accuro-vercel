@@ -52,7 +52,6 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
-import { Badge } from '../components/ui/badge'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import bookingService from '../services/bookingService'
@@ -1566,7 +1565,7 @@ export function BookingDashboard(): React.ReactElement {
                   <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
                     Welcome back, {currentUser.name}
                     {isSuperAdmin && (
-                      <Badge className="ml-2 bg-blue-600 hover:bg-blue-700">Super Admin</Badge>
+                      <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded bg-blue-600 text-white">Super Admin</span>
                     )}
                   </p>
                 )}

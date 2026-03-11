@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, CheckCircle2, Award, Users, TrendingUp } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
-import { Badge } from '../components/ui/badge'
 import { TestimonialsSection } from '../components/TestimonialsSection'
 
 export function Home() {
@@ -119,7 +118,6 @@ export function Home() {
       <section className="py-16 sm:py-24 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <Badge className="mb-4">Our Partners</Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
               Backed by Industry Leaders
             </h2>
@@ -141,7 +139,7 @@ export function Home() {
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <Award className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <Badge variant="secondary">Official Distributor</Badge>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Official Distributor</span>
                 </div>
                 <p className="text-base text-gray-700 dark:text-gray-300">
                   Official distributor of Beamex calibration equipment and
@@ -163,7 +161,7 @@ export function Home() {
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <Badge variant="secondary">Strategic Partners</Badge>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Strategic Partners</span>
                 </div>
                 <p className="text-base text-gray-700 dark:text-gray-300">
                   Partnered with leading industrial automation companies
@@ -184,7 +182,7 @@ export function Home() {
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <Badge variant="secondary">Certified Experts</Badge>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Certified Experts</span>
                 </div>
                 <p className="text-base text-gray-700 dark:text-gray-300">
                   Certified experts in measurement and calibration technologies
@@ -199,7 +197,6 @@ export function Home() {
       <section className="py-16 sm:py-24 dark:bg-gray-950">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 space-y-4">
-            <Badge className="mb-4">Product Catalog</Badge>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">Our Products</h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
               We offer a comprehensive range of Beamex calibration equipment and

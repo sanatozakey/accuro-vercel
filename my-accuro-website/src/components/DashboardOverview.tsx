@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { ActivityLog } from '../services/activityLogService';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useQueryClient } from '@tanstack/react-query';
@@ -167,9 +166,9 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
                         <p className={`text-sm ${mutedClass}`}>{booking.contactName}</p>
                       </div>
                     </div>
-                    <Badge className={getStatusColor(booking.status)}>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${getStatusColor(booking.status)}`}>
                       {booking.status}
-                    </Badge>
+                    </span>
                   </div>
                 ))}
               </div>
@@ -209,9 +208,9 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
                         {new Date(booking.date).toLocaleDateString()} at {booking.time}
                       </p>
                     </div>
-                    <Badge className="bg-yellow-100 text-yellow-800">
+                    <span className="text-xs font-medium px-2 py-0.5 rounded bg-yellow-100 text-yellow-800">
                       Needs Approval
-                    </Badge>
+                    </span>
                   </div>
                 ))}
               </div>
@@ -285,9 +284,9 @@ export function DashboardOverview({ darkMode, onNavigate }: DashboardOverviewPro
                     className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
                   >
                     <p className={`font-medium truncate ${textClass}`}>{product.name}</p>
-                    <Badge className={product.stockStatus === 'out_of_stock' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${product.stockStatus === 'out_of_stock' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
                       {product.stockQuantity} left
-                    </Badge>
+                    </span>
                   </div>
                 ))}
               </div>

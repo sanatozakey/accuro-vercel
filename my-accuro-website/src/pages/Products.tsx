@@ -9,7 +9,6 @@ import { ProductRecommendations } from '../components/ProductRecommendations'
 import { useAuth } from '../contexts/AuthContext'
 import recommendationService from '../services/recommendationService'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
-import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 
@@ -71,9 +70,6 @@ export function Products() {
       <section className="bg-navy-900 dark:bg-gray-900 text-white py-12 sm:py-16 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-navy-900 via-navy-900 to-blue-900 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900 opacity-90" />
         <div className="container mx-auto px-4 relative z-10">
-          <Badge className="mb-4 bg-blue-600 hover:bg-blue-700 text-white border-0">
-            Products Catalog
-          </Badge>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-3">Beamex Products</h1>
           <p className="text-base sm:text-lg max-w-2xl text-gray-200">
             Complete range of calibration solutions for all your calibration needs.
@@ -166,11 +162,11 @@ export function Products() {
 
           {/* Results Count & Active Filters */}
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="dark:bg-gray-800 dark:text-gray-300">
+            <span className="text-sm text-gray-600 dark:text-gray-300">
               {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
-            </Badge>
+            </span>
             {selectedCategory !== 'All Products' && (
-              <Badge variant="outline" className="dark:border-gray-700 dark:text-gray-300">
+              <span className="inline-flex items-center text-sm border rounded px-2 py-0.5 dark:border-gray-700 dark:text-gray-300">
                 {selectedCategory}
                 <Button
                   variant="ghost"
@@ -180,10 +176,10 @@ export function Products() {
                 >
                   <X className="h-3 w-3" />
                 </Button>
-              </Badge>
+              </span>
             )}
             {searchQuery && (
-              <Badge variant="outline" className="dark:border-gray-700 dark:text-gray-300">
+              <span className="inline-flex items-center text-sm border rounded px-2 py-0.5 dark:border-gray-700 dark:text-gray-300">
                 Search: "{searchQuery}"
                 <Button
                   variant="ghost"
@@ -193,10 +189,10 @@ export function Products() {
                 >
                   <X className="h-3 w-3" />
                 </Button>
-              </Badge>
+              </span>
             )}
             {showDiscontinued && (
-              <Badge variant="outline" className="dark:border-gray-700 dark:text-gray-300">
+              <span className="inline-flex items-center text-sm border rounded px-2 py-0.5 dark:border-gray-700 dark:text-gray-300">
                 Including Discontinued
                 <Button
                   variant="ghost"
@@ -206,7 +202,7 @@ export function Products() {
                 >
                   <X className="h-3 w-3" />
                 </Button>
-              </Badge>
+              </span>
             )}
           </div>
         </div>
@@ -348,9 +344,9 @@ const ProductCard = React.memo(function ProductCard({ product, currency }: { pro
           alt={product.name}
           className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
         />
-        <Badge className="absolute top-3 right-3 bg-blue-600 hover:bg-blue-700 text-white border-0 text-[10px]">
+        <span className="absolute top-3 right-3 bg-blue-600 text-white text-[10px] font-medium px-2 py-0.5 rounded">
           {product.category}
-        </Badge>
+        </span>
       </div>
 
       {/* Product Details */}

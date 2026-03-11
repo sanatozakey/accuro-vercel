@@ -48,7 +48,6 @@ import userService, {
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Badge } from './ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -452,10 +451,10 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
     const Icon = role === 'superadmin' ? ShieldCheck : role === 'admin' ? Shield : UserCog;
 
     return (
-      <Badge className={`${colors.bg} ${colors.text} hover:${colors.bg} gap-1`}>
+      <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded ${colors.bg} ${colors.text} gap-1`}>
         <Icon className="h-3 w-3" />
         {label}
-      </Badge>
+      </span>
     );
   };
 
@@ -984,9 +983,9 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
                       <div className="flex flex-wrap gap-1">
                         {getRoleBadge(user.role)}
                         {user.isEmailVerified && (
-                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                          <span className="text-xs font-medium px-2 py-0.5 rounded bg-green-100 text-green-700">
                             Verified
-                          </Badge>
+                          </span>
                         )}
                       </div>
                     </td>
@@ -1384,7 +1383,7 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
                   <div className="flex items-center gap-2 mt-1">
                     {getRoleBadge(viewingUser.role)}
                     {viewingUser.isEmailVerified && (
-                      <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Verified</Badge>
+                      <span className="text-xs font-medium px-2 py-0.5 rounded bg-green-100 text-green-700">Verified</span>
                     )}
                   </div>
                 </div>
