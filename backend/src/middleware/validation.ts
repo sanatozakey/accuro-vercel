@@ -545,25 +545,26 @@ export const validateCreateQuotation: ValidationChain[] = [
   body('items')
     .isArray({ min: 1 })
     .withMessage('At least one item is required'),
-  body('items.*.name')
+  body('items.*.productName')
     .trim()
     .notEmpty()
-    .withMessage('Item name is required'),
+    .withMessage('Product name is required'),
+  body('items.*.productId')
+    .trim()
+    .notEmpty()
+    .withMessage('Product ID is required'),
   body('items.*.quantity')
     .isInt({ min: 1 })
     .withMessage('Quantity must be at least 1'),
   body('items.*.unitPrice')
+    .optional()
     .isFloat({ min: 0 })
     .withMessage('Unit price must be a positive number'),
-  body('validUntil')
-    .optional()
-    .isISO8601()
-    .withMessage('Valid until must be a valid date'),
-  body('notes')
+  body('additionalRequirements')
     .optional()
     .trim()
     .isLength({ max: 2000 })
-    .withMessage('Notes must not exceed 2000 characters'),
+    .withMessage('Additional requirements must not exceed 2000 characters'),
 ];
 
 // ==================== PURCHASE HISTORY VALIDATIONS ====================

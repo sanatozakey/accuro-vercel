@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
-import productService, { Product } from '../services/productService'
+import { products as staticProducts, Product as StaticProduct } from '../data/products'
 import quotationService, { CreateQuotationData, QuotationItem } from '../services/quotationService'
 import { useCart } from '../contexts/CartContext'
 
@@ -36,9 +36,9 @@ export function RequestQuotation() {
   const { clearCart } = useCart()
   const navigate = useNavigate()
 
-  // Products
-  const [products, setProducts] = useState<Product[]>([])
-  const [loadingProducts, setLoadingProducts] = useState(true)
+  // Products (from static data, same source as Products page)
+  const [products] = useState<StaticProduct[]>(staticProducts)
+  const [loadingProducts] = useState(false)
 
   // Selected items
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([])
@@ -58,57 +58,42 @@ export function RequestQuotation() {
   const [submitted, setSubmitted] = useState(false)
   const [quotationNumber, setQuotationNumber] = useState('')
 
-  // Fetch products on mount and pre-populate from quote list if available
+  // Pre-populate from quote list (MiniCart) if available
   useEffect(() => {
-    const fetchProducts = async () => {
+    const quoteCartRaw = localStorage.getItem('quoteCart')
+    if (quoteCartRaw) {
       try {
-        const response = await productService.getProducts({ status: 'active' })
-        const productList = response.data || []
-        setProducts(productList)
-
-        // Check for quote list items from Products page (via MiniCart)
-        const quoteCartRaw = localStorage.getItem('quoteCart')
-        if (quoteCartRaw) {
-          try {
-            const quoteCart = JSON.parse(quoteCartRaw) as Array<{
-              id: number
-              name: string
-              category: string
-              price: number
-              quantity: number
-              image: string
-            }>
-            if (quoteCart.length > 0) {
-              const preItems: SelectedItem[] = quoteCart.map((cartItem) => {
-                // Try to match to a real product for the productId
-                const matchedProduct = productList.find(
-                  (p) => p.name === cartItem.name || p._id === cartItem.id.toString()
-                )
-                return {
-                  productId: matchedProduct?._id || cartItem.id.toString(),
-                  productName: cartItem.name,
-                  productImage: cartItem.image || matchedProduct?.image,
-                  category: cartItem.category,
-                  quantity: cartItem.quantity,
-                  specifications: '',
-                }
-              })
-              setSelectedItems(preItems)
+        const quoteCart = JSON.parse(quoteCartRaw) as Array<{
+          id: number | string
+          name: string
+          category: string
+          price: number
+          quantity: number
+          image: string
+        }>
+        if (quoteCart.length > 0) {
+          const preItems: SelectedItem[] = quoteCart.map((cartItem) => {
+            // Match to static product by name or id
+            const matched = staticProducts.find(
+              (p) => p.name === cartItem.name || p.id === String(cartItem.id)
+            )
+            return {
+              productId: matched?.id || String(cartItem.id),
+              productName: cartItem.name,
+              productImage: cartItem.image || matched?.image,
+              category: cartItem.category,
+              quantity: cartItem.quantity,
+              specifications: '',
             }
-          } catch {
-            // ignore parse errors
-          }
-          // Clear localStorage so it doesn't persist on refresh
-          localStorage.removeItem('quoteCart')
-          localStorage.removeItem('cartTotal')
+          })
+          setSelectedItems(preItems)
         }
       } catch {
-        toast.error('Failed to load products')
-      } finally {
-        setLoadingProducts(false)
+        // ignore parse errors
       }
+      localStorage.removeItem('quoteCart')
+      localStorage.removeItem('cartTotal')
     }
-    fetchProducts()
   }, [])
 
   // Close dropdown on outside click
@@ -122,20 +107,21 @@ export function RequestQuotation() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  // Filter products by search
+  // Filter products by search (exclude already selected, exclude discontinued)
   const filteredProducts = products.filter(
     (p) =>
-      !selectedItems.find((item) => item.productId === p._id) &&
+      !selectedItems.find((item) => item.productId === p.id) &&
+      !p.description.toLowerCase().includes('discontinued') &&
       (p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.category.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
   // Add product to selection
-  const addProduct = (product: Product) => {
+  const addProduct = (product: StaticProduct) => {
     setSelectedItems((prev) => [
       ...prev,
       {
-        productId: product._id,
+        productId: product.id,
         productName: product.name,
         productImage: product.image,
         category: product.category,
@@ -335,7 +321,7 @@ export function RequestQuotation() {
                       ) : (
                         filteredProducts.map((product) => (
                           <button
-                            key={product._id}
+                            key={product.id}
                             type="button"
                             onClick={() => addProduct(product)}
                             className="w-full flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 dark:hover:bg-gray-600 transition text-left border-b border-gray-100 dark:border-gray-600 last:border-0"

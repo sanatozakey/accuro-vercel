@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IQuotationItem {
-  productId: mongoose.Types.ObjectId;
+  productId: string;
   productName: string;
   productImage?: string;
   quantity: number;
@@ -43,7 +43,7 @@ export interface IQuotation extends Document {
 }
 
 const QuotationItemSchema = new Schema<IQuotationItem>({
-  productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
+  productId: { type: String, required: true, trim: true },
   productName: { type: String, required: true, trim: true },
   productImage: { type: String, trim: true },
   quantity: { type: Number, required: true, min: 1 },
