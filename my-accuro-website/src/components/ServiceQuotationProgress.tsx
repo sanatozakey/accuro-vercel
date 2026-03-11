@@ -17,16 +17,20 @@ export function ServiceQuotationProgress() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [bookingsRes, quotationsRes] = await Promise.all([
-        bookingService.getAll(),
+      // Fetch independently so one failure doesn't block the other
+      const [bookingsRes, quotationsRes] = await Promise.allSettled([
+        bookingService.getMyBookings(),
         quotationService.getQuotations({ limit: 5 }),
       ]);
 
-      setBookings(bookingsRes.data.slice(0, 5));
-      setQuotations(quotationsRes.data.slice(0, 5));
+      if (bookingsRes.status === 'fulfilled') {
+        setBookings(bookingsRes.value.data.slice(0, 5));
+      }
+      if (quotationsRes.status === 'fulfilled') {
+        setQuotations(quotationsRes.value.data.slice(0, 5));
+      }
     } catch (error) {
       console.error('Failed to load progress data:', error);
-      toast.error('Failed to load progress data');
     } finally {
       setLoading(false);
     }
@@ -88,8 +92,8 @@ export function ServiceQuotationProgress() {
               Book Service
             </Link>
             <Link
-              to="/quotations"
-              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+              to="/request-quote"
+              className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
             >
               <FileText className="h-4 w-4 mr-2" />
               Request Quote
@@ -165,7 +169,7 @@ export function ServiceQuotationProgress() {
                 Recent Quotations
               </h3>
               <Link
-                to="/dashboard"
+                to="/quotations"
                 className="text-sm text-green-600 hover:text-green-700 dark:text-green-400 flex items-center gap-1"
               >
                 View All <ArrowRight className="h-4 w-4" />
