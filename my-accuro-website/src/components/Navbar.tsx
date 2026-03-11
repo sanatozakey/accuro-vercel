@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { MenuIcon, XIcon, User, LogOut, Settings, ShieldCheck, LayoutDashboard, Sun, Moon, Home, Package, Info, MessageSquare, Mail, Calendar } from 'lucide-react'
+import { MenuIcon, XIcon, User, LogOut, Settings, ShieldCheck, LayoutDashboard, Sun, Moon, Home, Package, Info, MessageSquare, Mail, Calendar, FileText } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import {
@@ -68,6 +68,12 @@ export function Navbar() {
               className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 text-sm font-medium transition"
             >
               Contact
+            </Link>
+            <Link
+              to="/request-quote"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-md text-sm font-medium transition"
+            >
+              Request Quote
             </Link>
             <Link
               to="/booking"
@@ -292,6 +298,14 @@ export function Navbar() {
                     >
                       <Mail size={20} />
                       <span className="font-medium">Contact Us</span>
+                    </Link>
+                    <Link
+                      to="/request-quote"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-gray-800 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <FileText size={20} />
+                      <span className="font-medium">Request Quote</span>
                     </Link>
                     <Link
                       to="/booking"

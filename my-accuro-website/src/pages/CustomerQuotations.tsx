@@ -95,8 +95,8 @@ export function CustomerQuotations() {
             </h1>
           </div>
           <Link
-            to="/products"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+            to="/request-quote"
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
           >
             Request New Quote
           </Link>
