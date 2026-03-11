@@ -118,7 +118,7 @@ export function Navbar() {
                       {isAdmin && (
                         <span className="inline-flex items-center mt-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
                           <ShieldCheck size={12} className="mr-1" />
-                          Admin
+                          {user?.role === 'superadmin' ? 'Super Admin' : 'Admin'}
                         </span>
                       )}
                     </div>
@@ -241,7 +241,7 @@ export function Navbar() {
                       {isAdmin && (
                         <span className="inline-flex items-center mt-1 text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">
                           <ShieldCheck size={10} className="mr-1" />
-                          Admin
+                          {user?.role === 'superadmin' ? 'Super Admin' : 'Admin'}
                         </span>
                       )}
                     </div>
