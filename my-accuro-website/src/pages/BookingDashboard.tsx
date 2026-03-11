@@ -261,6 +261,36 @@ export function BookingDashboard(): React.ReactElement {
   const [showPastBookingsWarning, setShowPastBookingsWarning] = useState<boolean>(false)
   const [showBulkCompletionWizard, setShowBulkCompletionWizard] = useState<boolean>(false)
 
+  // Read/unread tracking for bookings (persisted in localStorage)
+  const [readBookingIds, setReadBookingIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('admin_read_bookings')
+      return stored ? new Set(JSON.parse(stored)) : new Set()
+    } catch { return new Set() }
+  })
+
+  const markBookingAsRead = (bookingId: string) => {
+    setReadBookingIds(prev => {
+      const next = new Set(prev)
+      next.add(bookingId)
+      localStorage.setItem('admin_read_bookings', JSON.stringify([...next]))
+      return next
+    })
+  }
+
+  const markAllBookingsAsRead = () => {
+    const allIds = bookings.map(b => b._id)
+    setReadBookingIds(() => {
+      const next = new Set(allIds)
+      localStorage.setItem('admin_read_bookings', JSON.stringify([...next]))
+      return next
+    })
+  }
+
+  const isBookingUnread = (bookingId: string): boolean => !readBookingIds.has(bookingId)
+
+  const unreadBookingCount = bookings.filter(b => isBookingUnread(b._id)).length
+
   const [newBooking, setNewBooking] = useState<NewBooking>({
     date: new Date().toISOString().split('T')[0],
     time: '10:00',
@@ -782,6 +812,7 @@ export function BookingDashboard(): React.ReactElement {
     })
     setIsEditMode(false)
     setIsDetailModalOpen(true)
+    markBookingAsRead(booking._id)
   }
   // Open edit modal
   const openEditModal = (booking: Booking): void => {
@@ -1277,8 +1308,22 @@ export function BookingDashboard(): React.ReactElement {
             }`}
             title="Bookings"
           >
-            <List className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
-            {!sidebarCollapsed && 'Bookings'}
+            <div className="relative">
+              <List className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+              {unreadBookingCount > 0 && sidebarCollapsed && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+              )}
+            </div>
+            {!sidebarCollapsed && (
+              <>
+                Bookings
+                {unreadBookingCount > 0 && (
+                  <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] flex items-center justify-center px-1">
+                    {unreadBookingCount > 99 ? '99+' : unreadBookingCount}
+                  </span>
+                )}
+              </>
+            )}
           </Button>
 
           <Button
@@ -1835,9 +1880,24 @@ export function BookingDashboard(): React.ReactElement {
               </div>
             )}
 
-            {/* Export All Button (when nothing selected) */}
+            {/* Export All & Mark All Read Buttons (when nothing selected) */}
             {selectedBookings.size === 0 && filteredBookings.length > 0 && (
-              <div className="flex justify-end mb-4">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  {unreadBookingCount > 0 && (
+                    <button
+                      onClick={markAllBookingsAsRead}
+                      className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
+                        darkMode
+                          ? 'bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 border border-blue-500/30'
+                          : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200'
+                      }`}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Mark all as read ({unreadBookingCount})
+                    </button>
+                  )}
+                </div>
                 <button
                   onClick={exportToCSV}
                   className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
@@ -1911,8 +1971,11 @@ export function BookingDashboard(): React.ReactElement {
                 <tbody className={`${darkMode ? 'bg-gray-800' : 'bg-white'} divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                   {paginatedBookings.length > 0 ? (
                     paginatedBookings.map((booking) => (
-                      <tr key={booking._id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} ${selectedBookings.has(booking._id) ? (darkMode ? 'bg-blue-900/30' : 'bg-blue-50') : ''}`}>
-                        <td className="px-2 py-3 w-10">
+                      <tr key={booking._id} className={`${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} ${selectedBookings.has(booking._id) ? (darkMode ? 'bg-blue-900/30' : 'bg-blue-50') : ''} ${isBookingUnread(booking._id) ? (darkMode ? 'bg-blue-900/10' : 'bg-blue-50/50') : ''}`}>
+                        <td className="px-2 py-3 w-10 relative">
+                          {isBookingUnread(booking._id) && (
+                            <span className="absolute left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full" title="Unread" />
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
@@ -2044,8 +2107,11 @@ export function BookingDashboard(): React.ReactElement {
                 paginatedBookings.map((booking) => (
                   <div
                     key={booking._id}
-                    className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} ${selectedBookings.has(booking._id) ? (darkMode ? 'border-blue-500 bg-blue-900/20' : 'border-blue-500 bg-blue-50') : ''} border rounded-lg p-4 shadow-sm`}
+                    className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} ${selectedBookings.has(booking._id) ? (darkMode ? 'border-blue-500 bg-blue-900/20' : 'border-blue-500 bg-blue-50') : ''} ${isBookingUnread(booking._id) && !selectedBookings.has(booking._id) ? (darkMode ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-blue-500') : ''} border rounded-lg p-4 shadow-sm relative`}
                   >
+                    {isBookingUnread(booking._id) && (
+                      <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-blue-500 rounded-full" title="Unread" />
+                    )}
                     <div className="flex items-start justify-between mb-3">
                       <button
                         onClick={() => toggleSelectBooking(booking._id)}
