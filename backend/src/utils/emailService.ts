@@ -1,4 +1,4 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 interface EmailOptions {
   to: string;
@@ -6,31 +6,39 @@ interface EmailOptions {
   html: string;
 }
 
-const FROM_EMAIL = process.env.EMAIL_FROM || 'Accuro <onboarding@resend.dev>';
-const REPLY_TO_EMAIL = process.env.REPLY_TO_EMAIL || 'calibrex.emailer@gmail.com';
-const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL || 'calibrex.emailer@gmail.com';
+const EMAIL_USER = process.env.EMAIL_USER || 'calibrex.emailer@gmail.com';
+const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD || '';
+const FROM_EMAIL = process.env.EMAIL_FROM || `Accuro <${EMAIL_USER}>`;
+const REPLY_TO_EMAIL = process.env.REPLY_TO_EMAIL || EMAIL_USER;
+const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL || EMAIL_USER;
 
 class EmailService {
-  private resend: Resend;
+  private transporter: nodemailer.Transporter;
 
   constructor() {
-    this.resend = new Resend(process.env.RESEND_API_KEY || '');
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASSWORD,
+      },
+    });
   }
 
   async sendEmail(options: EmailOptions): Promise<void> {
     try {
-      const { error } = await this.resend.emails.send({
+      if (!EMAIL_PASSWORD) {
+        console.warn('EMAIL_PASSWORD not set — skipping email send to', options.to);
+        return;
+      }
+
+      await this.transporter.sendMail({
         from: FROM_EMAIL,
         replyTo: REPLY_TO_EMAIL,
         to: options.to,
         subject: options.subject,
         html: options.html,
       });
-
-      if (error) {
-        console.error(`Resend error for ${options.to}:`, error);
-        throw new Error(error.message);
-      }
 
       console.log(`Email sent successfully to ${options.to}`);
     } catch (err) {
@@ -320,11 +328,11 @@ class EmailService {
       errors: [] as string[],
     };
 
-    if (!process.env.RESEND_API_KEY) {
+    if (!EMAIL_PASSWORD) {
       return {
         sent: 0,
         failed: recipients.length,
-        errors: ['Email service is not configured. RESEND_API_KEY is missing.'],
+        errors: ['Email service is not configured. EMAIL_PASSWORD is missing.'],
       };
     }
 
