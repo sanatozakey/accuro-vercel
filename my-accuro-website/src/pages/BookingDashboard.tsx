@@ -195,6 +195,7 @@ export function BookingDashboard(): React.ReactElement {
   const [reviewProof, setReviewProof] = useState<CompletionProof | null>(null)
   const [revisionMode, setRevisionMode] = useState<boolean>(false)
   const [revisionProof, setRevisionProof] = useState<CompletionProof | null>(null)
+  const [rejectedProofMap, setRejectedProofMap] = useState<Record<string, CompletionProof>>({})
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
   const [viewMode, setViewMode] = useState<'dashboard' | 'table' | 'calendar' | 'products' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings' | 'rateLimits' | 'security'>(
@@ -276,6 +277,22 @@ export function BookingDashboard(): React.ReactElement {
   const [formErrors, setFormErrors] = useState<FormErrors>({})
 
   // Fetch all bookings from backend
+  const fetchRejectedProofs = async (): Promise<void> => {
+    try {
+      const response = await completionProofService.getAll({ status: 'rejected' })
+      if (response.success && response.data) {
+        const map: Record<string, CompletionProof> = {}
+        for (const proof of response.data) {
+          const bookingId = typeof proof.bookingId === 'string' ? proof.bookingId : (proof.bookingId as any)?._id || ''
+          if (bookingId) map[bookingId] = proof
+        }
+        setRejectedProofMap(map)
+      }
+    } catch (err) {
+      console.error('Failed to fetch rejected proofs:', err)
+    }
+  }
+
   const fetchBookings = async (): Promise<void> => {
     setLoading(true)
     setError('')
@@ -321,6 +338,7 @@ export function BookingDashboard(): React.ReactElement {
   // Load bookings on component mount
   useEffect(() => {
     fetchBookings()
+    fetchRejectedProofs()
   }, [])
 
   // Check for past bookings that need attention
@@ -525,7 +543,9 @@ export function BookingDashboard(): React.ReactElement {
       )
     }
     // Apply status filter
-    if (statusFilter !== 'all') {
+    if (statusFilter === 'rejected_report') {
+      result = result.filter((booking) => booking.status === 'confirmed' && rejectedProofMap[booking._id])
+    } else if (statusFilter !== 'all') {
       result = result.filter((booking) => booking.status === statusFilter)
     }
     // Apply completion filter
@@ -538,7 +558,7 @@ export function BookingDashboard(): React.ReactElement {
     }
     setFilteredBookings(result)
     setBookingPage(1) // Reset to first page on filter change
-  }, [searchTerm, statusFilter, completionFilter, bookings])
+  }, [searchTerm, statusFilter, completionFilter, bookings, rejectedProofMap])
 
   // Client-side pagination for booking table view
   const bookingTotalPages = Math.ceil(filteredBookings.length / BOOKINGS_PER_PAGE)
@@ -577,10 +597,13 @@ export function BookingDashboard(): React.ReactElement {
   }
   // Handle completion - called after proof is created
   const handleBookingCompleted = async (): Promise<void> => {
-    // Refresh bookings from server
+    // Refresh bookings and rejected proofs from server
     await fetchBookings()
+    await fetchRejectedProofs()
     setIsCompletionModalOpen(false)
     setIsDetailModalOpen(false)
+    setRevisionMode(false)
+    setRevisionProof(null)
   }
 
   // Open review modal (superadmin reviews a pending_review booking)
@@ -618,6 +641,7 @@ export function BookingDashboard(): React.ReactElement {
 
   const handleReviewDecision = async (): Promise<void> => {
     await fetchBookings()
+    await fetchRejectedProofs()
     setIsReviewModalOpen(false)
     setReviewProof(null)
   }
@@ -1647,6 +1671,7 @@ export function BookingDashboard(): React.ReactElement {
                   <option value="all">All Statuses</option>
                   <option value="pending">Pending</option>
                   <option value="confirmed">Confirmed</option>
+                  <option value="rejected_report">Rejected Reports</option>
                   <option value="pending_review">Pending Review</option>
                   <option value="rescheduled">Rescheduled</option>
                   <option value="cancelled">Cancelled</option>
@@ -1872,6 +1897,12 @@ export function BookingDashboard(): React.ReactElement {
                         <td className="px-3 py-3 text-center">
                           <div className="flex flex-col items-center gap-1">
                             {getStatusBadge(booking.status)}
+                            {rejectedProofMap[booking._id] && booking.status === 'confirmed' && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <XCircle className="w-3 h-3 mr-1" />
+                                Report Rejected
+                              </span>
+                            )}
                             {booking.isCompleted !== undefined && getCompletionBadge(booking.isCompleted)}
                           </div>
                         </td>
@@ -1991,6 +2022,12 @@ export function BookingDashboard(): React.ReactElement {
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           {getStatusBadge(booking.status)}
+                          {rejectedProofMap[booking._id] && booking.status === 'confirmed' && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              <XCircle className="w-3 h-3 mr-1" />
+                              Report Rejected
+                            </span>
+                          )}
                           {booking.isCompleted !== undefined && getCompletionBadge(booking.isCompleted)}
                         </div>
                       </div>
@@ -2937,6 +2974,22 @@ export function BookingDashboard(): React.ReactElement {
                               {getStatusBadge(selectedBooking.status)}
                             </div>
                           </div>
+                          {rejectedProofMap[selectedBooking._id] && selectedBooking.status === 'confirmed' && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                              <div className="flex items-start gap-2">
+                                <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <p className="text-sm font-semibold text-red-800">Completion Report Rejected</p>
+                                  <p className="text-sm text-red-700 mt-1">
+                                    {rejectedProofMap[selectedBooking._id].reviewFeedback || 'No feedback provided.'}
+                                  </p>
+                                  <p className="text-xs text-red-500 mt-2">
+                                    Rejected by {rejectedProofMap[selectedBooking._id].reviewedByName || 'Superadmin'} on {new Date(rejectedProofMap[selectedBooking._id].reviewedAt || '').toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           {selectedBooking.isCompleted !== undefined && (
                             <div>
                               <div className="text-sm font-medium text-gray-500 mb-1">
@@ -3031,25 +3084,25 @@ export function BookingDashboard(): React.ReactElement {
                         selectedBooking.status === 'rescheduled') &&
                         !selectedBooking.isCompleted && (
                           <>
-                            <button
-                              type="button"
-                              className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:w-auto sm:text-sm"
-                              onClick={() => {
-                                // Check if there's a rejected proof to revise
-                                completionProofService.getByBookingId(selectedBooking._id)
-                                  .then(res => {
-                                    if (res.success && res.data && res.data.status === 'rejected') {
-                                      openRevisionModal(selectedBooking)
-                                    } else {
-                                      openCompletionModal()
-                                    }
-                                  })
-                                  .catch(() => openCompletionModal())
-                              }}
-                            >
-                              <CheckSquare className="h-4 w-4 mr-2" />
-                              Submit Completion Report
-                            </button>
+                            {rejectedProofMap[selectedBooking._id] ? (
+                              <button
+                                type="button"
+                                className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:w-auto sm:text-sm"
+                                onClick={() => openRevisionModal(selectedBooking)}
+                              >
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                                Revise & Resubmit Report
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:w-auto sm:text-sm"
+                                onClick={() => openCompletionModal()}
+                              >
+                                <CheckSquare className="h-4 w-4 mr-2" />
+                                Submit Completion Report
+                              </button>
+                            )}
                             <button
                               type="button"
                               className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:w-auto sm:text-sm"
