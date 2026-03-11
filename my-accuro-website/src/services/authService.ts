@@ -1,7 +1,10 @@
 import api from './api';
 
 export interface RegisterData {
-  name: string;
+  name?: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
   email: string;
   password: string;
   phone?: string;
@@ -22,6 +25,9 @@ export interface AuthResponse {
   data?: {
     _id: string;
     name: string;
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
     email: string;
     role: string;
     phone?: string;
@@ -39,6 +45,9 @@ export interface UserResponse {
   data: {
     _id: string;
     name: string;
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
     email: string;
     role: string;
     phone?: string;

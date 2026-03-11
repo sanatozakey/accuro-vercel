@@ -15,7 +15,9 @@ export function Signup() {
   const { register } = useAuth();
 
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -29,7 +31,8 @@ export function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{
-    name?: string;
+    firstName?: string;
+    lastName?: string;
     email?: string;
     phone?: string;
     company?: string;
@@ -50,11 +53,19 @@ export function Signup() {
     const newFieldErrors = { ...fieldErrors };
 
     switch (name) {
-      case 'name':
-        if (value.length > 0 && value.length < 2) {
-          newFieldErrors.name = 'Name must be at least 2 characters';
+      case 'firstName':
+        if (value.length > 0 && value.length < 1) {
+          newFieldErrors.firstName = 'First name is required';
         } else {
-          delete newFieldErrors.name;
+          delete newFieldErrors.firstName;
+        }
+        break;
+
+      case 'lastName':
+        if (value.length > 0 && value.length < 1) {
+          newFieldErrors.lastName = 'Last name is required';
+        } else {
+          delete newFieldErrors.lastName;
         }
         break;
 
@@ -109,8 +120,12 @@ export function Signup() {
     let isValid = true;
 
     // Name validation
-    if (formData.name.length < 2) {
-      newFieldErrors.name = 'Name must be at least 2 characters';
+    if (!formData.firstName.trim()) {
+      newFieldErrors.firstName = 'First name is required';
+      isValid = false;
+    }
+    if (!formData.lastName.trim()) {
+      newFieldErrors.lastName = 'Last name is required';
       isValid = false;
     }
 
@@ -223,22 +238,58 @@ export function Signup() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Full Name *</Label>
+                    <Label htmlFor="firstName">First Name *</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                       <Input
                         type="text"
-                        id="name"
-                        name="name"
-                        value={formData.name}
+                        id="firstName"
+                        name="firstName"
+                        value={formData.firstName}
                         onChange={handleChange}
-                        className={`pl-10 ${fieldErrors.name ? 'border-red-500' : ''}`}
-                        placeholder="John Doe"
+                        className={`pl-10 ${fieldErrors.firstName ? 'border-red-500' : ''}`}
+                        placeholder="John"
                         required
                       />
                     </div>
-                    {fieldErrors.name && (
-                      <p className="text-sm text-red-600">{fieldErrors.name}</p>
+                    {fieldErrors.firstName && (
+                      <p className="text-sm text-red-600">{fieldErrors.firstName}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="middleName">Middle Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        id="middleName"
+                        name="middleName"
+                        value={formData.middleName}
+                        onChange={handleChange}
+                        className="pl-10"
+                        placeholder="(Optional)"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name *</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        id="lastName"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        className={`pl-10 ${fieldErrors.lastName ? 'border-red-500' : ''}`}
+                        placeholder="Doe"
+                        required
+                      />
+                    </div>
+                    {fieldErrors.lastName && (
+                      <p className="text-sm text-red-600">{fieldErrors.lastName}</p>
                     )}
                   </div>
 

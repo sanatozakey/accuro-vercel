@@ -4,6 +4,9 @@ import authService, { LoginData, RegisterData } from '../services/authService';
 interface User {
   _id: string;
   name: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
   email: string;
   role: string;
   phone?: string;

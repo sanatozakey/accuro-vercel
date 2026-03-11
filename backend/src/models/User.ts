@@ -9,6 +9,9 @@ export interface ILoginHistoryEntry {
 
 export interface IUser extends Document {
   name: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
   email: string;
   password: string;
   role: 'user' | 'admin' | 'superadmin';
@@ -47,6 +50,19 @@ const UserSchema: Schema = new Schema(
     name: {
       type: String,
       required: [true, 'Please provide a name'],
+      trim: true,
+    },
+    firstName: {
+      type: String,
+      trim: true,
+    },
+    middleName: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    lastName: {
+      type: String,
       trim: true,
     },
     email: {

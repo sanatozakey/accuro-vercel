@@ -15,7 +15,12 @@ import { verifyTOTP, verifyBackupCode } from '../utils/totp';
 // @access  Public
 export const register = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, phone, company } = req.body;
+    const { name, firstName, middleName, lastName, email, password, phone, company } = req.body;
+
+    // Compose full name from parts if provided, otherwise use name field
+    const fullName = firstName && lastName
+      ? [firstName, middleName, lastName].filter(Boolean).join(' ')
+      : name;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -33,7 +38,10 @@ export const register = async (req: Request, res: Response) => {
 
     // Create user
     const user = await User.create({
-      name,
+      name: fullName,
+      firstName: firstName || '',
+      middleName: middleName || '',
+      lastName: lastName || '',
       email,
       password,
       phone,
@@ -87,6 +95,9 @@ export const register = async (req: Request, res: Response) => {
       data: {
         _id: user._id,
         name: user.name,
+        firstName: user.firstName,
+        middleName: user.middleName,
+        lastName: user.lastName,
         email: user.email,
         role: user.role,
         phone: user.phone,
@@ -266,6 +277,9 @@ export const login = async (req: Request, res: Response) => {
       data: {
         _id: user._id,
         name: user.name,
+        firstName: user.firstName,
+        middleName: user.middleName,
+        lastName: user.lastName,
         email: user.email,
         role: user.role,
         phone: user.phone,
@@ -345,7 +359,18 @@ export const updateDetails = async (req: AuthRequest, res: Response) => {
     }
 
     const fieldsToUpdate: any = {};
-    if (req.body.name !== undefined) fieldsToUpdate.name = req.body.name;
+    if (req.body.firstName !== undefined) fieldsToUpdate.firstName = req.body.firstName;
+    if (req.body.middleName !== undefined) fieldsToUpdate.middleName = req.body.middleName;
+    if (req.body.lastName !== undefined) fieldsToUpdate.lastName = req.body.lastName;
+    // Compose name from parts if any name part is provided
+    if (req.body.firstName !== undefined || req.body.lastName !== undefined) {
+      const firstName = req.body.firstName ?? req.user!.firstName ?? '';
+      const middleName = req.body.middleName ?? req.user!.middleName ?? '';
+      const lastName = req.body.lastName ?? req.user!.lastName ?? '';
+      fieldsToUpdate.name = [firstName, middleName, lastName].filter(Boolean).join(' ');
+    } else if (req.body.name !== undefined) {
+      fieldsToUpdate.name = req.body.name;
+    }
     if (req.body.email !== undefined) fieldsToUpdate.email = req.body.email;
     if (req.body.phone !== undefined) fieldsToUpdate.phone = req.body.phone;
     if (req.body.company !== undefined) fieldsToUpdate.company = req.body.company;

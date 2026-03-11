@@ -62,7 +62,25 @@ const nameValidation = () =>
 // ==================== AUTH VALIDATIONS ====================
 
 export const validateRegister: ValidationChain[] = [
-  nameValidation(),
+  body('firstName')
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('First name is required and must not exceed 50 characters')
+    .matches(/^[a-zA-Z\s'-]+$/)
+    .withMessage('First name can only contain letters, spaces, hyphens, and apostrophes'),
+  body('middleName')
+    .optional({ values: 'falsy' })
+    .trim()
+    .isLength({ max: 50 })
+    .withMessage('Middle name must not exceed 50 characters')
+    .matches(/^[a-zA-Z\s'-]*$/)
+    .withMessage('Middle name can only contain letters, spaces, hyphens, and apostrophes'),
+  body('lastName')
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('Last name is required and must not exceed 50 characters')
+    .matches(/^[a-zA-Z\s'-]+$/)
+    .withMessage('Last name can only contain letters, spaces, hyphens, and apostrophes'),
   emailValidation(),
   passwordValidation(),
   phoneValidation(),

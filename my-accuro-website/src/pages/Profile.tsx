@@ -11,7 +11,9 @@ export function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
-    name: user?.name || '',
+    firstName: user?.firstName || '',
+    middleName: user?.middleName || '',
+    lastName: user?.lastName || '',
     email: user?.email || '',
     phone: user?.phone || '',
     company: user?.company || '',
@@ -102,7 +104,9 @@ export function Profile() {
       const updateData: any = {};
 
       // Only add fields that have non-empty values
-      if (formData.name && formData.name.trim()) updateData.name = formData.name.trim();
+      if (formData.firstName && formData.firstName.trim()) updateData.firstName = formData.firstName.trim();
+      updateData.middleName = formData.middleName ? formData.middleName.trim() : '';
+      if (formData.lastName && formData.lastName.trim()) updateData.lastName = formData.lastName.trim();
       if (formData.email && formData.email.trim()) updateData.email = formData.email.trim();
       if (formData.phone && formData.phone.trim()) updateData.phone = formData.phone.trim();
       if (formData.company && formData.company.trim()) updateData.company = formData.company.trim();
@@ -231,22 +235,55 @@ export function Profile() {
               </div>
             )}
 
-            {/* Name Field */}
-            <div className="mb-6">
-              <label htmlFor="name" className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                <User className="w-4 h-4 mr-2 text-gray-400" />
-                Full Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter your full name"
-              />
+            {/* Name Fields */}
+            <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label htmlFor="firstName" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                  <User className="w-4 h-4 mr-2 text-gray-400" />
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="First name"
+                />
+              </div>
+              <div>
+                <label htmlFor="middleName" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                  <User className="w-4 h-4 mr-2 text-gray-400" />
+                  Middle Name
+                </label>
+                <input
+                  type="text"
+                  id="middleName"
+                  name="middleName"
+                  value={formData.middleName}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="(Optional)"
+                />
+              </div>
+              <div>
+                <label htmlFor="lastName" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                  <User className="w-4 h-4 mr-2 text-gray-400" />
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Last name"
+                />
+              </div>
             </div>
 
             {/* Email Field */}
