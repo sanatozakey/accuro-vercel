@@ -20,6 +20,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
 import productService, { Product } from '../services/productService'
 import quotationService, { CreateQuotationData, QuotationItem } from '../services/quotationService'
+import { useCart } from '../contexts/CartContext'
 
 interface SelectedItem {
   productId: string
@@ -32,6 +33,7 @@ interface SelectedItem {
 
 export function RequestQuotation() {
   const { user } = useAuth()
+  const { clearCart } = useCart()
   const navigate = useNavigate()
 
   // Products
@@ -56,12 +58,50 @@ export function RequestQuotation() {
   const [submitted, setSubmitted] = useState(false)
   const [quotationNumber, setQuotationNumber] = useState('')
 
-  // Fetch products on mount
+  // Fetch products on mount and pre-populate from quote list if available
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const response = await productService.getProducts({ status: 'active' })
-        setProducts(response.data || [])
+        const productList = response.data || []
+        setProducts(productList)
+
+        // Check for quote list items from Products page (via MiniCart)
+        const quoteCartRaw = localStorage.getItem('quoteCart')
+        if (quoteCartRaw) {
+          try {
+            const quoteCart = JSON.parse(quoteCartRaw) as Array<{
+              id: number
+              name: string
+              category: string
+              price: number
+              quantity: number
+              image: string
+            }>
+            if (quoteCart.length > 0) {
+              const preItems: SelectedItem[] = quoteCart.map((cartItem) => {
+                // Try to match to a real product for the productId
+                const matchedProduct = productList.find(
+                  (p) => p.name === cartItem.name || p._id === cartItem.id.toString()
+                )
+                return {
+                  productId: matchedProduct?._id || cartItem.id.toString(),
+                  productName: cartItem.name,
+                  productImage: cartItem.image || matchedProduct?.image,
+                  category: cartItem.category,
+                  quantity: cartItem.quantity,
+                  specifications: '',
+                }
+              })
+              setSelectedItems(preItems)
+            }
+          } catch {
+            // ignore parse errors
+          }
+          // Clear localStorage so it doesn't persist on refresh
+          localStorage.removeItem('quoteCart')
+          localStorage.removeItem('cartTotal')
+        }
       } catch {
         toast.error('Failed to load products')
       } finally {
@@ -169,6 +209,7 @@ export function RequestQuotation() {
 
       const response = await quotationService.createQuotation(data)
       if (response.success) {
+        clearCart() // Clear the quote list after successful submission
         setSubmitted(true)
         setQuotationNumber(response.data?.quotationNumber || '')
         toast.success('Quotation request submitted successfully!')

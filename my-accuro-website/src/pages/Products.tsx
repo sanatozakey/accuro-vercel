@@ -260,7 +260,7 @@ export function Products() {
               size="lg"
               className="bg-white text-blue-600 hover:bg-gray-100"
             >
-              <a href="/quotations">Request Quotation</a>
+              <a href="/request-quote">Request Quotation</a>
             </Button>
             <Button
               asChild

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Send } from 'lucide-react'
+import { X, Send, FileText } from 'lucide-react'
 import { useCart, CartItem } from '../../contexts/CartContext'
 import { CartIcon } from './CartIcon'
 import { useNavigate } from 'react-router-dom'
@@ -34,11 +34,10 @@ export function MiniCart({ darkMode: propDarkMode }: MiniCartProps) {
   }, [propDarkMode])
 
   const handleRequestQuote = () => {
-    // Store cart data in localStorage for the booking page
+    // Store cart data in localStorage for the quotation page
     localStorage.setItem('quoteCart', JSON.stringify(cart))
     localStorage.setItem('cartTotal', getCartTotal().toString())
-    // Navigate to booking page
-    navigate('/booking?type=quote')
+    navigate('/request-quote')
     setIsOpen(false)
   }
 
@@ -61,14 +60,14 @@ export function MiniCart({ darkMode: propDarkMode }: MiniCartProps) {
 
   return (
     <>
-      {/* Floating Cart Button */}
+      {/* Floating Quote List Button */}
       <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-full shadow-lg hover:bg-blue-700 transition-all hover:scale-105"
+          className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-full shadow-lg hover:bg-emerald-700 transition-all hover:scale-105"
         >
-          <CartIcon />
-          <span className="font-medium text-sm">Cart ({cart.length})</span>
+          <FileText size={20} />
+          <span className="font-medium text-sm">Quote List ({cart.length})</span>
         </button>
       </div>
 
@@ -86,10 +85,10 @@ export function MiniCart({ darkMode: propDarkMode }: MiniCartProps) {
             darkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
             {/* Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-blue-600 text-white">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-emerald-600 text-white">
               <div>
-                <h3 className="font-bold text-lg">Your Quote Cart</h3>
-                <p className="text-xs text-blue-100">{cart.length} item{cart.length !== 1 ? 's' : ''} selected</p>
+                <h3 className="font-bold text-lg">Your Quote List</h3>
+                <p className="text-xs text-emerald-100">{cart.length} item{cart.length !== 1 ? 's' : ''} selected</p>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
@@ -186,10 +185,10 @@ export function MiniCart({ darkMode: propDarkMode }: MiniCartProps) {
 
               <button
                 onClick={handleRequestQuote}
-                className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-all flex items-center justify-center gap-2 mb-2"
+                className="w-full bg-emerald-600 text-white py-3 rounded-lg font-medium hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 mb-2"
               >
                 <Send size={18} />
-                Request Official Quote
+                Request Quotation
               </button>
 
               <button
@@ -200,7 +199,7 @@ export function MiniCart({ darkMode: propDarkMode }: MiniCartProps) {
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                 }`}
               >
-                Clear Cart
+                Clear List
               </button>
             </div>
           </div>
@@ -212,9 +211,9 @@ export function MiniCart({ darkMode: propDarkMode }: MiniCartProps) {
         isOpen={showClearConfirm}
         onClose={() => setShowClearConfirm(false)}
         onConfirm={handleClearCart}
-        title="Clear Cart?"
-        message={`Are you sure you want to remove all ${cart.length} item${cart.length !== 1 ? 's' : ''} from your cart? This action cannot be undone.`}
-        confirmText="Clear Cart"
+        title="Clear Quote List?"
+        message={`Are you sure you want to remove all ${cart.length} item${cart.length !== 1 ? 's' : ''} from your quote list? This action cannot be undone.`}
+        confirmText="Clear List"
         cancelText="Keep Items"
         confirmStyle="danger"
         darkMode={darkMode}

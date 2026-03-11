@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ShoppingCart, Check } from 'lucide-react'
+import { FileText, Check } from 'lucide-react'
 import { useCart } from '../../contexts/CartContext'
 import { useAuth } from '../../contexts/AuthContext'
 import recommendationService from '../../services/recommendationService'
@@ -58,7 +58,7 @@ export function AddToCartButton({ product, price, disabled = false }: AddToCartB
             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
             : showAdded
             ? 'bg-green-600 text-white'
-            : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
+            : 'bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95'
         }`}
       >
         {showAdded ? (
@@ -68,15 +68,15 @@ export function AddToCartButton({ product, price, disabled = false }: AddToCartB
           </span>
         ) : (
           <span className="flex items-center gap-2">
-            <ShoppingCart size={16} />
-            Add to Cart
+            <FileText size={16} />
+            Add to Quote
           </span>
         )}
       </button>
-      
+
       {showAdded && (
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-600 text-white text-xs px-3 py-1 rounded shadow-lg animate-bounce">
-          Added to cart!
+        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-emerald-600 text-white text-xs px-3 py-1 rounded shadow-lg animate-bounce">
+          Added to quote list!
         </div>
       )}
     </div>
