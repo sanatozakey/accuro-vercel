@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from './components/Layout'
+import { ScrollToTop } from './components/ScrollToTop'
 import { LoadingSpinner } from './components/LoadingSpinner'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -36,6 +37,7 @@ interface AppRouterProps {
 export function AppRouter({ showSplash }: AppRouterProps) {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Suspense fallback={<LoadingSpinner size="lg" text="Loading..." />}>
         <ErrorBoundary>
         <Routes>
