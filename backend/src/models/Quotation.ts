@@ -56,7 +56,6 @@ const QuotationSchema = new Schema<IQuotation>(
   {
     quotationNumber: {
       type: String,
-      required: true,
       unique: true,
       trim: true,
       index: true,
@@ -164,8 +163,8 @@ QuotationSchema.index({ userId: 1, createdAt: -1 });
 QuotationSchema.index({ status: 1, createdAt: -1 });
 QuotationSchema.index({ quotationNumber: 1 });
 
-// Auto-generate quotation number before saving
-QuotationSchema.pre('save', async function (next) {
+// Auto-generate quotation number before validation
+QuotationSchema.pre('validate', async function (next) {
   if (this.isNew && !this.quotationNumber) {
     const year = new Date().getFullYear();
     const count = await mongoose.model('Quotation').countDocuments({
