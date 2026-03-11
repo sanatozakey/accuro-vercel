@@ -5,7 +5,12 @@ import { FileText, Eye, Check, X, RefreshCw, Filter } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import quotationService, { Quotation } from '../services/quotationService';
 
-export function QuotationDashboard() {
+interface QuotationDashboardProps {
+  isInline?: boolean;
+  darkMode?: boolean;
+}
+
+export function QuotationDashboard({ isInline = false, darkMode: propDarkMode }: QuotationDashboardProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [quotations, setQuotations] = useState<Quotation[]>([]);
@@ -27,12 +32,12 @@ export function QuotationDashboard() {
   const [rejectNotes, setRejectNotes] = useState('');
 
   useEffect(() => {
-    if (user?.role !== 'admin' && user?.role !== 'superadmin') {
+    if (!isInline && user?.role !== 'admin' && user?.role !== 'superadmin') {
       navigate('/');
       return;
     }
     fetchQuotations();
-  }, [user, navigate, filter]);
+  }, [user, navigate, filter, isInline]);
 
   const fetchQuotations = async () => {
     try {
@@ -112,15 +117,15 @@ export function QuotationDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className={`${isInline ? '' : 'min-h-screen bg-gray-50 dark:bg-gray-900'} flex items-center justify-center py-12`}>
         <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="container mx-auto px-4">
+    <div className={isInline ? '' : 'min-h-screen bg-gray-50 dark:bg-gray-900 py-8'}>
+      <div className={isInline ? '' : 'container mx-auto px-4'}>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">

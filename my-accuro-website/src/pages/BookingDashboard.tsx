@@ -75,6 +75,7 @@ import { CalendarView } from '../components/CalendarView'
 import { AdminSettings } from '../components/AdminSettings'
 import { DashboardOverview } from '../components/DashboardOverview'
 import { ProductManagement } from './ProductManagement'
+import { QuotationDashboard } from './QuotationDashboard'
 import { UserManagement } from '../components/UserManagement'
 import { SessionManagement } from '../components/SessionManagement'
 import { ActivityLogViewer } from '../components/ActivityLogViewer'
@@ -198,7 +199,7 @@ export function BookingDashboard(): React.ReactElement {
   const [rejectedProofMap, setRejectedProofMap] = useState<Record<string, CompletionProof>>({})
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
-  const [viewMode, setViewMode] = useState<'dashboard' | 'table' | 'calendar' | 'products' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings' | 'rateLimits' | 'security'>(
+  const [viewMode, setViewMode] = useState<'dashboard' | 'table' | 'calendar' | 'products' | 'quotations' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings' | 'rateLimits' | 'security'>(
     'dashboard',
   )
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
@@ -1319,6 +1320,25 @@ export function BookingDashboard(): React.ReactElement {
           >
             <Package className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
             {!sidebarCollapsed && 'Products'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              setViewMode('quotations')
+              setSidebarOpen(false)
+            }}
+            variant={viewMode === 'quotations' ? 'default' : 'ghost'}
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              viewMode === 'quotations'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Quotations"
+          >
+            <FileText className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Quotations'}
           </Button>
 
           <Button
@@ -2643,6 +2663,11 @@ export function BookingDashboard(): React.ReactElement {
         {/* Products View */}
         {viewMode === 'products' && (
           <ProductManagement isInline={true} darkMode={darkMode} />
+        )}
+
+        {/* Quotations View */}
+        {viewMode === 'quotations' && (
+          <QuotationDashboard isInline={true} darkMode={darkMode} />
         )}
 
         {/* Settings View */}
