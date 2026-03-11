@@ -15,6 +15,7 @@ import {
   Info,
   Clock,
   Shield,
+  Calendar,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuth } from '../contexts/AuthContext'
@@ -226,11 +227,11 @@ export function RequestQuotation() {
                 Reference: {quotationNumber}
               </p>
             )}
-            <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
               Our team will review your request and prepare a detailed quotation. You'll receive
               a notification once it's ready.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
               <Link
                 to="/quotations"
                 className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
@@ -250,6 +251,37 @@ export function RequestQuotation() {
                 <Plus className="h-5 w-5 mr-2" />
                 Submit Another Request
               </button>
+            </div>
+
+            {/* What's Next */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">What's Next?</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg mx-auto">
+                <Link
+                  to="/products"
+                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition group"
+                >
+                  <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                    <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-medium text-sm text-gray-900 dark:text-white">Continue Browsing</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Explore more products</p>
+                  </div>
+                </Link>
+                <Link
+                  to="/booking"
+                  className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition group"
+                >
+                  <div className="h-9 w-9 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                    <Calendar className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-medium text-sm text-gray-900 dark:text-white">Book a Consultation</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Discuss your needs</p>
+                  </div>
+                </Link>
+              </div>
             </div>
           </div>
         </div>

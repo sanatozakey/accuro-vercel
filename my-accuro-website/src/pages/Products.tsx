@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { ExternalLink, Search, Filter, X } from 'lucide-react'
+import { useSearchParams, Link } from 'react-router-dom'
+import { ExternalLink, Search, Filter, X, ArrowRight } from 'lucide-react'
 import { productCategories, getProductsByCategory, Product } from '../data/products'
 import { LazyImage } from '../components/LazyImage'
 import { AddToCartButton } from '../components/cart/AddToCartButton'
@@ -251,16 +251,16 @@ export function Products() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Need Help Choosing?</h2>
           <p className="text-base sm:text-lg mb-6 max-w-xl mx-auto text-blue-50">
-            Our calibration experts are here to help you select the perfect solution.
+            Know what you need? Request a quote directly. Not sure yet? Book a free consultation with our experts.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               asChild
               variant="secondary"
               size="lg"
-              className="bg-white text-blue-600 hover:bg-gray-100"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white border-0"
             >
-              <a href="/request-quote">Request Quotation</a>
+              <Link to="/request-quote">Request a Quote</Link>
             </Button>
             <Button
               asChild
@@ -268,7 +268,7 @@ export function Products() {
               size="lg"
               className="bg-white text-blue-600 hover:bg-gray-100"
             >
-              <a href="/contact">Contact Us</a>
+              <Link to="/booking">Book a Consultation</Link>
             </Button>
             <Button
               asChild
@@ -276,7 +276,7 @@ export function Products() {
               size="lg"
               className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600"
             >
-              <a href="/booking">Schedule Consultation</a>
+              <Link to="/contact">Contact Us</Link>
             </Button>
           </div>
         </div>
@@ -351,9 +351,11 @@ const ProductCard = React.memo(function ProductCard({ product, currency }: { pro
 
       {/* Product Details */}
       <CardContent className="p-5 flex-1 flex flex-col">
-        <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
-          {product.name}
-        </h3>
+        <Link to={`/products/${product.id}`} className="block">
+          <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+            {product.name}
+          </h3>
+        </Link>
 
         {/* Price */}
         {((currency === 'PHP' && product.priceRange) || (currency === 'USD' && product.priceRangeUSD)) && (
@@ -397,24 +399,20 @@ const ProductCard = React.memo(function ProductCard({ product, currency }: { pro
             />
           )}
 
-          {product.beamexUrl && (
-            <Button
-              variant="outline"
-              size="sm"
-              asChild
-              className="w-full dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="w-full dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            <Link
+              to={`/products/${product.id}`}
+              className="flex items-center justify-center gap-2"
             >
-              <a
-                href={product.beamexUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2"
-              >
-                View Details
-                <ExternalLink className="h-4 w-4" />
-              </a>
-            </Button>
-          )}
+              View Details
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
         </div>
       </CardContent>
     </Card>

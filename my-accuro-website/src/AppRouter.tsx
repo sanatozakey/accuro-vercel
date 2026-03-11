@@ -8,6 +8,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 // Lazy load pages for better performance
 const Home = lazy(() => import('./pages/Home').then(module => ({ default: module.Home })))
 const Products = lazy(() => import('./pages/Products').then(module => ({ default: module.Products })))
+const ProductDetail = lazy(() => import('./pages/ProductDetail').then(module => ({ default: module.ProductDetail })))
 const About = lazy(() => import('./pages/About').then(module => ({ default: module.About })))
 const Contact = lazy(() => import('./pages/Contact').then(module => ({ default: module.Contact })))
 const Booking = lazy(() => import('./pages/Booking').then(module => ({ default: module.Booking })))
@@ -51,6 +52,14 @@ export function AppRouter({ showSplash }: AppRouterProps) {
             element={
               <Layout showSplash={showSplash}>
                 <Products />
+              </Layout>
+            }
+          />
+          <Route
+            path="/products/:productId"
+            element={
+              <Layout showSplash={showSplash}>
+                <ProductDetail />
               </Layout>
             }
           />

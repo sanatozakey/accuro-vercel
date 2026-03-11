@@ -146,28 +146,61 @@ export function Booking() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {bookingSubmitted && (
-                    <Alert className="bg-green-50 border-green-200">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      <AlertDescription className="text-green-800">
-                        <h3 className="font-medium mb-1">
-                          Meeting request submitted successfully!
-                        </h3>
-                        <p className="text-green-700 mb-3">
-                          We'll review your request and get back to you within
-                          24 hours to confirm your appointment.
-                        </p>
-                        {lastBookingData && (
-                          <Button
-                            onClick={handleDownloadReceipt}
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700"
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6">
+                      <div className="flex items-start gap-3 mb-4">
+                        <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <h3 className="font-semibold text-green-800 dark:text-green-300 text-lg">
+                            Meeting request submitted successfully!
+                          </h3>
+                          <p className="text-green-700 dark:text-green-400 mt-1">
+                            We'll review your request and get back to you within 24 hours to confirm your appointment.
+                          </p>
+                        </div>
+                      </div>
+
+                      {lastBookingData && (
+                        <Button
+                          onClick={handleDownloadReceipt}
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 mb-4"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download Receipt (PDF)
+                        </Button>
+                      )}
+
+                      {/* What's Next Section */}
+                      <div className="border-t border-green-200 dark:border-green-800 pt-4 mt-4">
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-3">What's Next?</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <Link
+                            to="/products"
+                            className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition group"
                           >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download Receipt (PDF)
-                          </Button>
-                        )}
-                      </AlertDescription>
-                    </Alert>
+                            <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                              <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white text-sm group-hover:text-blue-600 dark:group-hover:text-blue-400">Browse Products</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Explore our calibration equipment</p>
+                            </div>
+                          </Link>
+                          <Link
+                            to="/request-quote"
+                            className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-500 transition group"
+                          >
+                            <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+                              <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-400">Request a Quote</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Get a custom quotation</p>
+                            </div>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
                   )}
 
                   {error && (
