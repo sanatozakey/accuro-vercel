@@ -303,11 +303,11 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
         {bookings.map((booking) => (
           <div
             key={booking._id}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
           >
             <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-3">
               <div className="mb-2 md:mb-0">
-                <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                   {booking.company || 'Booking'}
                 </h4>
                 <p className="text-sm text-gray-600">
@@ -391,11 +391,11 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
         {purchases.map((purchase) => (
           <div
             key={purchase._id}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
           >
             <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4">
               <div className="mb-2 md:mb-0">
-                <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                   Order #{purchase.orderNumber}
                 </h4>
                 <p className="text-sm text-gray-600">
@@ -499,7 +499,7 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
         {reviews.map((review) => (
           <div
             key={review._id}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
           >
             <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-3">
               <div className="mb-2 md:mb-0">
@@ -597,11 +597,11 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
         {quotes.map((quote) => (
           <div
             key={quote._id}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
           >
             <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4">
               <div className="mb-2 md:mb-0">
-                <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                   {quote.company}
                 </h4>
                 <p className="text-sm text-gray-600">
@@ -672,11 +672,11 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
         {bookings.map((booking) => (
           <div
             key={`booking-${booking._id}`}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
           >
             <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4">
               <div className="mb-2 md:mb-0">
-                <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
                   {booking.company}
                 </h4>
                 <p className="text-sm text-gray-600">
@@ -781,7 +781,7 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
           return (
             <div
               key={log._id}
-              className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
             >
               <div className="flex items-start gap-3">
                 <div className={`p-2 rounded-lg ${colorClass}`}>
@@ -820,7 +820,7 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-md overflow-hidden ${className}`}>
+    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden ${className}`}>
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
         <div className="flex items-center gap-3">
@@ -893,7 +893,7 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
       {/* Booking Details Modal */}
       {isDetailModalOpen && selectedBooking && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-xl">
               <div className="flex items-center justify-between">

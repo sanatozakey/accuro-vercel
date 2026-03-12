@@ -104,7 +104,7 @@ export function CalendarDatePicker({
   }
 
   return (
-    <div className="bg-white rounded-lg border-2 border-gray-200 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 p-4">
       {/* Month Navigation */}
       <div className="flex items-center justify-between mb-4">
         <button

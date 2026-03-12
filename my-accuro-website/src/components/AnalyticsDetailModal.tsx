@@ -258,7 +258,7 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
     switch (type) {
       case 'bookings':
         return (
-          <tr key={item._id || index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+          <tr key={item._id || index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {new Date(item.date).toLocaleDateString()}
               <div className="text-xs text-gray-500">{item.time}</div>
@@ -299,7 +299,7 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
       case 'cart':
       case 'searches':
         return (
-          <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+          <tr key={index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {formatDate(item.createdAt)}
             </td>
@@ -331,7 +331,7 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
         )
       case 'quotes':
         return (
-          <tr key={item._id || index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+          <tr key={item._id || index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {formatDate(item.createdAt)}
             </td>
@@ -362,7 +362,7 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
         )
       case 'contacts':
         return (
-          <tr key={item._id || index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+          <tr key={item._id || index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {formatDate(item.createdAt)}
             </td>
@@ -388,7 +388,7 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
         )
       case 'registrations':
         return (
-          <tr key={item._id || index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+          <tr key={item._id || index} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {formatDate(item.createdAt)}
             </td>
@@ -419,9 +419,9 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
+      <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white dark:bg-gray-800 dark:border-gray-700">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{title}</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-500 transition-colors"
@@ -444,14 +444,14 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
 
         {!loading && !error && (
           <>
-            <div className="mb-4 text-sm text-gray-600">
+            <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
               Showing {details.length} of {total} total records
             </div>
 
             <div className="overflow-x-auto max-h-96">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0">{renderTableHeader()}</thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">{renderTableHeader()}</thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {details.length > 0 ? (
                     details.map((item, index) => renderTableRow(item, index))
                   ) : (
@@ -473,12 +473,12 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
                   className={`px-4 py-2 border rounded-md ${
                     currentPage === 1
                       ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   Previous
                 </button>
-                <span className="text-sm text-gray-700">
+                <span className="text-sm text-gray-700 dark:text-gray-200">
                   Page {currentPage} of {totalPages}
                 </span>
                 <button
@@ -487,7 +487,7 @@ const AnalyticsDetailModal: React.FC<AnalyticsDetailModalProps> = ({
                   className={`px-4 py-2 border rounded-md ${
                     currentPage === totalPages
                       ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   Next

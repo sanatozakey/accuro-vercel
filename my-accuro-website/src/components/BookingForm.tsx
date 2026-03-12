@@ -177,10 +177,10 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
   // Show login prompt if not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
-        <LogIn className="h-16 w-16 text-yellow-600 mx-auto mb-4" />
-        <h3 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Login Required</h3>
-        <p className="text-gray-700 mb-6">
+      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-8 text-center">
+        <LogIn className="h-16 w-16 text-yellow-600 dark:text-yellow-400 mx-auto mb-4" />
+        <h3 className="text-2xl md:text-3xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Login Required</h3>
+        <p className="text-gray-700 dark:text-gray-300 mb-6">
           You need to be logged in to schedule a meeting. This allows you to view and manage your bookings from your dashboard.
         </p>
         <div className="flex justify-center">
@@ -199,15 +199,15 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Date and Time Selection - Side by Side Layout */}
       <div>
-        <label className="flex items-center text-gray-700 font-medium mb-4">
+        <label className="flex items-center text-gray-700 dark:text-gray-200 font-medium mb-4">
           <Calendar className="h-4 w-4 mr-2 text-blue-600" />
           Select Date and Time
         </label>
 
-        <div className="border-2 border-gray-200 rounded-lg overflow-hidden">
+        <div className="border-2 border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
             {/* Left side - Calendar */}
-            <div className="border-b md:border-b-0 md:border-r border-gray-200 p-4">
+            <div className="border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 p-4">
               <CalendarDatePicker
                 selectedDate={formData.date}
                 onDateSelect={(date) => setFormData({ ...formData, date })}
@@ -217,7 +217,7 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
             {/* Right side - Time Slots */}
             <div className="p-4">
               <div className="mb-3">
-                <label className="flex items-center text-gray-700 font-medium text-sm">
+                <label className="flex items-center text-gray-700 dark:text-gray-200 font-medium text-sm">
                   <Clock className="h-4 w-4 mr-2 text-blue-600" />
                   Available Time Slots
                 </label>
@@ -235,8 +235,8 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
 
           {/* Footer - Booking Summary */}
           {formData.date && formData.time && (
-            <div className="border-t border-gray-200 bg-blue-50 p-4">
-              <p className="text-sm text-blue-900 font-medium">
+            <div className="border-t border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/30 p-4">
+              <p className="text-sm text-blue-900 dark:text-blue-200 font-medium">
                 Your meeting is scheduled for{' '}
                 <span className="font-bold">
                   {new Date(formData.date).toLocaleDateString('en-US', {
@@ -257,7 +257,7 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
       <div>
         <label
           htmlFor="company"
-          className="flex items-center text-gray-700 font-medium mb-2"
+          className="flex items-center text-gray-700 dark:text-gray-200 font-medium mb-2"
         >
           <Building className="h-4 w-4 mr-2 text-blue-600" />
           Company Name
@@ -270,7 +270,7 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
           value={formData.company}
           onChange={handleChange}
           placeholder="Your company name"
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
       {/* Contact Information */}
@@ -278,7 +278,7 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
         <div>
           <label
             htmlFor="contactName"
-            className="block text-gray-700 font-medium mb-2"
+            className="block text-gray-700 dark:text-gray-200 font-medium mb-2"
           >
             Contact Name
           </label>
@@ -290,13 +290,13 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
             value={formData.contactName}
             onChange={handleChange}
             placeholder="Full name"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div>
           <label
             htmlFor="contactEmail"
-            className="block text-gray-700 font-medium mb-2"
+            className="block text-gray-700 dark:text-gray-200 font-medium mb-2"
           >
             Email Address
           </label>
@@ -308,13 +308,13 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
             value={formData.contactEmail}
             onChange={handleChange}
             placeholder="email@company.com"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div>
           <label
             htmlFor="contactPhone"
-            className="block text-gray-700 font-medium mb-2"
+            className="block text-gray-700 dark:text-gray-200 font-medium mb-2"
           >
             Phone Number
           </label>
@@ -326,7 +326,7 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
             value={formData.contactPhone}
             onChange={handleChange}
             placeholder="Your phone number"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -334,7 +334,7 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
       <div>
         <label
           htmlFor="purpose"
-          className="flex items-center text-gray-700 font-medium mb-2"
+          className="flex items-center text-gray-700 dark:text-gray-200 font-medium mb-2"
         >
           <FileText className="h-4 w-4 mr-2 text-blue-600" />
           Meeting Purpose
@@ -345,7 +345,7 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
           required
           value={formData.purpose}
           onChange={handleChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="" disabled>
             Select purpose

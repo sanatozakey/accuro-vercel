@@ -67,7 +67,7 @@ export function ProductRecommendations({
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {Array.from({ length: limit }).map((_, i) => (
-            <div key={i} className="bg-white rounded-lg p-4 animate-pulse">
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-4 animate-pulse">
               <div className="h-32 bg-gray-200 rounded mb-3"></div>
               <div className="h-4 bg-gray-200 rounded mb-2"></div>
               <div className="h-3 bg-gray-200 rounded w-2/3"></div>
@@ -102,7 +102,7 @@ export function ProductRecommendations({
             <Link
               key={product.id}
               to={`/products#${product.id}`}
-              className="group bg-white rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border-2 border-transparent hover:border-blue-400"
+              className="group bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border-2 border-transparent hover:border-blue-400"
             >
               <div className="relative">
                 <img

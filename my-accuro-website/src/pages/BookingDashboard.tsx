@@ -2467,41 +2467,41 @@ export function BookingDashboard(): React.ReactElement {
                   <>
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-                      <div className="bg-white rounded-lg shadow-md p-6">
+                      <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">Total Interactions</p>
-                            <p className="text-3xl font-bold text-gray-900">{reportsStats.totalInteractions}</p>
+                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Total Interactions</p>
+                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{reportsStats.totalInteractions}</p>
                           </div>
                           <Activity className="h-12 w-12 text-blue-600" />
                         </div>
                       </div>
 
-                      <div className="bg-white rounded-lg shadow-md p-6">
+                      <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">Active Users</p>
-                            <p className="text-3xl font-bold text-gray-900">{reportsStats.totalUsers}</p>
+                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Active Users</p>
+                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{reportsStats.totalUsers}</p>
                           </div>
                           <Users className="h-12 w-12 text-green-600" />
                         </div>
                       </div>
 
-                      <div className="bg-white rounded-lg shadow-md p-6">
+                      <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">Top Products</p>
-                            <p className="text-3xl font-bold text-gray-900">{reportsStats.topProducts.length}</p>
+                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Top Products</p>
+                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{reportsStats.topProducts.length}</p>
                           </div>
                           <Star className="h-12 w-12 text-yellow-600" />
                         </div>
                       </div>
 
-                      <div className="bg-white rounded-lg shadow-md p-6">
+                      <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-gray-600 mb-1">Categories</p>
-                            <p className="text-3xl font-bold text-gray-900">
+                            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-1`}>Categories</p>
+                            <p className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                               {reportsStats.interactionsByCategory.length}
                             </p>
                           </div>
@@ -2513,8 +2513,8 @@ export function BookingDashboard(): React.ReactElement {
                     {/* Charts Row */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                       {/* Interaction Types Pie Chart */}
-                      <div className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">Interactions by Type</h3>
+                      <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
+                        <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Interactions by Type</h3>
                         {reportsStats.interactionsByType.length > 0 ? (
                           <ResponsiveContainer width="100%" height={300}>
                             <PieChart>
@@ -2546,8 +2546,8 @@ export function BookingDashboard(): React.ReactElement {
                       </div>
 
                       {/* Category Interactions Bar Chart */}
-                      <div className="bg-white rounded-lg shadow-md p-6">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">
+                      <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md p-6`}>
+                        <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>
                           Interactions by Category
                         </h3>
                         {reportsStats.interactionsByCategory.length > 0 ? (
@@ -2570,41 +2570,41 @@ export function BookingDashboard(): React.ReactElement {
                     </div>
 
                     {/* Top Products Table */}
-                    <div className="bg-white rounded-lg shadow-md mb-8">
-                      <div className="p-6 border-b border-gray-200">
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md mb-8`}>
+                      <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} flex items-center`}>
                           <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
                           Top Products by Engagement
                         </h3>
                       </div>
                       <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
+                        <table className={`min-w-full divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                          <thead className={darkMode ? 'bg-gray-900' : 'bg-gray-50'}>
                             <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                                 Rank
                               </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                                 Product
                               </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                                 Interactions
                               </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                                 Total Weight
                               </th>
                             </tr>
                           </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
+                          <tbody className={`${darkMode ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-y divide-gray-200'}`}>
                             {reportsStats.topProducts.length > 0 ? (
                               reportsStats.topProducts.map((product, index) => (
-                                <tr key={product.productId} className="hover:bg-gray-50">
+                                <tr key={product.productId} className={`hover:${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                                   <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className="text-lg font-bold text-gray-900">#{index + 1}</span>
+                                    <span className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>#{index + 1}</span>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="font-medium text-gray-900">{product.productName}</div>
-                                    <div className="text-sm text-gray-500">{product.productId}</div>
+                                    <div className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{product.productName}</div>
+                                    <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{product.productId}</div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <span className="text-sm text-gray-900">
@@ -2631,38 +2631,38 @@ export function BookingDashboard(): React.ReactElement {
                     </div>
 
                     {/* Recent Interactions */}
-                    <div className="bg-white rounded-lg shadow-md">
-                      <div className="p-6 border-b border-gray-200">
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center">
+                    <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md`}>
+                      <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'} flex items-center`}>
                           <Clock className="h-5 w-5 mr-2 text-blue-600" />
                           Recent Interactions
                         </h3>
                       </div>
                       <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
+                        <table className={`min-w-full divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                          <thead className={darkMode ? 'bg-gray-900' : 'bg-gray-50'}>
                             <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                                 User
                               </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                                 Type
                               </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                                 Product
                               </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                                 Category
                               </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                                 Weight
                               </th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              <th className={`px-6 py-3 text-left text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wider`}>
                                 Time
                               </th>
                             </tr>
                           </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
+                          <tbody className={`${darkMode ? 'bg-gray-800 divide-gray-700' : 'bg-white divide-y divide-gray-200'}`}>
                             {userInteractions.length > 0 ? (
                               userInteractions.slice(0, 20).map((interaction) => {
                                 const getInteractionIcon = (type: string) => {
@@ -2817,8 +2817,8 @@ export function BookingDashboard(): React.ReactElement {
             >
               &#8203;
             </span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className={`inline-block align-bottom ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full`}>
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} px-4 pt-5 pb-4 sm:p-6 sm:pb-4`}>
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                     <div className="flex justify-between items-center mb-4">
@@ -3301,8 +3301,8 @@ export function BookingDashboard(): React.ReactElement {
             >
               &#8203;
             </span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className={`inline-block align-bottom ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full`}>
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} px-4 pt-5 pb-4 sm:p-6 sm:pb-4`}>
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                     <div className="flex justify-between items-center mb-4">
@@ -3470,8 +3470,8 @@ export function BookingDashboard(): React.ReactElement {
             >
               &#8203;
             </span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className={`inline-block align-bottom ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full`}>
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} px-4 pt-5 pb-4 sm:p-6 sm:pb-4`}>
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                     <h3 className="text-lg leading-6 font-medium text-gray-900">
@@ -3592,8 +3592,8 @@ export function BookingDashboard(): React.ReactElement {
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
               &#8203;
             </span>
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className={`inline-block align-bottom ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full`}>
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} px-4 pt-5 pb-4 sm:p-6 sm:pb-4`}>
                 <div className="sm:flex sm:items-start">
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                     <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">

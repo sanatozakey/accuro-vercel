@@ -90,10 +90,10 @@ export function RecommendationsMonitor() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <RefreshCw className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading recommendation data...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading recommendation data...</p>
         </div>
       </div>
     );
@@ -101,8 +101,8 @@ export function RecommendationsMonitor() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 max-w-md">
           <p className="text-red-800">{error}</p>
           <button
             onClick={fetchData}
@@ -131,7 +131,7 @@ export function RecommendationsMonitor() {
   }));
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-navy-900 text-white py-12">
         <div className="container mx-auto px-4">
@@ -158,41 +158,41 @@ export function RecommendationsMonitor() {
       <div className="container mx-auto px-4 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Total Interactions</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalInteractions}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Interactions</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.totalInteractions}</p>
               </div>
               <Activity className="h-12 w-12 text-blue-600" />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Active Users</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Active Users</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.totalUsers}</p>
               </div>
               <Users className="h-12 w-12 text-green-600" />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Top Products</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.topProducts.length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Top Products</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">{stats.topProducts.length}</p>
               </div>
               <Star className="h-12 w-12 text-yellow-600" />
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Categories</p>
-                <p className="text-3xl font-bold text-gray-900">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Categories</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                   {stats.interactionsByCategory.length}
                 </p>
               </div>
@@ -204,8 +204,8 @@ export function RecommendationsMonitor() {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Interaction Types Pie Chart */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Interactions by Type</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Interactions by Type</h3>
             {interactionTypeData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -234,8 +234,8 @@ export function RecommendationsMonitor() {
           </div>
 
           {/* Category Interactions Bar Chart */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">
               Interactions by Category
             </h3>
             {categoryData.length > 0 ? (
@@ -255,40 +255,40 @@ export function RecommendationsMonitor() {
         </div>
 
         {/* Top Products Table */}
-        <div className="bg-white rounded-lg shadow-md mb-8">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-8">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center">
               <TrendingUp className="h-5 w-5 mr-2 text-blue-600" />
               Top Products by Engagement
             </h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Rank
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Product
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Interactions
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Total Weight
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {stats.topProducts.length > 0 ? (
                   stats.topProducts.map((product, index) => (
-                    <tr key={product.productId} className="hover:bg-gray-50">
+                    <tr key={product.productId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-lg font-bold text-gray-900">#{index + 1}</span>
+                        <span className="text-lg font-bold text-gray-900 dark:text-gray-100">#{index + 1}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-medium text-gray-900">{product.productName}</div>
+                        <div className="font-medium text-gray-900 dark:text-gray-100">{product.productName}</div>
                         <div className="text-sm text-gray-500">{product.productId}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -316,9 +316,9 @@ export function RecommendationsMonitor() {
         </div>
 
         {/* Recent Interactions */}
-        <div className="bg-white rounded-lg shadow-md">
-          <div className="p-6 border-b border-gray-200">
-            <h3 className="text-lg font-bold text-gray-900 flex items-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center">
               <Clock className="h-5 w-5 mr-2 text-blue-600" />
               Recent Interactions
             </h3>
@@ -347,7 +347,7 @@ export function RecommendationsMonitor() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {interactions.length > 0 ? (
                   interactions.slice(0, 20).map((interaction) => (
                     <tr key={interaction._id} className="hover:bg-gray-50">

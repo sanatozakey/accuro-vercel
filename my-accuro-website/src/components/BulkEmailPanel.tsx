@@ -67,8 +67,8 @@ export function BulkEmailPanel({ darkMode = false }: BulkEmailPanelProps) {
       });
 
       if (response.data.success) {
-        const { sent, failed } = response.data.data;
-        setSuccess(`Successfully sent ${sent} emails. ${failed > 0 ? `${failed} failed.` : ''}`);
+        const { totalRecipients } = response.data.data;
+        setSuccess(`Sending emails to ${totalRecipients} recipient(s) in the background. They should arrive within a minute.`);
         setSubject('');
         setContent('');
       }

@@ -149,16 +149,16 @@ export function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-8">
             <h1 className="text-3xl font-bold text-white text-center">Edit Profile</h1>
           </div>
 
           {/* Profile Picture Section */}
-          <div className="px-6 py-8 border-b border-gray-200">
+          <div className="px-6 py-8 border-b border-gray-200 dark:border-gray-700">
             <div className="flex flex-col items-center">
               <div
                 className="relative"
@@ -185,7 +185,7 @@ export function Profile() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition"
+                    className="bg-white dark:bg-gray-700 rounded-full p-2 shadow-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition"
                   >
                     <Camera className="w-5 h-5 text-blue-600" />
                   </button>
@@ -193,7 +193,7 @@ export function Profile() {
                     <button
                       type="button"
                       onClick={handleRemoveImage}
-                      className="bg-white rounded-full p-2 shadow-lg hover:bg-red-50 transition"
+                      className="bg-white dark:bg-gray-700 rounded-full p-2 shadow-lg hover:bg-red-50 dark:hover:bg-gray-600 transition"
                       title="Remove profile picture"
                     >
                       <X className="w-5 h-5 text-red-600" />
@@ -208,7 +208,7 @@ export function Profile() {
                   className="hidden"
                 />
               </div>
-              <p className="mt-4 text-sm text-gray-500">
+              <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
                 Click the camera icon or drag & drop an image to upload a new profile picture
               </p>
               <p className="text-xs text-gray-400 mt-1">
@@ -238,7 +238,7 @@ export function Profile() {
             {/* Name Fields */}
             <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="firstName" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="firstName" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   <User className="w-4 h-4 mr-2 text-gray-400" />
                   First Name
                 </label>
@@ -249,12 +249,12 @@ export function Profile() {
                   value={formData.firstName}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="First name"
                 />
               </div>
               <div>
-                <label htmlFor="middleName" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="middleName" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   <User className="w-4 h-4 mr-2 text-gray-400" />
                   Middle Name
                 </label>
@@ -264,12 +264,12 @@ export function Profile() {
                   name="middleName"
                   value={formData.middleName}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="(Optional)"
                 />
               </div>
               <div>
-                <label htmlFor="lastName" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="lastName" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                   <User className="w-4 h-4 mr-2 text-gray-400" />
                   Last Name
                 </label>
@@ -280,7 +280,7 @@ export function Profile() {
                   value={formData.lastName}
                   onChange={handleInputChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Last name"
                 />
               </div>
@@ -288,7 +288,7 @@ export function Profile() {
 
             {/* Email Field */}
             <div className="mb-6">
-              <label htmlFor="email" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 <Mail className="w-4 h-4 mr-2 text-gray-400" />
                 Email Address
               </label>
@@ -299,7 +299,7 @@ export function Profile() {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter your email"
               />
               {user?.isEmailVerified && (
@@ -309,7 +309,7 @@ export function Profile() {
 
             {/* Phone Field */}
             <div className="mb-6">
-              <label htmlFor="phone" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="phone" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 <Phone className="w-4 h-4 mr-2 text-gray-400" />
                 Phone Number
               </label>
@@ -319,14 +319,14 @@ export function Profile() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter your phone number"
               />
             </div>
 
             {/* Company Field */}
             <div className="mb-6">
-              <label htmlFor="company" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="company" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 <Building className="w-4 h-4 mr-2 text-gray-400" />
                 Company
               </label>
@@ -336,7 +336,7 @@ export function Profile() {
                 name="company"
                 value={formData.company}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter your company name"
               />
             </div>
@@ -354,7 +354,7 @@ export function Profile() {
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
+                className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
               >
                 Cancel
               </button>

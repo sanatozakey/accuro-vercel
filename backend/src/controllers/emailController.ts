@@ -44,48 +44,42 @@ export const sendBulkEmail = async (req: AuthRequest, res: Response) => {
       name: user.name,
     }));
 
-    // Send bulk email
-    const results = await emailService.sendBulkEmail(recipients, subject, content);
-
-    // Log activity
-    try {
-      await ActivityLog.create({
-        user: req.user!._id,
-        userName: req.user!.name,
-        userEmail: req.user!.email,
-        action: 'BULK_EMAIL_SENT',
-        resourceType: 'system',
-        details: `Bulk email sent: ${results.sent} successful, ${results.failed} failed`,
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
-      });
-    } catch (logError) {
-      console.error('Failed to log activity:', logError);
-    }
-
-    // If all emails failed due to SMTP issues, return error
-    if (results.sent === 0 && results.failed > 0) {
-      return res.status(503).json({
-        success: false,
-        message: results.errors[0] || 'Failed to send emails. Email service may be unavailable.',
-        data: {
-          totalRecipients: recipients.length,
-          sent: results.sent,
-          failed: results.failed,
-          errors: results.errors.slice(0, 10),
-        },
-      });
-    }
-
+    // Respond immediately — emails are sent in the background.
     res.status(200).json({
       success: true,
+      message: `Sending emails to ${recipients.length} recipient(s) in the background. You'll see results in the server logs.`,
       data: {
         totalRecipients: recipients.length,
-        sent: results.sent,
-        failed: results.failed,
-        errors: results.errors.slice(0, 10),
       },
     });
+
+    // Process emails in the background after response is sent
+    emailService.sendBulkEmail(recipients, subject, content)
+      .then(async (results) => {
+        console.log(`Bulk email complete: ${results.sent} sent, ${results.failed} failed`);
+        if (results.errors.length > 0) {
+          console.error('Bulk email errors:', results.errors.slice(0, 10));
+        }
+
+        // Log activity
+        try {
+          await ActivityLog.create({
+            user: req.user!._id,
+            userName: req.user!.name,
+            userEmail: req.user!.email,
+            action: 'BULK_EMAIL_SENT',
+            resourceType: 'system',
+            details: `Bulk email sent: ${results.sent} successful, ${results.failed} failed`,
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent'],
+          });
+        } catch (logError) {
+          console.error('Failed to log activity:', logError);
+        }
+      })
+      .catch((err) => {
+        console.error('Bulk email background processing failed:', err);
+      });
   } catch (error: any) {
     res.status(500).json({
       success: false,

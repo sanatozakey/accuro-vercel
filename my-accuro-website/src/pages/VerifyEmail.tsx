@@ -60,7 +60,7 @@ export function VerifyEmail() {
   };
 
   return (
-    <div className="w-full bg-gray-50 min-h-screen">
+    <div className="w-full bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <section className="bg-navy-900 text-white py-12">
         <div className="container mx-auto px-4">
@@ -73,7 +73,7 @@ export function VerifyEmail() {
       <section className="py-12">
         <div className="container mx-auto px-4">
           <div className="max-w-md mx-auto">
-            <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-8">
               {status === 'loading' && (
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-6">
@@ -81,8 +81,8 @@ export function VerifyEmail() {
                       <Loader className="h-8 w-8 text-blue-600 animate-spin" />
                     </div>
                   </div>
-                  <h2 className="text-2xl font-bold text-center mb-4">Verifying...</h2>
-                  <p className="text-gray-600 text-center">Please wait while we verify your email address.</p>
+                  <h2 className="text-2xl font-bold text-center mb-4 dark:text-gray-100">Verifying...</h2>
+                  <p className="text-gray-600 dark:text-gray-300 text-center">Please wait while we verify your email address.</p>
                 </div>
               )}
 
@@ -94,8 +94,8 @@ export function VerifyEmail() {
                     </div>
                   </div>
                   <h2 className="text-2xl font-bold text-center mb-4 text-green-600">Success!</h2>
-                  <p className="text-gray-600 text-center mb-6">{message}</p>
-                  <p className="text-sm text-gray-500 mb-4">Redirecting to login page...</p>
+                  <p className="text-gray-600 dark:text-gray-300 text-center mb-6">{message}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Redirecting to login page...</p>
                   <Link
                     to="/login"
                     className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition"
@@ -113,22 +113,22 @@ export function VerifyEmail() {
                     </div>
                   </div>
                   <h2 className="text-2xl font-bold text-center mb-4 text-red-600">Verification Failed</h2>
-                  <p className="text-gray-600 text-center mb-6">{message}</p>
+                  <p className="text-gray-600 dark:text-gray-300 text-center mb-6">{message}</p>
 
                   {/* Resend Verification */}
-                  <div className="mt-8 border-t pt-6">
+                  <div className="mt-8 border-t dark:border-gray-700 pt-6">
                     <div className="flex items-center justify-center mb-4">
                       <Mail className="h-5 w-5 text-gray-400 mr-2" />
-                      <h3 className="text-lg font-semibold">Resend Verification Email</h3>
+                      <h3 className="text-lg font-semibold dark:text-gray-100">Resend Verification Email</h3>
                     </div>
-                    <p className="text-sm text-gray-600 mb-4">Enter your email to receive a new verification link</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">Enter your email to receive a new verification link</p>
                     <div className="space-y-4">
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="your@email.com"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                       <button
                         onClick={handleResendVerification}

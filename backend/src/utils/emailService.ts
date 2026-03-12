@@ -1,4 +1,5 @@
-import nodemailer from 'nodemailer';
+// Gmail REST API email service (uses HTTPS, not SMTP)
+// This bypasses Render's free tier SMTP port blocking (ports 25, 465, 587)
 
 interface EmailOptions {
   to: string;
@@ -7,38 +8,97 @@ interface EmailOptions {
 }
 
 const EMAIL_USER = process.env.EMAIL_USER || 'calibrex.emailer@gmail.com';
-const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD || '';
+const GMAIL_CLIENT_ID = process.env.GMAIL_CLIENT_ID || '';
+const GMAIL_CLIENT_SECRET = process.env.GMAIL_CLIENT_SECRET || '';
+const GMAIL_REFRESH_TOKEN = process.env.GMAIL_REFRESH_TOKEN || '';
 const FROM_EMAIL = process.env.EMAIL_FROM || `Accuro <${EMAIL_USER}>`;
 const REPLY_TO_EMAIL = process.env.REPLY_TO_EMAIL || EMAIL_USER;
 const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL || EMAIL_USER;
 
 class EmailService {
-  private transporter: nodemailer.Transporter;
+  private accessToken: string | null = null;
+  private tokenExpiry: number = 0;
 
-  constructor() {
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: EMAIL_USER,
-        pass: EMAIL_PASSWORD,
-      },
+  private async getAccessToken(): Promise<string> {
+    // Reuse cached token if still valid
+    if (this.accessToken && Date.now() < this.tokenExpiry) {
+      return this.accessToken;
+    }
+
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: GMAIL_CLIENT_ID,
+        client_secret: GMAIL_CLIENT_SECRET,
+        refresh_token: GMAIL_REFRESH_TOKEN,
+        grant_type: 'refresh_token',
+      }),
     });
+
+    const data = await response.json() as { access_token: string; expires_in: number; error?: string; error_description?: string };
+    if (!response.ok) {
+      throw new Error(`OAuth2 token error: ${data.error_description || data.error}`);
+    }
+
+    this.accessToken = data.access_token;
+    // Expire 60s early to avoid edge cases
+    this.tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+    return data.access_token;
+  }
+
+  private createMimeMessage(to: string, subject: string, html: string): string {
+    const boundary = `boundary_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const message = [
+      `From: ${FROM_EMAIL}`,
+      `To: ${to}`,
+      `Reply-To: ${REPLY_TO_EMAIL}`,
+      `Subject: =?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`,
+      'MIME-Version: 1.0',
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/html; charset=UTF-8',
+      'Content-Transfer-Encoding: base64',
+      '',
+      Buffer.from(html).toString('base64'),
+      `--${boundary}--`,
+    ].join('\r\n');
+
+    // Gmail API requires URL-safe base64
+    return Buffer.from(message)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
   }
 
   async sendEmail(options: EmailOptions): Promise<void> {
     try {
-      if (!EMAIL_PASSWORD) {
-        console.warn('EMAIL_PASSWORD not set — skipping email send to', options.to);
+      if (!GMAIL_REFRESH_TOKEN) {
+        console.warn('GMAIL_REFRESH_TOKEN not set — skipping email send to', options.to);
         return;
       }
 
-      await this.transporter.sendMail({
-        from: FROM_EMAIL,
-        replyTo: REPLY_TO_EMAIL,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-      });
+      const accessToken = await this.getAccessToken();
+      const raw = this.createMimeMessage(options.to, options.subject, options.html);
+
+      const response = await fetch(
+        'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ raw }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json() as { error?: { message?: string } };
+        throw new Error(`Gmail API error: ${error.error?.message || JSON.stringify(error)}`);
+      }
 
       console.log(`Email sent successfully to ${options.to}`);
     } catch (err) {
@@ -320,7 +380,7 @@ class EmailService {
     });
   }
 
-  // Send bulk email to multiple recipients (parallel with batching)
+  // Send bulk email to multiple recipients (sequential with delay to respect Gmail rate limits)
   async sendBulkEmail(recipients: { email: string; name: string }[], subject: string, htmlContent: string): Promise<{ sent: number; failed: number; errors: string[] }> {
     const results = {
       sent: 0,
@@ -328,16 +388,16 @@ class EmailService {
       errors: [] as string[],
     };
 
-    if (!EMAIL_PASSWORD) {
+    if (!GMAIL_REFRESH_TOKEN) {
       return {
         sent: 0,
         failed: recipients.length,
-        errors: ['Email service is not configured. EMAIL_PASSWORD is missing.'],
+        errors: ['Email service is not configured. GMAIL_REFRESH_TOKEN is missing.'],
       };
     }
 
-    // Send in parallel batches of 5
-    const BATCH_SIZE = 5;
+    // Send in batches of 3 with a 1s delay between batches (Gmail rate limit ~2/sec)
+    const BATCH_SIZE = 3;
     for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
       const batch = recipients.slice(i, i + BATCH_SIZE);
 
@@ -371,6 +431,11 @@ class EmailService {
           results.failed++;
           results.errors.push(result.reason?.message || 'Unknown error');
         }
+      }
+
+      // Delay between batches to respect Gmail API rate limits
+      if (i + BATCH_SIZE < recipients.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 

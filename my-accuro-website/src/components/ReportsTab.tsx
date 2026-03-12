@@ -189,7 +189,7 @@ export function ReportsTab({ className = '' }: ReportsTabProps) {
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Generate New Report */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
         <div className="flex items-center gap-3 mb-6">
           <TrendingUp className="h-6 w-6 text-blue-600" />
           <h2 className="text-xl font-bold text-gray-900">Generate New Report</h2>
@@ -281,7 +281,7 @@ export function ReportsTab({ className = '' }: ReportsTabProps) {
       )}
 
       {/* Generated Reports List */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <FileText className="h-6 w-6 text-gray-600" />
