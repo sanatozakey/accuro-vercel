@@ -19,6 +19,49 @@ class EmailService {
   private accessToken: string | null = null;
   private tokenExpiry: number = 0;
 
+  // Shared professional email header
+  private emailHeader(title: string): string {
+    return `
+      <div style="font-family: 'Segoe UI', Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+        <!-- Header Banner -->
+        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); padding: 28px 32px; text-align: center;">
+          <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: 1px;">ACCURO</h1>
+          <p style="margin: 4px 0 0; color: #bfdbfe; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;">Beamex Instrumentation &amp; Calibration</p>
+        </div>
+        <!-- Title Bar -->
+        <div style="background-color: #f0f4ff; padding: 16px 32px; border-bottom: 1px solid #e5e7eb;">
+          <h2 style="margin: 0; color: #1e3a8a; font-size: 18px; font-weight: 600;">${title}</h2>
+        </div>
+        <!-- Body -->
+        <div style="padding: 28px 32px;">
+    `;
+  }
+
+  // Shared professional email footer
+  private emailFooter(): string {
+    return `
+        </div>
+        <!-- Footer -->
+        <div style="background-color: #f8fafc; padding: 24px 32px; border-top: 1px solid #e5e7eb;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 12px; color: #6b7280;">
+            <tr>
+              <td>
+                <p style="margin: 0 0 4px; font-weight: 600; color: #374151;">Accuro</p>
+                <p style="margin: 0 0 2px;">Beamex Instrumentation &amp; Calibration</p>
+                <p style="margin: 0 0 2px;">Email: <a href="mailto:calibrex.emailer@gmail.com" style="color: #2563eb; text-decoration: none;">calibrex.emailer@gmail.com</a></p>
+                <p style="margin: 0;">Phone: +63 917 150 7737</p>
+              </td>
+            </tr>
+          </table>
+          <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid #e5e7eb; text-align: center;">
+            <p style="margin: 0; font-size: 11px; color: #9ca3af;">This is an automated message from Accuro. Please do not reply directly to this email.</p>
+            <p style="margin: 4px 0 0; font-size: 11px; color: #9ca3af;">&copy; ${new Date().getFullYear()} Accuro. All rights reserved.</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   private async getAccessToken(): Promise<string> {
     // Reuse cached token if still valid
     if (this.accessToken && Date.now() < this.tokenExpiry) {
@@ -116,30 +159,23 @@ class EmailService {
     message: string;
   }): Promise<void> {
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #1e3a8a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
-          New Contact Form Submission
-        </h2>
+      ${this.emailHeader('New Contact Form Submission')}
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 20px;">
+          <tr><td style="padding: 14px 18px; border-bottom: 1px solid #e5e7eb;"><strong style="color: #374151;">Name:</strong> <span style="color: #1f2937;">${contactData.name}</span></td></tr>
+          <tr><td style="padding: 14px 18px; border-bottom: 1px solid #e5e7eb;"><strong style="color: #374151;">Email:</strong> <a href="mailto:${contactData.email}" style="color: #2563eb;">${contactData.email}</a></td></tr>
+          <tr><td style="padding: 14px 18px; border-bottom: 1px solid #e5e7eb;"><strong style="color: #374151;">Phone:</strong> <span style="color: #1f2937;">${contactData.phone}</span></td></tr>
+          ${contactData.company ? `<tr><td style="padding: 14px 18px; border-bottom: 1px solid #e5e7eb;"><strong style="color: #374151;">Company:</strong> <span style="color: #1f2937;">${contactData.company}</span></td></tr>` : ''}
+        </table>
 
-        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 5px; margin: 20px 0;">
-          <p style="margin: 10px 0;"><strong>Name:</strong> ${contactData.name}</p>
-          <p style="margin: 10px 0;"><strong>Email:</strong> ${contactData.email}</p>
-          <p style="margin: 10px 0;"><strong>Phone:</strong> ${contactData.phone}</p>
-          ${contactData.company ? `<p style="margin: 10px 0;"><strong>Company:</strong> ${contactData.company}</p>` : ''}
+        <h3 style="color: #1e3a8a; font-size: 15px; margin: 0 0 8px;">Message</h3>
+        <div style="background-color: #f9fafb; padding: 16px; border-left: 4px solid #2563eb; border-radius: 4px; color: #374151; line-height: 1.6;">
+          ${contactData.message}
         </div>
 
-        <div style="margin: 20px 0;">
-          <h3 style="color: #1e3a8a;">Message:</h3>
-          <p style="background-color: #f9fafb; padding: 15px; border-left: 4px solid #3b82f6; border-radius: 3px;">
-            ${contactData.message}
-          </p>
-        </div>
-
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
-          <p>This email was sent from the Accuro website contact form.</p>
-          <p>Please respond directly to ${contactData.email}</p>
-        </div>
-      </div>
+        <p style="margin-top: 20px; font-size: 13px; color: #6b7280;">
+          Please respond directly to <a href="mailto:${contactData.email}" style="color: #2563eb;">${contactData.email}</a>.
+        </p>
+      ${this.emailFooter()}
     `;
 
     await this.sendEmail({
@@ -154,41 +190,35 @@ class EmailService {
     const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
 
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #1e3a8a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
-          Verify Your Email Address
-        </h2>
+      ${this.emailHeader('Verify Your Email Address')}
+        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 8px;">Hello ${name},</p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
+          Thank you for registering with Accuro. Please verify your email address by clicking the button below to complete your account setup.
+        </p>
 
-        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 5px; margin: 20px 0;">
-          <p style="margin: 10px 0;">Hello ${name},</p>
-          <p style="margin: 10px 0;">Thank you for registering with Accuro! Please verify your email address to complete your registration.</p>
-        </div>
-
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${verificationUrl}" style="background-color: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${verificationUrl}" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 15px;">
             Verify Email Address
           </a>
         </div>
 
-        <div style="background-color: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; border-radius: 3px; margin: 20px 0;">
-          <p style="margin: 0; color: #92400e;">
+        <div style="background-color: #fffbeb; padding: 14px 16px; border-left: 4px solid #f59e0b; border-radius: 4px; margin: 24px 0;">
+          <p style="margin: 0; color: #92400e; font-size: 13px;">
             <strong>Note:</strong> This verification link will expire in 24 hours.
           </p>
         </div>
 
-        <div style="margin: 20px 0;">
-          <p style="color: #6b7280; font-size: 14px;">
-            If the button doesn't work, copy and paste this link into your browser:
-          </p>
-          <p style="background-color: #f9fafb; padding: 10px; border: 1px solid #e5e7eb; border-radius: 3px; word-break: break-all; font-size: 12px;">
-            ${verificationUrl}
-          </p>
+        <p style="color: #6b7280; font-size: 13px; margin: 16px 0 6px;">
+          If the button doesn't work, copy and paste this link into your browser:
+        </p>
+        <div style="background-color: #f1f5f9; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 4px; word-break: break-all; font-size: 12px; color: #475569; font-family: monospace;">
+          ${verificationUrl}
         </div>
 
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
-          <p>If you didn't create an account with Accuro, please ignore this email.</p>
-        </div>
-      </div>
+        <p style="margin-top: 24px; font-size: 13px; color: #9ca3af;">
+          If you didn't create an account with Accuro, you can safely ignore this email.
+        </p>
+      ${this.emailFooter()}
     `;
 
     await this.sendEmail({
@@ -213,48 +243,36 @@ class EmailService {
     bookingId: string;
   }): Promise<void> {
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #1e3a8a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
-          Meeting Request Received - Accuro
-        </h2>
+      ${this.emailHeader('Meeting Request Received')}
+        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 8px;">Hello ${bookingData.contactName},</p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
+          Thank you for scheduling a meeting with Accuro. Your meeting request has been successfully received and is now being reviewed.
+        </p>
 
-        <div style="background-color: #eff6ff; padding: 20px; border-radius: 5px; margin: 20px 0;">
-          <p style="margin: 10px 0;">Hello ${bookingData.contactName},</p>
-          <p style="margin: 10px 0;">Thank you for scheduling a meeting with Accuro! Your meeting request has been successfully received.</p>
-        </div>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 20px;">
+          <tr><td colspan="2" style="padding: 14px 18px; background-color: #eff6ff; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #1e3a8a; font-size: 14px;">Meeting Details</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; width: 140px; color: #6b7280; font-size: 13px;">Booking ID</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px; font-family: monospace;">${bookingData.bookingId}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Date</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${new Date(bookingData.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Time</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${bookingData.time}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Location</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${bookingData.location}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Product</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${bookingData.product}</td></tr>
+          <tr><td style="padding: 12px 18px; color: #6b7280; font-size: 13px;">Purpose</td><td style="padding: 12px 18px; color: #1f2937; font-size: 13px;">${bookingData.purpose}</td></tr>
+        </table>
 
-        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="color: #1e3a8a; margin-top: 0;">Meeting Details</h3>
-          <p style="margin: 10px 0;"><strong>Booking ID:</strong> ${bookingData.bookingId}</p>
-          <p style="margin: 10px 0;"><strong>Date:</strong> ${new Date(bookingData.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-          <p style="margin: 10px 0;"><strong>Time:</strong> ${bookingData.time}</p>
-          <p style="margin: 10px 0;"><strong>Location:</strong> ${bookingData.location}</p>
-          <p style="margin: 10px 0;"><strong>Product Interest:</strong> ${bookingData.product}</p>
-          <p style="margin: 10px 0;"><strong>Purpose:</strong> ${bookingData.purpose}</p>
-        </div>
-
-        <div style="background-color: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; border-radius: 3px; margin: 20px 0;">
-          <p style="margin: 0; color: #92400e;">
+        <div style="background-color: #fffbeb; padding: 14px 16px; border-left: 4px solid #f59e0b; border-radius: 4px; margin: 20px 0;">
+          <p style="margin: 0; color: #92400e; font-size: 13px;">
             <strong>Status: Pending Confirmation</strong><br>
-            We will review your request and send you a confirmation email within 24 hours.
+            Our team will review your request and send you a confirmation within 24 hours.
           </p>
         </div>
 
         ${bookingData.additionalInfo ? `
-          <div style="margin: 20px 0;">
-            <h3 style="color: #1e3a8a;">Additional Information:</h3>
-            <p style="background-color: #f9fafb; padding: 15px; border-left: 4px solid #3b82f6; border-radius: 3px; white-space: pre-wrap;">
-              ${bookingData.additionalInfo}
-            </p>
+          <h3 style="color: #1e3a8a; font-size: 14px; margin: 20px 0 8px;">Additional Information</h3>
+          <div style="background-color: #f1f5f9; padding: 14px 16px; border-left: 4px solid #2563eb; border-radius: 4px; color: #374151; font-size: 13px; line-height: 1.6; white-space: pre-wrap;">
+            ${bookingData.additionalInfo}
           </div>
         ` : ''}
-
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
-          <p>If you have any questions, please don't hesitate to contact us:</p>
-          <p>Email: info@accuro.com.ph | Phone: +63 9171507737</p>
-          <p>This is an automated email. Please do not reply to this message.</p>
-        </div>
-      </div>
+      ${this.emailFooter()}
     `;
 
     await this.sendEmail({
@@ -278,42 +296,35 @@ class EmailService {
     additionalInfo?: string;
   }): Promise<void> {
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #1e3a8a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
-          New Meeting Booking Request
-        </h2>
+      ${this.emailHeader('New Meeting Booking Request')}
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 20px;">
+          <tr><td colspan="2" style="padding: 14px 18px; background-color: #f0f4ff; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #1e3a8a; font-size: 14px;">Contact Information</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; width: 120px; color: #6b7280; font-size: 13px;">Name</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${bookingData.contactName}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Email</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;"><a href="mailto:${bookingData.contactEmail}" style="color: #2563eb;">${bookingData.contactEmail}</a></td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Phone</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${bookingData.contactPhone}</td></tr>
+          <tr><td style="padding: 12px 18px; color: #6b7280; font-size: 13px;">Company</td><td style="padding: 12px 18px; color: #1f2937; font-size: 13px;">${bookingData.company}</td></tr>
+        </table>
 
-        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="color: #1e3a8a; margin-top: 0;">Contact Information</h3>
-          <p style="margin: 10px 0;"><strong>Name:</strong> ${bookingData.contactName}</p>
-          <p style="margin: 10px 0;"><strong>Email:</strong> ${bookingData.contactEmail}</p>
-          <p style="margin: 10px 0;"><strong>Phone:</strong> ${bookingData.contactPhone}</p>
-          <p style="margin: 10px 0;"><strong>Company:</strong> ${bookingData.company}</p>
-        </div>
-
-        <div style="background-color: #eff6ff; padding: 20px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="color: #1e3a8a; margin-top: 0;">Meeting Details</h3>
-          <p style="margin: 10px 0;"><strong>Date:</strong> ${new Date(bookingData.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-          <p style="margin: 10px 0;"><strong>Time:</strong> ${bookingData.time}</p>
-          <p style="margin: 10px 0;"><strong>Location:</strong> ${bookingData.location}</p>
-          <p style="margin: 10px 0;"><strong>Product Interest:</strong> ${bookingData.product}</p>
-          <p style="margin: 10px 0;"><strong>Purpose:</strong> ${bookingData.purpose}</p>
-        </div>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 20px;">
+          <tr><td colspan="2" style="padding: 14px 18px; background-color: #eff6ff; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #1e3a8a; font-size: 14px;">Meeting Details</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; width: 120px; color: #6b7280; font-size: 13px;">Date</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${new Date(bookingData.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Time</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${bookingData.time}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Location</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${bookingData.location}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Product</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${bookingData.product}</td></tr>
+          <tr><td style="padding: 12px 18px; color: #6b7280; font-size: 13px;">Purpose</td><td style="padding: 12px 18px; color: #1f2937; font-size: 13px;">${bookingData.purpose}</td></tr>
+        </table>
 
         ${bookingData.additionalInfo ? `
-          <div style="margin: 20px 0;">
-            <h3 style="color: #1e3a8a;">Additional Information:</h3>
-            <p style="background-color: #f9fafb; padding: 15px; border-left: 4px solid #3b82f6; border-radius: 3px;">
-              ${bookingData.additionalInfo}
-            </p>
+          <h3 style="color: #1e3a8a; font-size: 14px; margin: 20px 0 8px;">Additional Information</h3>
+          <div style="background-color: #f1f5f9; padding: 14px 16px; border-left: 4px solid #2563eb; border-radius: 4px; color: #374151; font-size: 13px; line-height: 1.6;">
+            ${bookingData.additionalInfo}
           </div>
         ` : ''}
 
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
-          <p>This email was sent from the Accuro website booking system.</p>
-          <p>Please respond to ${bookingData.contactEmail} to confirm the appointment.</p>
-        </div>
-      </div>
+        <p style="margin-top: 20px; font-size: 13px; color: #6b7280;">
+          Please respond to <a href="mailto:${bookingData.contactEmail}" style="color: #2563eb;">${bookingData.contactEmail}</a> to confirm the appointment.
+        </p>
+      ${this.emailFooter()}
     `;
 
     await this.sendEmail({
@@ -328,49 +339,37 @@ class EmailService {
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
 
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #1e3a8a; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
-          Password Reset Request
-        </h2>
+      ${this.emailHeader('Password Reset Request')}
+        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 8px;">Hello ${name},</p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
+          You recently requested to reset your password for your Accuro account. Click the button below to set a new password.
+        </p>
 
-        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 5px; margin: 20px 0;">
-          <p style="margin: 10px 0;">Hello ${name},</p>
-          <p style="margin: 10px 0;">You recently requested to reset your password for your Accuro account. Click the button below to reset it.</p>
-        </div>
-
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${resetUrl}" style="background-color: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${resetUrl}" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 15px;">
             Reset Password
           </a>
         </div>
 
-        <div style="background-color: #fee2e2; padding: 15px; border-left: 4px solid #ef4444; border-radius: 3px; margin: 20px 0;">
-          <p style="margin: 0; color: #991b1b;">
-            <strong>Security Notice:</strong> This password reset link will expire in 1 hour for security reasons.
+        <div style="background-color: #fef2f2; padding: 14px 16px; border-left: 4px solid #ef4444; border-radius: 4px; margin: 20px 0;">
+          <p style="margin: 0; color: #991b1b; font-size: 13px;">
+            <strong>Security Notice:</strong> This link will expire after one use or in 1 hour.
           </p>
         </div>
 
-        <div style="margin: 20px 0;">
-          <p style="color: #6b7280; font-size: 14px;">
-            If the button doesn't work, copy and paste this link into your browser:
-          </p>
-          <p style="background-color: #f9fafb; padding: 10px; border: 1px solid #e5e7eb; border-radius: 3px; word-break: break-all; font-size: 12px;">
-            ${resetUrl}
-          </p>
+        <p style="color: #6b7280; font-size: 13px; margin: 16px 0 6px;">
+          If the button doesn't work, copy and paste this link into your browser:
+        </p>
+        <div style="background-color: #f1f5f9; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 4px; word-break: break-all; font-size: 12px; color: #475569; font-family: monospace;">
+          ${resetUrl}
         </div>
 
-        <div style="background-color: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; border-radius: 3px; margin: 20px 0;">
-          <p style="margin: 0; color: #92400e;">
-            <strong>Did not request this?</strong><br>
-            If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
+        <div style="background-color: #fffbeb; padding: 14px 16px; border-left: 4px solid #f59e0b; border-radius: 4px; margin: 24px 0;">
+          <p style="margin: 0; color: #92400e; font-size: 13px;">
+            <strong>Didn't request this?</strong> If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
           </p>
         </div>
-
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
-          <p>For security reasons, this link will expire after one use or in 1 hour.</p>
-          <p>If you need assistance, please contact us at info@accuro.com.ph</p>
-        </div>
-      </div>
+      ${this.emailFooter()}
     `;
 
     await this.sendEmail({
@@ -416,14 +415,14 @@ class EmailService {
             to: recipient.email,
             subject,
             html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                ${personalizedHtml}
-
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
-                  <p>This email was sent from Accuro.</p>
-                  <p>If you wish to unsubscribe, please contact us at info@accuro.com.ph</p>
+              ${this.emailHeader(subject)}
+                <div style="color: #374151; font-size: 15px; line-height: 1.7;">
+                  ${personalizedHtml}
                 </div>
-              </div>
+                <p style="margin-top: 24px; font-size: 12px; color: #9ca3af;">
+                  If you wish to unsubscribe, please contact us at <a href="mailto:calibrex.emailer@gmail.com" style="color: #2563eb;">calibrex.emailer@gmail.com</a>.
+                </p>
+              ${this.emailFooter()}
             `,
           });
 

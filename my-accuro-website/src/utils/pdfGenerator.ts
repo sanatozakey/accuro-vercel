@@ -182,7 +182,7 @@ export const generateBookingReceipt = (data: BookingReceiptData) => {
   doc.setFontSize(8);
   doc.setTextColor(107, 114, 128);
   doc.text('Accuro - Calibration Excellence', 20, yPos + 5);
-  doc.text('Email: info@accuro.com.ph | Phone: +63 9171507737', 20, yPos + 10);
+  doc.text('Email: calibrex.emailer@gmail.com | Phone: +63 9171507737', 20, yPos + 10);
   doc.text('This is an automated receipt. Please keep it for your records.', 20, yPos + 15);
 
   // Save the PDF
