@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Send, Users, AlertCircle, CheckCircle, RefreshCw, Eye } from 'lucide-react';
 import api from '../services/api';
+import { useSocket } from '../contexts/SocketContext';
 
 interface BulkEmailPanelProps {
   darkMode?: boolean;
@@ -15,6 +16,14 @@ const FILTER_OPTIONS = [
   { value: 'admins', label: 'Admins Only', description: 'Only admin and superadmin users' },
 ];
 
+interface EmailProgress {
+  sent: number;
+  failed: number;
+  total: number;
+  currentEmail?: string;
+  error?: string;
+}
+
 export function BulkEmailPanel({ darkMode = false }: BulkEmailPanelProps) {
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
@@ -25,6 +34,36 @@ export function BulkEmailPanel({ darkMode = false }: BulkEmailPanelProps) {
   const [previewCount, setPreviewCount] = useState<number | null>(null);
   const [previewSample, setPreviewSample] = useState<{ email: string; name: string }[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [progress, setProgress] = useState<EmailProgress | null>(null);
+  const { socket } = useSocket();
+
+  // Listen for real-time bulk email progress
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleProgress = (data: EmailProgress) => {
+      setProgress(data);
+    };
+
+    const handleComplete = (data: EmailProgress) => {
+      setProgress(null);
+      if (data.error) {
+        setError(`Email sending failed: ${data.error}`);
+      } else if (data.failed > 0) {
+        setSuccess(`Done! ${data.sent} of ${data.total} emails sent successfully. ${data.failed} failed.`);
+      } else {
+        setSuccess(`All ${data.sent} emails sent successfully!`);
+      }
+    };
+
+    socket.on('bulk-email-progress', handleProgress);
+    socket.on('bulk-email-complete', handleComplete);
+
+    return () => {
+      socket.off('bulk-email-progress', handleProgress);
+      socket.off('bulk-email-complete', handleComplete);
+    };
+  }, [socket]);
 
   useEffect(() => {
     fetchPreview();
@@ -68,7 +107,8 @@ export function BulkEmailPanel({ darkMode = false }: BulkEmailPanelProps) {
 
       if (response.data.success) {
         const { totalRecipients } = response.data.data;
-        setSuccess(`Sending emails to ${totalRecipients} recipient(s) in the background. They should arrive within a minute.`);
+        // Show initial progress state — real-time updates will come via socket
+        setProgress({ sent: 0, failed: 0, total: totalRecipients });
         setSubject('');
         setContent('');
       }
@@ -111,6 +151,40 @@ export function BulkEmailPanel({ darkMode = false }: BulkEmailPanelProps) {
           <div className={`p-4 rounded-lg flex items-center gap-2 ${darkMode ? 'bg-green-900/30 text-green-300' : 'bg-green-50 text-green-600'}`}>
             <CheckCircle size={18} />
             {success}
+          </div>
+        )}
+
+        {/* Live Progress Tracker */}
+        {progress && (
+          <div className={`p-4 rounded-lg border ${darkMode ? 'bg-blue-900/20 border-blue-800' : 'bg-blue-50 border-blue-200'}`}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="animate-spin text-blue-500" size={16} />
+                <span className={`font-medium ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                  Sending emails...
+                </span>
+              </div>
+              <span className={`text-sm font-mono ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}>
+                {progress.sent + progress.failed} of {progress.total}
+              </span>
+            </div>
+            {/* Progress bar */}
+            <div className={`w-full h-2.5 rounded-full ${darkMode ? 'bg-gray-700' : 'bg-blue-100'}`}>
+              <div
+                className="h-2.5 rounded-full bg-blue-500 transition-all duration-300"
+                style={{ width: `${((progress.sent + progress.failed) / progress.total) * 100}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-2">
+              <span className={`text-xs ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
+                {progress.sent} sent
+              </span>
+              {progress.failed > 0 && (
+                <span className={`text-xs ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
+                  {progress.failed} failed
+                </span>
+              )}
+            </div>
           </div>
         )}
 

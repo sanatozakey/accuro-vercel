@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import emailService from '../utils/emailService';
 import User from '../models/User';
 import ActivityLog from '../models/ActivityLog';
+import { socketService } from '../services/socketService';
 
 // @desc    Send bulk email to users
 // @route   POST /api/email/bulk
@@ -54,12 +55,24 @@ export const sendBulkEmail = async (req: AuthRequest, res: Response) => {
     });
 
     // Process emails in the background after response is sent
-    emailService.sendBulkEmail(recipients, subject, content)
+    const userId = req.user!._id.toString();
+
+    emailService.sendBulkEmail(recipients, subject, content, (progress) => {
+      // Emit real-time progress to the admin via Socket.IO
+      socketService.emitToUser(userId, 'bulk-email-progress', progress);
+    })
       .then(async (results) => {
         console.log(`Bulk email complete: ${results.sent} sent, ${results.failed} failed`);
         if (results.errors.length > 0) {
           console.error('Bulk email errors:', results.errors.slice(0, 10));
         }
+
+        // Emit completion event
+        socketService.emitToUser(userId, 'bulk-email-complete', {
+          sent: results.sent,
+          failed: results.failed,
+          total: recipients.length,
+        });
 
         // Log activity
         try {
@@ -79,6 +92,13 @@ export const sendBulkEmail = async (req: AuthRequest, res: Response) => {
       })
       .catch((err) => {
         console.error('Bulk email background processing failed:', err);
+        // Notify the admin that it failed
+        socketService.emitToUser(userId, 'bulk-email-complete', {
+          sent: 0,
+          failed: recipients.length,
+          total: recipients.length,
+          error: err.message || 'Background processing failed',
+        });
       });
   } catch (error: any) {
     res.status(500).json({

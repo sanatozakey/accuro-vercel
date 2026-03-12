@@ -381,7 +381,12 @@ class EmailService {
   }
 
   // Send bulk email to multiple recipients (sequential with delay to respect Gmail rate limits)
-  async sendBulkEmail(recipients: { email: string; name: string }[], subject: string, htmlContent: string): Promise<{ sent: number; failed: number; errors: string[] }> {
+  async sendBulkEmail(
+    recipients: { email: string; name: string }[],
+    subject: string,
+    htmlContent: string,
+    onProgress?: (progress: { sent: number; failed: number; total: number; currentEmail: string }) => void
+  ): Promise<{ sent: number; failed: number; errors: string[] }> {
     const results = {
       sent: 0,
       failed: 0,
@@ -395,6 +400,8 @@ class EmailService {
         errors: ['Email service is not configured. GMAIL_REFRESH_TOKEN is missing.'],
       };
     }
+
+    const total = recipients.length;
 
     // Send in batches of 3 with a 1s delay between batches (Gmail rate limit ~2/sec)
     const BATCH_SIZE = 3;
@@ -431,6 +438,12 @@ class EmailService {
           results.failed++;
           results.errors.push(result.reason?.message || 'Unknown error');
         }
+      }
+
+      // Emit progress after each batch
+      if (onProgress) {
+        const lastEmail = batch[batch.length - 1]?.email || '';
+        onProgress({ sent: results.sent, failed: results.failed, total, currentEmail: lastEmail });
       }
 
       // Delay between batches to respect Gmail API rate limits
