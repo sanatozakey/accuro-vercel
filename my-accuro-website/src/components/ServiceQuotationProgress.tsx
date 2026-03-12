@@ -122,7 +122,7 @@ export function ServiceQuotationProgress() {
                 Recent Bookings
               </h3>
               <Link
-                to="/dashboard"
+                to="/my-bookings"
                 className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
               >
                 View All <ArrowRight className="h-4 w-4" />

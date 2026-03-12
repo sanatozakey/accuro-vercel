@@ -406,11 +406,11 @@ export const getUserChatContext = async (req: AuthRequest, res: Response) => {
     const [userProfile, bookings, quotations] = await Promise.all([
       User.findById(userId).select('name email phone company createdAt'),
       Booking.find({ userId })
-        .select('_id date time status company product location')
+        .select('_id date time status company product location purpose contactName contactEmail contactPhone additionalInfo')
         .sort({ date: -1 })
         .limit(5),
       Quotation.find({ userId })
-        .select('_id quotationNumber status totalAmount createdAt')
+        .select('_id quotationNumber status totalAmount currency items createdAt validUntil')
         .sort({ createdAt: -1 })
         .limit(5),
     ]);

@@ -12,7 +12,17 @@ import {
   Frown,
   Brain,
   Loader,
-  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  MapPin,
+  Briefcase,
+  Phone,
+  Mail,
+  User,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Send,
 } from 'lucide-react'
 
 interface Message {
@@ -34,6 +44,17 @@ interface BookingContext {
   company: string
   product: string
   location: string
+  purpose?: string
+  contactName?: string
+  contactEmail?: string
+  contactPhone?: string
+  additionalInfo?: string
+}
+
+interface QuotationItem {
+  productName: string
+  quantity: number
+  specifications?: string
 }
 
 interface QuotationContext {
@@ -41,7 +62,10 @@ interface QuotationContext {
   quotationNumber: string
   status: string
   totalAmount?: number
+  currency?: string
+  items?: QuotationItem[]
   createdAt: string
+  validUntil?: string
 }
 
 interface UserContext {
@@ -88,6 +112,15 @@ const STATUS_COLORS: Record<string, string> = {
   expired: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
 }
 
+const STATUS_ICONS: Record<string, React.FC<{ size?: number; className?: string }>> = {
+  pending: Clock,
+  confirmed: CheckCircle,
+  completed: CheckCircle,
+  cancelled: XCircle,
+  approved: CheckCircle,
+  rejected: XCircle,
+}
+
 export function ChatSuggestionPanel({
   conversationId,
   messages,
@@ -95,6 +128,8 @@ export function ChatSuggestionPanel({
 }: ChatSuggestionPanelProps) {
   const [context, setContext] = useState<ChatContextData | null>(null)
   const [contextLoading, setContextLoading] = useState(false)
+  const [expandedBooking, setExpandedBooking] = useState<string | null>(null)
+  const [expandedQuotation, setExpandedQuotation] = useState<string | null>(null)
 
   // Fetch user context when conversationId changes
   useEffect(() => {
@@ -102,6 +137,8 @@ export function ChatSuggestionPanel({
 
     let cancelled = false
     setContextLoading(true)
+    setExpandedBooking(null)
+    setExpandedQuotation(null)
 
     api
       .get(`/chat/conversations/${conversationId}/context`)
@@ -132,9 +169,62 @@ export function ChatSuggestionPanel({
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  const formatAmount = (amount?: number) => {
+  const formatAmount = (amount?: number, currency?: string) => {
     if (amount == null) return 'N/A'
-    return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount)
+    const symbol = currency === 'USD' ? '$' : '₱'
+    return `${symbol}${amount.toLocaleString()}`
+  }
+
+  const handleBookingClick = (booking: BookingContext) => {
+    if (expandedBooking === booking._id) {
+      setExpandedBooking(null)
+      return
+    }
+    setExpandedBooking(booking._id)
+    setExpandedQuotation(null)
+
+    // Auto-send a formatted booking details message
+    const details = [
+      `📋 Booking Details for ${context?.user?.name || 'Customer'}:`,
+      `• Date: ${formatDate(booking.date)} at ${booking.time}`,
+      `• Status: ${booking.status.replace('_', ' ').toUpperCase()}`,
+      booking.purpose ? `• Purpose: ${booking.purpose}` : null,
+      booking.company ? `• Company: ${booking.company}` : null,
+      booking.location ? `• Location: ${booking.location}` : null,
+      booking.product ? `• Product: ${booking.product}` : null,
+      booking.contactName ? `• Contact: ${booking.contactName}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n')
+
+    onSendReply(details)
+  }
+
+  const handleQuotationClick = (quote: QuotationContext) => {
+    if (expandedQuotation === quote._id) {
+      setExpandedQuotation(null)
+      return
+    }
+    setExpandedQuotation(quote._id)
+    setExpandedBooking(null)
+
+    // Auto-send a formatted quotation details message
+    const itemsList = quote.items && quote.items.length > 0
+      ? quote.items.map((item, i) => `  ${i + 1}. ${item.productName} (Qty: ${item.quantity})`).join('\n')
+      : null
+
+    const details = [
+      `📄 Quotation Details - ${quote.quotationNumber}:`,
+      `• Status: ${quote.status.toUpperCase()}`,
+      quote.totalAmount != null ? `• Total: ${formatAmount(quote.totalAmount, quote.currency)}` : null,
+      `• Requested: ${formatDate(quote.createdAt)}`,
+      quote.validUntil ? `• Valid Until: ${formatDate(quote.validUntil)}` : null,
+      itemsList ? `• Items:\n${itemsList}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n')
+
+    onSendReply(details)
   }
 
   return (
@@ -231,41 +321,118 @@ export function ChatSuggestionPanel({
                   <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">
                     Recent Bookings
                   </span>
+                  <span className="text-[9px] text-gray-400 ml-auto">Click to share in chat</span>
                 </div>
                 {context.bookings.length > 0 ? (
                   <div className="space-y-1">
-                    {context.bookings.map((booking) => (
-                      <a
-                        key={booking._id}
-                        href="/admin/bookings"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[11px] text-gray-900 dark:text-white truncate">
-                            {formatDate(booking.date)}
-                            {booking.time && ` at ${booking.time}`}
-                          </p>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
-                            {booking.company || booking.product || booking.location || 'No details'}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                          <span
-                            className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
-                              STATUS_COLORS[booking.status] || 'bg-gray-100 text-gray-800'
+                    {context.bookings.map((booking) => {
+                      const isExpanded = expandedBooking === booking._id
+                      const StatusIcon = STATUS_ICONS[booking.status] || Clock
+                      return (
+                        <div key={booking._id} className="rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden">
+                          <button
+                            onClick={() => handleBookingClick(booking)}
+                            className={`w-full flex items-center justify-between px-2.5 py-2 text-left transition-colors ${
+                              isExpanded
+                                ? 'bg-blue-50 dark:bg-blue-900/30 border-b border-gray-200 dark:border-gray-600'
+                                : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                             }`}
                           >
-                            {booking.status.replace('_', ' ')}
-                          </span>
-                          <ExternalLink
-                            size={10}
-                            className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                          />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] font-medium text-gray-900 dark:text-white truncate">
+                                {formatDate(booking.date)}
+                                {booking.time && ` at ${booking.time}`}
+                              </p>
+                              <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                                {booking.company || booking.product || booking.location || 'No details'}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                              <span
+                                className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
+                                  STATUS_COLORS[booking.status] || 'bg-gray-100 text-gray-800'
+                                }`}
+                              >
+                                {booking.status.replace('_', ' ')}
+                              </span>
+                              {isExpanded ? (
+                                <ChevronUp size={12} className="text-gray-400" />
+                              ) : (
+                                <ChevronDown size={12} className="text-gray-400" />
+                              )}
+                            </div>
+                          </button>
+
+                          {/* Expanded Booking Details */}
+                          {isExpanded && (
+                            <div className="px-2.5 py-2 bg-white dark:bg-gray-700 space-y-1.5">
+                              <div className="flex items-center gap-1 text-[10px]">
+                                <StatusIcon size={10} className="text-blue-500 flex-shrink-0" />
+                                <span className="text-gray-500 dark:text-gray-400">Status:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{booking.status.replace('_', ' ').toUpperCase()}</span>
+                              </div>
+                              {booking.purpose && (
+                                <div className="flex items-start gap-1 text-[10px]">
+                                  <Briefcase size={10} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                                  <span className="text-gray-500 dark:text-gray-400">Purpose:</span>
+                                  <span className="text-gray-900 dark:text-white">{booking.purpose}</span>
+                                </div>
+                              )}
+                              {booking.company && (
+                                <div className="flex items-center gap-1 text-[10px]">
+                                  <Briefcase size={10} className="text-blue-500 flex-shrink-0" />
+                                  <span className="text-gray-500 dark:text-gray-400">Company:</span>
+                                  <span className="text-gray-900 dark:text-white">{booking.company}</span>
+                                </div>
+                              )}
+                              {booking.location && (
+                                <div className="flex items-center gap-1 text-[10px]">
+                                  <MapPin size={10} className="text-blue-500 flex-shrink-0" />
+                                  <span className="text-gray-500 dark:text-gray-400">Location:</span>
+                                  <span className="text-gray-900 dark:text-white">{booking.location}</span>
+                                </div>
+                              )}
+                              {booking.product && (
+                                <div className="flex items-center gap-1 text-[10px]">
+                                  <ShoppingCart size={10} className="text-blue-500 flex-shrink-0" />
+                                  <span className="text-gray-500 dark:text-gray-400">Product:</span>
+                                  <span className="text-gray-900 dark:text-white">{booking.product}</span>
+                                </div>
+                              )}
+                              {booking.contactName && (
+                                <div className="flex items-center gap-1 text-[10px]">
+                                  <User size={10} className="text-blue-500 flex-shrink-0" />
+                                  <span className="text-gray-500 dark:text-gray-400">Contact:</span>
+                                  <span className="text-gray-900 dark:text-white">{booking.contactName}</span>
+                                </div>
+                              )}
+                              {booking.contactEmail && (
+                                <div className="flex items-center gap-1 text-[10px]">
+                                  <Mail size={10} className="text-blue-500 flex-shrink-0" />
+                                  <span className="text-gray-900 dark:text-white">{booking.contactEmail}</span>
+                                </div>
+                              )}
+                              {booking.contactPhone && (
+                                <div className="flex items-center gap-1 text-[10px]">
+                                  <Phone size={10} className="text-blue-500 flex-shrink-0" />
+                                  <span className="text-gray-900 dark:text-white">{booking.contactPhone}</span>
+                                </div>
+                              )}
+                              {booking.additionalInfo && (
+                                <div className="text-[10px] mt-1 pt-1 border-t border-gray-100 dark:border-gray-600">
+                                  <span className="text-gray-500 dark:text-gray-400">Notes: </span>
+                                  <span className="text-gray-900 dark:text-white">{booking.additionalInfo}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1 pt-1 text-[9px] text-green-600 dark:text-green-400">
+                                <Send size={8} />
+                                <span>Details sent to chat</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </a>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : (
                   <p className="text-[10px] text-gray-400 dark:text-gray-500 px-2">No bookings found</p>
@@ -279,40 +446,96 @@ export function ChatSuggestionPanel({
                   <span className="text-[11px] font-medium text-gray-700 dark:text-gray-300">
                     Quotations
                   </span>
+                  <span className="text-[9px] text-gray-400 ml-auto">Click to share in chat</span>
                 </div>
                 {context.quotations.length > 0 ? (
                   <div className="space-y-1">
-                    {context.quotations.map((quote) => (
-                      <a
-                        key={quote._id}
-                        href="/admin/quotations"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[11px] text-gray-900 dark:text-white truncate">
-                            {quote.quotationNumber}
-                          </p>
-                          <p className="text-[10px] text-gray-500 dark:text-gray-400">
-                            {formatAmount(quote.totalAmount)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                          <span
-                            className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
-                              STATUS_COLORS[quote.status] || 'bg-gray-100 text-gray-800'
+                    {context.quotations.map((quote) => {
+                      const isExpanded = expandedQuotation === quote._id
+                      const StatusIcon = STATUS_ICONS[quote.status] || Clock
+                      return (
+                        <div key={quote._id} className="rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden">
+                          <button
+                            onClick={() => handleQuotationClick(quote)}
+                            className={`w-full flex items-center justify-between px-2.5 py-2 text-left transition-colors ${
+                              isExpanded
+                                ? 'bg-green-50 dark:bg-green-900/30 border-b border-gray-200 dark:border-gray-600'
+                                : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-green-50 dark:hover:bg-green-900/20'
                             }`}
                           >
-                            {quote.status}
-                          </span>
-                          <ExternalLink
-                            size={10}
-                            className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                          />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] font-medium text-gray-900 dark:text-white truncate">
+                                {quote.quotationNumber}
+                              </p>
+                              <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                                {formatAmount(quote.totalAmount, quote.currency)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                              <span
+                                className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
+                                  STATUS_COLORS[quote.status] || 'bg-gray-100 text-gray-800'
+                                }`}
+                              >
+                                {quote.status}
+                              </span>
+                              {isExpanded ? (
+                                <ChevronUp size={12} className="text-gray-400" />
+                              ) : (
+                                <ChevronDown size={12} className="text-gray-400" />
+                              )}
+                            </div>
+                          </button>
+
+                          {/* Expanded Quotation Details */}
+                          {isExpanded && (
+                            <div className="px-2.5 py-2 bg-white dark:bg-gray-700 space-y-1.5">
+                              <div className="flex items-center gap-1 text-[10px]">
+                                <StatusIcon size={10} className="text-green-500 flex-shrink-0" />
+                                <span className="text-gray-500 dark:text-gray-400">Status:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{quote.status.toUpperCase()}</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-[10px]">
+                                <Calendar size={10} className="text-green-500 flex-shrink-0" />
+                                <span className="text-gray-500 dark:text-gray-400">Requested:</span>
+                                <span className="text-gray-900 dark:text-white">{formatDate(quote.createdAt)}</span>
+                              </div>
+                              {quote.totalAmount != null && (
+                                <div className="flex items-center gap-1 text-[10px]">
+                                  <span className="text-gray-500 dark:text-gray-400 ml-3">Total:</span>
+                                  <span className="font-semibold text-green-600 dark:text-green-400">
+                                    {formatAmount(quote.totalAmount, quote.currency)}
+                                  </span>
+                                </div>
+                              )}
+                              {quote.validUntil && (
+                                <div className="flex items-center gap-1 text-[10px]">
+                                  <Clock size={10} className="text-green-500 flex-shrink-0" />
+                                  <span className="text-gray-500 dark:text-gray-400">Valid Until:</span>
+                                  <span className="text-gray-900 dark:text-white">{formatDate(quote.validUntil)}</span>
+                                </div>
+                              )}
+                              {quote.items && quote.items.length > 0 && (
+                                <div className="text-[10px] mt-1 pt-1 border-t border-gray-100 dark:border-gray-600">
+                                  <p className="text-gray-500 dark:text-gray-400 mb-1">Items:</p>
+                                  <div className="space-y-0.5 pl-2">
+                                    {quote.items.map((item, idx) => (
+                                      <div key={idx} className="text-gray-900 dark:text-white">
+                                        {idx + 1}. {item.productName} <span className="text-gray-400">(Qty: {item.quantity})</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1 pt-1 text-[9px] text-green-600 dark:text-green-400">
+                                <Send size={8} />
+                                <span>Details sent to chat</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </a>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : (
                   <p className="text-[10px] text-gray-400 dark:text-gray-500 px-2">No quotations found</p>
