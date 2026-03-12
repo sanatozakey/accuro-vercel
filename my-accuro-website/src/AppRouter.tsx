@@ -29,6 +29,7 @@ const QuotationDashboard = lazy(() => import('./pages/QuotationDashboard'))
 const CustomerQuotations = lazy(() => import('./pages/CustomerQuotations'))
 const RequestQuotation = lazy(() => import('./pages/RequestQuotation'))
 const StockSettings = lazy(() => import('./pages/admin/StockSettings'))
+const AdminChatDashboard = lazy(() => import('./pages/AdminChatDashboard'))
 
 // Redirects /account?tab=bookings&bookingId=... to /dashboard?tab=bookings&bookingId=...
 function AccountRedirect() {
@@ -234,6 +235,14 @@ export function AppRouter({ showSplash }: AppRouterProps) {
             element={
               <ProtectedRoute adminOnly={true}>
                 <StockSettings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/chats"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminChatDashboard />
               </ProtectedRoute>
             }
           />

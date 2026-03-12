@@ -50,6 +50,7 @@ import {
   Square,
   CheckSquare2,
   Pencil,
+  MessageCircle,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
@@ -1414,6 +1415,22 @@ export function BookingDashboard(): React.ReactElement {
           >
             <Users className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
             {!sidebarCollapsed && 'Users'}
+          </Button>
+
+          <Button
+            onClick={() => {
+              window.location.href = '/admin/chats'
+            }}
+            variant="ghost"
+            className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
+              darkMode
+                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title="Chat Support"
+          >
+            <MessageCircle className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+            {!sidebarCollapsed && 'Chat Support'}
           </Button>
 
           {/* INSIGHTS Section */}

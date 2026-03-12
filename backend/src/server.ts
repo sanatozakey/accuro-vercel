@@ -38,6 +38,7 @@ import emailRoutes from './routes/emailRoutes';
 import rateLimitRoutes from './routes/rateLimitRoutes';
 import activityRoutes from './routes/activityRoutes';
 import quotationRoutes from './routes/quotationRoutes';
+import chatRoutes from './routes/chatRoutes';
 
 // Initialize app
 const app: Application = express();
@@ -108,6 +109,7 @@ app.use('/api/email', emailRoutes);
 app.use('/api/rate-limits', rateLimitRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/quotations', quotationRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
