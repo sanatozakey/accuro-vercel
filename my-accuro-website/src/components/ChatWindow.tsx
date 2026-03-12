@@ -1,5 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Send, X, User } from 'lucide-react';
+import {
+  MessageCircle,
+  Send,
+  X,
+  User,
+  Calendar,
+  FileText,
+  RefreshCw,
+  ShoppingCart,
+  HelpCircle,
+  Sparkles,
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
 import api from '../services/api';
@@ -20,6 +31,17 @@ interface ChatWindowProps {
   onClose: () => void;
   onUnreadChange: (count: number) => void;
 }
+
+const QUICK_ACTIONS = [
+  { action: 'check_booking', label: 'Check Booking Status', icon: Calendar, userMessage: "I'd like to check my booking status" },
+  { action: 'check_quotation', label: 'Check Quotation', icon: FileText, userMessage: "I'd like to check my quotation status" },
+  { action: 'reschedule', label: 'Reschedule Booking', icon: RefreshCw, userMessage: 'I need to reschedule my booking' },
+  { action: 'product_inquiry', label: 'Product Inquiry', icon: ShoppingCart, userMessage: 'I have a question about your products' },
+  { action: 'technical_support', label: 'Technical Support', icon: HelpCircle, userMessage: 'I need technical support' },
+  { action: 'talk_to_agent', label: 'Talk to Agent', icon: MessageCircle, userMessage: "I'd like to speak with an agent" },
+] as const;
+
+type QuickAction = (typeof QUICK_ACTIONS)[number];
 
 export function ChatWindow({ isOpen, onClose, onUnreadChange }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -133,6 +155,33 @@ export function ChatWindow({ isOpen, onClose, onUnreadChange }: ChatWindowProps)
     }
   };
 
+  const handleQuickAction = async (action: QuickAction) => {
+    if (!conversationId || isSending) return;
+    setIsSending(true);
+    try {
+      // Send user message first
+      const res = await api.post(`/chat/conversations/${conversationId}/messages`, {
+        message: action.userMessage,
+      });
+      if (res.data.success) {
+        const newMessage: Message = res.data.data;
+        setMessages((prev) => {
+          if (prev.some((m) => m._id === newMessage._id)) return prev;
+          return [...prev, newMessage];
+        });
+      }
+      // Trigger auto-reply
+      await api.post(`/chat/conversations/${conversationId}/auto-reply`, {
+        action: action.action,
+      });
+      // Bot response will arrive via socket
+    } catch (error) {
+      console.error('Quick action failed:', error);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -160,6 +209,7 @@ export function ChatWindow({ isOpen, onClose, onUnreadChange }: ChatWindowProps)
   };
 
   const isOwnMessage = (msg: Message) => msg.senderId === user?._id;
+  const isBotMessage = (msg: Message) => msg.senderRole === 'bot';
 
   return (
     <div
@@ -201,27 +251,63 @@ export function ChatWindow({ isOpen, onClose, onUnreadChange }: ChatWindowProps)
             </div>
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center px-4">
-              <MessageCircle size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Send us a message and we'll get back to you!
+          /* Empty state with quick action grid */
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="text-center px-2 mb-4">
+              <Sparkles size={36} className="mx-auto text-violet-400 dark:text-violet-300 mb-2" />
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                How can we help you?
               </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                Choose an option or type a message below.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2 w-full px-1">
+              {QUICK_ACTIONS.map((qa) => {
+                const Icon = qa.icon;
+                return (
+                  <button
+                    key={qa.action}
+                    onClick={() => handleQuickAction(qa)}
+                    disabled={isSending || !conversationId}
+                    className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl
+                      bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700
+                      hover:bg-violet-50 hover:border-violet-300 dark:hover:bg-violet-900/30 dark:hover:border-violet-600
+                      transition-all duration-150 group
+                      disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Icon
+                      size={18}
+                      className="text-violet-500 dark:text-violet-400 group-hover:text-violet-600 dark:group-hover:text-violet-300 transition-colors"
+                    />
+                    <span className="text-[11px] leading-tight font-medium text-gray-600 dark:text-gray-300 group-hover:text-violet-700 dark:group-hover:text-violet-200 text-center transition-colors">
+                      {qa.label}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : (
           messages.map((msg) => {
             const own = isOwnMessage(msg);
+            const bot = isBotMessage(msg);
             return (
               <div key={msg._id} className={`flex ${own ? 'justify-end' : 'justify-start'}`}>
                 <div className="max-w-[75%]">
                   {!own && (
                     <div className="flex items-center gap-1.5 mb-1">
-                      <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                        <User size={12} className="text-gray-500 dark:text-gray-400" />
-                      </div>
-                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                        {msg.senderName}
+                      {bot ? (
+                        <div className="w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center">
+                          <Sparkles size={11} className="text-violet-500 dark:text-violet-400" />
+                        </div>
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                          <User size={12} className="text-gray-500 dark:text-gray-400" />
+                        </div>
+                      )}
+                      <span className={`text-xs font-medium ${bot ? 'text-violet-600 dark:text-violet-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                        {bot ? 'Accuro Assistant' : msg.senderName}
                       </span>
                     </div>
                   )}
@@ -229,6 +315,8 @@ export function ChatWindow({ isOpen, onClose, onUnreadChange }: ChatWindowProps)
                     className={`px-3 py-2 rounded-2xl text-sm leading-relaxed ${
                       own
                         ? 'bg-blue-600 text-white rounded-br-md'
+                        : bot
+                        ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-900 dark:text-violet-100 border border-violet-200 dark:border-violet-700/50 rounded-bl-md'
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md'
                     }`}
                   >
@@ -244,6 +332,39 @@ export function ChatWindow({ isOpen, onClose, onUnreadChange }: ChatWindowProps)
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Quick Actions Row (shown when there are messages) */}
+      {messages.length > 0 && !isLoading && (
+        <div className="px-3 py-2 border-t border-gray-100 dark:border-gray-800 flex-shrink-0 overflow-x-auto">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap font-medium mr-0.5">
+              Quick actions:
+            </span>
+            {QUICK_ACTIONS.map((qa) => {
+              const Icon = qa.icon;
+              return (
+                <button
+                  key={qa.action}
+                  onClick={() => handleQuickAction(qa)}
+                  disabled={isSending || !conversationId}
+                  className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium whitespace-nowrap
+                    bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300
+                    border border-gray-200 dark:border-gray-700
+                    hover:bg-violet-50 hover:text-violet-700 hover:border-violet-300
+                    dark:hover:bg-violet-900/30 dark:hover:text-violet-300 dark:hover:border-violet-600
+                    transition-all duration-150
+                    disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={qa.label}
+                >
+                  <Icon size={10} />
+                  <span className="hidden sm:inline">{qa.label}</span>
+                  <span className="sm:hidden">{qa.label.split(' ')[0]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Input Area */}
       <div className="px-3 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">

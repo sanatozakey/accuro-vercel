@@ -8,6 +8,31 @@ import User from '../models/User';
 import { socketService } from '../services/socketService';
 
 /**
+ * @desc    Get total unread message count across all active conversations (admin view)
+ * @route   GET /api/chat/admin-unread-count
+ * @access  Private (admin, superadmin)
+ */
+export const getAdminUnreadCount = async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await ChatConversation.aggregate([
+      { $match: { status: 'active' } },
+      { $group: { _id: null, total: { $sum: '$unreadByAdmin' } } },
+    ]);
+    const unreadCount = result.length > 0 ? result[0].total : 0;
+    return res.status(200).json({
+      success: true,
+      data: { unreadCount },
+    });
+  } catch (error: any) {
+    console.error('Error in getAdminUnreadCount:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+/**
  * @desc    Get or create conversation for the current user
  * @route   POST /api/chat/conversation
  * @access  Private
@@ -245,11 +270,11 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
 
     // Mark messages sent by the OTHER party as read
     if (userRole === 'user') {
-      // User is reading: mark admin/superadmin messages as read
+      // User is reading: mark admin/superadmin/bot messages as read
       await ChatMessage.updateMany(
         {
           conversationId,
-          senderRole: { $in: ['admin', 'superadmin'] },
+          senderRole: { $in: ['admin', 'superadmin', 'bot'] },
           isRead: false,
         },
         { isRead: true, readAt: now }
@@ -374,6 +399,189 @@ export const closeConversation = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error in closeConversation:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+/**
+ * @desc    Handle automated bot replies for quick actions
+ * @route   POST /api/chat/conversations/:conversationId/auto-reply
+ * @access  Private
+ */
+export const autoReply = async (req: AuthRequest, res: Response) => {
+  try {
+    const { conversationId } = req.params;
+    const { action } = req.body;
+
+    const validActions = [
+      'check_booking',
+      'check_quotation',
+      'reschedule',
+      'product_inquiry',
+      'technical_support',
+      'talk_to_agent',
+    ];
+
+    if (!action || !validActions.includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid action. Must be one of: ${validActions.join(', ')}`,
+      });
+    }
+
+    // Verify conversation exists
+    const conversation = await ChatConversation.findById(conversationId);
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Conversation not found',
+      });
+    }
+
+    // Users can only auto-reply in their own conversations
+    const userRole = req.user!.role;
+    if (userRole === 'user' && conversation.userId.toString() !== req.user!._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to access this conversation',
+      });
+    }
+
+    // Prevent in closed conversations
+    if (conversation.status === 'closed') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot send messages in a closed conversation',
+      });
+    }
+
+    const userId = conversation.userId;
+    let botMessage = '';
+
+    switch (action) {
+      case 'check_booking': {
+        const bookings = await Booking.find({ userId })
+          .sort({ date: -1 })
+          .limit(5)
+          .select('date time status company purpose product');
+
+        if (bookings.length === 0) {
+          botMessage =
+            "You don't have any bookings yet. Would you like to schedule one? Visit our booking page at /booking.";
+        } else {
+          const bookingLines = bookings.map((b: any, i: number) => {
+            const dateStr = new Date(b.date).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            });
+            return `${i + 1}. ${b.purpose || 'Booking'} - ${dateStr} at ${b.time}\n   Status: ${b.status} | Company: ${b.company || 'N/A'} | Product: ${b.product || 'N/A'}`;
+          });
+          botMessage = `Here are your recent bookings:\n\n${bookingLines.join('\n\n')}\n\nIf you need to make changes to any booking, please let us know or contact our admin team.`;
+        }
+        break;
+      }
+
+      case 'check_quotation': {
+        const quotations = await Quotation.find({ userId })
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .select('quotationNumber status totalAmount currency items createdAt');
+
+        if (quotations.length === 0) {
+          botMessage =
+            "You don't have any quotation requests yet. You can request a quotation by browsing our products at /products and adding items to your quote.";
+        } else {
+          const quotationLines = quotations.map((q: any, i: number) => {
+            const dateStr = new Date(q.createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            });
+            const itemCount = q.items ? q.items.length : 0;
+            const amount =
+              q.totalAmount != null ? ` | Amount: ${q.currency || 'PHP'} ${q.totalAmount.toLocaleString()}` : '';
+            return `${i + 1}. ${q.quotationNumber} - Created ${dateStr}\n   Status: ${q.status} | Items: ${itemCount}${amount}`;
+          });
+          botMessage = `Here are your recent quotation requests:\n\n${quotationLines.join('\n\n')}\n\nFor any questions about your quotations, our admin team will be happy to assist.`;
+        }
+        break;
+      }
+
+      case 'reschedule':
+        botMessage =
+          'To reschedule a booking, please provide the following details:\n\n' +
+          '1. The booking you want to reschedule (date and purpose)\n' +
+          '2. Your preferred new date and time\n' +
+          '3. Reason for rescheduling\n\n' +
+          'An admin will review your request and confirm the new schedule. You can also manage your bookings directly from your dashboard at /bookings.';
+        break;
+
+      case 'product_inquiry':
+        botMessage =
+          'Thank you for your interest in our products! You can browse our full catalog at /products to explore Beamex calibration instruments and solutions.\n\n' +
+          'If you have specific questions about a product, please share the product name or details here, and an admin will follow up with more information as soon as possible.';
+        break;
+
+      case 'technical_support':
+        botMessage =
+          'Your technical support request has been noted. Our team typically responds within a few hours during business hours.\n\n' +
+          'In the meantime, please provide as much detail as possible about your issue:\n' +
+          '- Product/equipment involved\n' +
+          '- Description of the issue\n' +
+          '- Any error messages or symptoms\n\n' +
+          'An admin will review your request and respond as soon as available.';
+        break;
+
+      case 'talk_to_agent':
+        botMessage =
+          'Your request to speak with an agent has been noted. An admin will be notified and will respond as soon as they are available.\n\n' +
+          'Our team is typically available during business hours (Mon-Fri, 9AM-6PM). If you have an urgent matter, please describe it here so we can prioritize accordingly.';
+        break;
+
+      default:
+        botMessage = 'Thank you for your message. An admin will respond shortly.';
+    }
+
+    // Create the bot message
+    const chatMessage = await ChatMessage.create({
+      conversationId,
+      senderId: userId,
+      senderRole: 'bot',
+      senderName: 'Accuro Assistant',
+      message: botMessage,
+    });
+
+    // Update conversation metadata
+    conversation.lastMessage = botMessage.substring(0, 200);
+    conversation.lastMessageAt = new Date();
+    // Bot messages are read by admin but unread by user (since user triggered it, mark as read for user too)
+    // Actually, the user sees the bot reply immediately, so no need to increment unreadByUser
+    // But admins should be notified there's activity
+    conversation.unreadByAdmin += 1;
+    await conversation.save();
+
+    // Emit real-time events
+    const emitData = {
+      conversationId,
+      message: chatMessage,
+    };
+
+    // Send to the user so their chat updates in real-time
+    socketService.emitToUser(userId.toString(), 'chat:new_message', emitData);
+    // Notify admins about the bot interaction
+    socketService.emitToAdmins('chat:new_message', emitData);
+
+    return res.status(201).json({
+      success: true,
+      data: chatMessage,
+    });
+  } catch (error: any) {
+    console.error('Error in autoReply:', error);
     return res.status(500).json({
       success: false,
       message: error.message || 'Server error',

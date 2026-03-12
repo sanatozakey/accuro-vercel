@@ -42,7 +42,11 @@ interface Message {
   createdAt: string
 }
 
-export function AdminChatDashboard() {
+interface AdminChatDashboardProps {
+  embedded?: boolean
+}
+
+export function AdminChatDashboard({ embedded = false }: AdminChatDashboardProps) {
   const { user, logout } = useAuth()
   const { socket, isConnected } = useSocket()
 
@@ -207,35 +211,9 @@ export function AdminChatDashboard() {
     }
   }
 
-  const handleSendFromSuggestion = async (text: string) => {
-    if (!text.trim() || !selectedConversation || sending) return
-
-    setNewMessage('')
-    setSending(true)
-
-    try {
-      const res = await api.post(`/chat/conversations/${selectedConversation._id}/messages`, {
-        message: text.trim(),
-      })
-      if (res.data.success) {
-        setMessages(prev => {
-          if (prev.find(m => m._id === res.data.data._id)) return prev
-          return [...prev, res.data.data]
-        })
-        setConversations(prev =>
-          prev.map(c =>
-            c._id === selectedConversation._id
-              ? { ...c, lastMessage: text.trim(), lastMessageAt: new Date().toISOString() }
-              : c
-          )
-        )
-      }
-    } catch (err) {
-      console.error('Failed to send suggested message:', err)
-    } finally {
-      setSending(false)
-      inputRef.current?.focus()
-    }
+  const handlePreFillMessage = (text: string) => {
+    setNewMessage(text)
+    inputRef.current?.focus()
   }
 
   const filteredConversations = conversations.filter(c => {
@@ -266,8 +244,9 @@ export function AdminChatDashboard() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100 dark:bg-gray-900">
-      {/* Top Bar */}
+    <div className={`${embedded ? 'h-full' : 'h-screen'} flex flex-col bg-gray-100 dark:bg-gray-900`}>
+      {/* Top Bar - hidden when embedded */}
+      {!embedded && (
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
           <MessageCircle className="h-6 w-6 text-blue-600" />
@@ -294,6 +273,7 @@ export function AdminChatDashboard() {
           </a>
         </div>
       </div>
+      )}
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
@@ -529,7 +509,7 @@ export function AdminChatDashboard() {
             <ChatSuggestionPanel
               conversationId={selectedConversation._id}
               messages={messages}
-              onSendReply={handleSendFromSuggestion}
+              onSendReply={handlePreFillMessage}
             />
           </div>
         )}

@@ -88,6 +88,8 @@ import { RateLimitDashboard } from '../components/RateLimitDashboard'
 import { BookingCalendarView } from '../components/BookingCalendarView'
 import { TwoFactorSetup } from '../components/TwoFactorSetup'
 import { AccountSettings } from '../components/AccountSettings'
+import { AdminChatDashboard } from './AdminChatDashboard'
+import api from '../services/api'
 // Define types for our booking data
 interface Booking {
   _id: string
@@ -206,15 +208,18 @@ export function BookingDashboard(): React.ReactElement {
   const [rejectedProofMap, setRejectedProofMap] = useState<Record<string, CompletionProof>>({})
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
-  const [viewMode, setViewMode] = useState<'dashboard' | 'table' | 'calendar' | 'products' | 'quotations' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings' | 'rateLimits' | 'security'>(
-    'dashboard',
-  )
+  const [viewMode, setViewMode] = useState<'dashboard' | 'table' | 'calendar' | 'products' | 'quotations' | 'users' | 'analytics' | 'activityLogs' | 'reviews' | 'reports' | 'settings' | 'rateLimits' | 'security' | 'chat'>(() => {
+    const tab = searchParams.get('tab')
+    if (tab === 'chat') return 'chat'
+    return 'dashboard'
+  })
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([])
 
   // UI state
   const [darkMode, setDarkMode] = useState<boolean>(false) // Default to light mode
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false) // Mobile sidebar state
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false) // Desktop sidebar collapsed state
+  const [unreadChatCount, setUnreadChatCount] = useState(0)
 
   // Booking pagination state
   const BOOKINGS_PER_PAGE = 15
@@ -504,6 +509,24 @@ export function BookingDashboard(): React.ReactElement {
     }
     setFilteredUsers(result)
   }, [userSearchTerm, users])
+
+  // Fetch unread chat count for sidebar badge
+  useEffect(() => {
+    const fetchChatUnread = async () => {
+      try {
+        const res = await api.get('/chat/admin-unread-count')
+        if (res.data.success) {
+          setUnreadChatCount(res.data.data?.unreadCount ?? 0)
+        }
+      } catch (err) {
+        // Chat not available, ignore
+      }
+    }
+    fetchChatUnread()
+    const interval = setInterval(fetchChatUnread, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
   // Create calendar events from filteredBookings (so filters work in calendar view)
   // Exclude completed bookings from calendar view
   useEffect(() => {
@@ -1419,18 +1442,35 @@ export function BookingDashboard(): React.ReactElement {
 
           <Button
             onClick={() => {
-              window.location.href = '/admin/chats'
+              setViewMode('chat')
+              setSidebarOpen(false)
             }}
-            variant="ghost"
+            variant={viewMode === 'chat' ? 'default' : 'ghost'}
             className={`w-full ${sidebarCollapsed ? 'justify-center' : 'justify-start'} ${
-              darkMode
-                ? 'text-gray-300 hover:text-white hover:bg-gray-800'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+              viewMode === 'chat'
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : darkMode
+                  ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
             }`}
             title="Chat Support"
           >
-            <MessageCircle className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
-            {!sidebarCollapsed && 'Chat Support'}
+            <div className="relative">
+              <MessageCircle className={`h-5 w-5 ${!sidebarCollapsed && 'mr-3'}`} />
+              {unreadChatCount > 0 && sidebarCollapsed && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
+              )}
+            </div>
+            {!sidebarCollapsed && (
+              <>
+                Chat Support
+                {unreadChatCount > 0 && (
+                  <span className="ml-auto bg-red-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] flex items-center justify-center px-1">
+                    {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                  </span>
+                )}
+              </>
+            )}
           </Button>
 
           {/* INSIGHTS Section */}
@@ -2819,6 +2859,13 @@ export function BookingDashboard(): React.ReactElement {
             <SessionManagement darkMode={darkMode} />
             <TwoFactorSetup darkMode={darkMode} />
             <AccountSettings darkMode={darkMode} />
+          </div>
+        )}
+
+        {/* Chat Support View */}
+        {viewMode === 'chat' && (
+          <div className="h-[calc(100vh-5rem)]">
+            <AdminChatDashboard embedded />
           </div>
         )}
           </>

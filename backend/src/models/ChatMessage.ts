@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IChatMessage extends Document {
   conversationId: mongoose.Types.ObjectId;
   senderId: mongoose.Types.ObjectId;
-  senderRole: 'user' | 'admin' | 'superadmin';
+  senderRole: 'user' | 'admin' | 'superadmin' | 'bot';
   senderName: string;
   message: string;
   isRead: boolean;
@@ -27,7 +27,7 @@ const ChatMessageSchema = new Schema<IChatMessage>(
     },
     senderRole: {
       type: String,
-      enum: ['user', 'admin', 'superadmin'],
+      enum: ['user', 'admin', 'superadmin', 'bot'],
       required: true,
     },
     senderName: {

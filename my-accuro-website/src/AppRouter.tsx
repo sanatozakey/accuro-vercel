@@ -253,7 +253,7 @@ export function AppRouter({ showSplash }: AppRouterProps) {
             path="/admin/chats"
             element={
               <ProtectedRoute adminOnly={true}>
-                <AdminChatDashboard />
+                <Navigate to="/admin/bookings?tab=chat" replace />
               </ProtectedRoute>
             }
           />

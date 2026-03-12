@@ -426,7 +426,7 @@ export function ChatSuggestionPanel({
                               )}
                               <div className="flex items-center gap-1 pt-1 text-[9px] text-green-600 dark:text-green-400">
                                 <Send size={8} />
-                                <span>Details sent to chat</span>
+                                <span>Details pre-filled in input</span>
                               </div>
                             </div>
                           )}
@@ -529,7 +529,7 @@ export function ChatSuggestionPanel({
                               )}
                               <div className="flex items-center gap-1 pt-1 text-[9px] text-green-600 dark:text-green-400">
                                 <Send size={8} />
-                                <span>Details sent to chat</span>
+                                <span>Details pre-filled in input</span>
                               </div>
                             </div>
                           )}

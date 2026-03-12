@@ -9,6 +9,8 @@ import {
   getUnreadCount,
   closeConversation,
   getUserChatContext,
+  autoReply,
+  getAdminUnreadCount,
 } from '../controllers/chatController';
 
 const router = Router();
@@ -25,11 +27,17 @@ router.get('/conversations', authorize('admin', 'superadmin'), getConversations)
 // Any authenticated user: get unread count
 router.get('/unread-count', getUnreadCount);
 
+// Admin only: get total unread count across all conversations
+router.get('/admin-unread-count', authorize('admin', 'superadmin'), getAdminUnreadCount);
+
 // Any authenticated user: get messages for a conversation (access checked in controller)
 router.get('/conversations/:conversationId/messages', getMessages);
 
 // Any authenticated user: send a message (access checked in controller)
 router.post('/conversations/:conversationId/messages', sendMessage);
+
+// Any authenticated user: trigger automated bot reply for quick actions
+router.post('/conversations/:conversationId/auto-reply', autoReply);
 
 // Any authenticated user: mark messages as read (access checked in controller)
 router.patch('/conversations/:conversationId/read', markAsRead);
