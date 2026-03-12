@@ -14,6 +14,7 @@ import {
   Loader,
   Inbox,
 } from 'lucide-react'
+import { ChatSuggestionPanel } from '../components/ChatSuggestionPanel'
 
 interface Conversation {
   _id: string
@@ -203,6 +204,37 @@ export function AdminChatDashboard() {
       }
     } catch (err) {
       console.error('Failed to close conversation:', err)
+    }
+  }
+
+  const handleSendFromSuggestion = async (text: string) => {
+    if (!text.trim() || !selectedConversation || sending) return
+
+    setNewMessage('')
+    setSending(true)
+
+    try {
+      const res = await api.post(`/chat/conversations/${selectedConversation._id}/messages`, {
+        message: text.trim(),
+      })
+      if (res.data.success) {
+        setMessages(prev => {
+          if (prev.find(m => m._id === res.data.data._id)) return prev
+          return [...prev, res.data.data]
+        })
+        setConversations(prev =>
+          prev.map(c =>
+            c._id === selectedConversation._id
+              ? { ...c, lastMessage: text.trim(), lastMessageAt: new Date().toISOString() }
+              : c
+          )
+        )
+      }
+    } catch (err) {
+      console.error('Failed to send suggested message:', err)
+    } finally {
+      setSending(false)
+      inputRef.current?.focus()
     }
   }
 
@@ -490,6 +522,17 @@ export function AdminChatDashboard() {
             </div>
           )}
         </div>
+
+        {/* Smart Suggestion Panel - visible on xl+ screens when a conversation is selected */}
+        {selectedConversation && (
+          <div className="hidden xl:flex">
+            <ChatSuggestionPanel
+              conversationId={selectedConversation._id}
+              messages={messages}
+              onSendReply={handleSendFromSuggestion}
+            />
+          </div>
+        )}
       </div>
     </div>
   )

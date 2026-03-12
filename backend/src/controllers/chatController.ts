@@ -2,6 +2,9 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import ChatConversation from '../models/ChatConversation';
 import ChatMessage from '../models/ChatMessage';
+import Booking from '../models/Booking';
+import Quotation from '../models/Quotation';
+import User from '../models/User';
 import { socketService } from '../services/socketService';
 
 /**
@@ -371,6 +374,57 @@ export const closeConversation = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error in closeConversation:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+/**
+ * @desc    Get user context for a conversation (bookings, quotations, profile)
+ * @route   GET /api/chat/conversations/:conversationId/context
+ * @access  Private (admin, superadmin)
+ */
+export const getUserChatContext = async (req: AuthRequest, res: Response) => {
+  try {
+    const { conversationId } = req.params;
+
+    // Find the conversation to get the userId
+    const conversation = await ChatConversation.findById(conversationId);
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        message: 'Conversation not found',
+      });
+    }
+
+    const userId = conversation.userId;
+
+    // Query user data in parallel
+    const [userProfile, bookings, quotations] = await Promise.all([
+      User.findById(userId).select('name email phone company createdAt'),
+      Booking.find({ userId })
+        .select('_id date time status company product location')
+        .sort({ date: -1 })
+        .limit(5),
+      Quotation.find({ userId })
+        .select('_id quotationNumber status totalAmount createdAt')
+        .sort({ createdAt: -1 })
+        .limit(5),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        user: userProfile,
+        bookings,
+        quotations,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error in getUserChatContext:', error);
     return res.status(500).json({
       success: false,
       message: error.message || 'Server error',

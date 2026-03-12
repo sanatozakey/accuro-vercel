@@ -8,6 +8,7 @@ import {
   markAsRead,
   getUnreadCount,
   closeConversation,
+  getUserChatContext,
 } from '../controllers/chatController';
 
 const router = Router();
@@ -32,6 +33,9 @@ router.post('/conversations/:conversationId/messages', sendMessage);
 
 // Any authenticated user: mark messages as read (access checked in controller)
 router.patch('/conversations/:conversationId/read', markAsRead);
+
+// Admin only: get user context for a conversation (bookings, quotations, profile)
+router.get('/conversations/:conversationId/context', authorize('admin', 'superadmin'), getUserChatContext);
 
 // Admin only: close a conversation
 router.patch('/conversations/:conversationId/close', authorize('admin', 'superadmin'), closeConversation);
