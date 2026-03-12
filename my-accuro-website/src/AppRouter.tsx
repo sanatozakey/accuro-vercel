@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { ScrollToTop } from './components/ScrollToTop'
 import { LoadingSpinner } from './components/LoadingSpinner'
@@ -29,6 +29,12 @@ const QuotationDashboard = lazy(() => import('./pages/QuotationDashboard'))
 const CustomerQuotations = lazy(() => import('./pages/CustomerQuotations'))
 const RequestQuotation = lazy(() => import('./pages/RequestQuotation'))
 const StockSettings = lazy(() => import('./pages/admin/StockSettings'))
+
+// Redirects /account?tab=bookings&bookingId=... to /dashboard?tab=bookings&bookingId=...
+function AccountRedirect() {
+  const location = useLocation()
+  return <Navigate to={`/dashboard${location.search}`} replace />
+}
 
 interface AppRouterProps {
   showSplash: boolean;
@@ -100,6 +106,14 @@ export function AppRouter({ showSplash }: AppRouterProps) {
           <Route
             path="/quote"
             element={<Navigate to="/products" replace />}
+          />
+          <Route
+            path="/account"
+            element={
+              <ProtectedRoute>
+                <AccountRedirect />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/login"
