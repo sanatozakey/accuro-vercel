@@ -101,7 +101,7 @@ export class NotificationService {
       message: statusInfo.message,
       relatedId: bookingId,
       relatedType: 'booking',
-      actionUrl: `/account?tab=bookings&bookingId=${bookingId}`,
+      actionUrl: `/dashboard?tab=bookings&bookingId=${bookingId}`,
     });
   }
 

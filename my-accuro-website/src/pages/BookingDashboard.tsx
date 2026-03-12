@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, cloneElement } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -182,7 +183,12 @@ export function BookingDashboard(): React.ReactElement {
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState<string>('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [searchParams] = useSearchParams()
+  const [statusFilter, setStatusFilter] = useState<string>(() => {
+    const tab = searchParams.get('tab')
+    if (tab === 'pending-review') return 'pending_review'
+    return 'all'
+  })
   const [completionFilter, setCompletionFilter] = useState<string>('all')
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false)
