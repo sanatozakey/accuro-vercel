@@ -208,7 +208,7 @@ export function ChatWindow({ isOpen, onClose, onUnreadChange }: ChatWindowProps)
     });
   };
 
-  const isOwnMessage = (msg: Message) => msg.senderId === user?._id;
+  const isOwnMessage = (msg: Message) => msg.senderId === user?._id && msg.senderRole !== 'bot';
 
   return (
     <div

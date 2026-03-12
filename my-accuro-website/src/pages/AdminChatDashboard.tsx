@@ -423,7 +423,7 @@ export function AdminChatDashboard({ embedded = false }: AdminChatDashboardProps
                   </div>
                 ) : (
                   messages.map((msg) => {
-                    const isAdmin = msg.senderRole === 'admin' || msg.senderRole === 'superadmin' || msg.senderRole === 'bot'
+                    const isAdmin = msg.senderRole === 'admin' || msg.senderRole === 'superadmin'
                     return (
                       <div
                         key={msg._id}
