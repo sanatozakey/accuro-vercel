@@ -528,13 +528,10 @@ export function BookingDashboard(): React.ReactElement {
   }, [])
 
   // Create calendar events from filteredBookings (so filters work in calendar view)
-  // Exclude completed bookings from calendar view
   useEffect(() => {
     const events: CalendarEvent[] = []
 
     filteredBookings.forEach((booking) => {
-      // Skip completed bookings - they should not appear on the calendar
-      if (booking.status === 'completed') return
       if (!booking.date || !booking.time) return
 
       try {
@@ -571,6 +568,8 @@ export function BookingDashboard(): React.ReactElement {
         if (booking.status === 'cancelled') backgroundColor = '#ef4444'
         if (booking.status === 'pending') backgroundColor = '#f59e0b'
         if (booking.status === 'rescheduled') backgroundColor = '#8b5cf6'
+        if (booking.status === 'completed') backgroundColor = '#3b82f6'
+        if (booking.status === 'pending_review') backgroundColor = '#6366f1'
 
         const event: CalendarEvent = {
           id: booking._id,
