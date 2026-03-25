@@ -24,6 +24,7 @@ interface CalendarViewProps {
   darkMode: boolean;
   calendarEvents: CalendarEvent[];
   handleEventClick: (info: any) => void;
+  readBookingIds?: Set<string>;
 }
 
 type CalendarTab = 'interactive' | 'google';
@@ -32,6 +33,7 @@ export function CalendarView({
   darkMode,
   calendarEvents,
   handleEventClick,
+  readBookingIds = new Set(),
 }: CalendarViewProps): React.ReactElement {
   const [activeTab, setActiveTab] = useState<CalendarTab>('interactive');
 
@@ -127,6 +129,10 @@ export function CalendarView({
                 <span className="flex items-center gap-1">
                   <span className="w-2.5 h-2.5 rounded-full bg-gray-400"></span>
                   <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Overdue</span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-white border-2 border-gray-400 animate-pulse"></span>
+                  <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Unread</span>
                 </span>
               </div>
             </div>
@@ -308,6 +314,21 @@ export function CalendarView({
                 }}
                 events={calendarEvents}
                 eventClick={handleEventClick}
+                eventContent={(arg) => {
+                  const bookingId = arg.event.id;
+                  const isUnread = bookingId && !readBookingIds.has(bookingId);
+                  return (
+                    <div className="flex items-center gap-1 w-full overflow-hidden px-1">
+                      {isUnread && (
+                        <span className="w-2 h-2 min-w-[0.5rem] rounded-full bg-white animate-pulse" />
+                      )}
+                      <span className="truncate text-xs">
+                        {arg.timeText && <span className="font-semibold">{arg.timeText} </span>}
+                        {arg.event.title}
+                      </span>
+                    </div>
+                  );
+                }}
                 height="auto"
                 contentHeight="auto"
                 aspectRatio={1.5}

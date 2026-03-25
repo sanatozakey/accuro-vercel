@@ -2279,6 +2279,7 @@ export function BookingDashboard(): React.ReactElement {
             darkMode={darkMode}
             calendarEvents={calendarEvents}
             handleEventClick={handleEventClick}
+            readBookingIds={readBookingIds}
           />
         )}
         {viewMode === 'users' && (
