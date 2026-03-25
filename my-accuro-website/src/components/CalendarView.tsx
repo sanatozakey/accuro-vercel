@@ -124,6 +124,10 @@ export function CalendarView({
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
                   <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Completed</span>
                 </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-gray-400"></span>
+                  <span className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Overdue</span>
+                </span>
               </div>
             </div>
             <div className={`fullcalendar-wrapper ${darkMode ? 'fc-dark' : 'fc-light'}`}>

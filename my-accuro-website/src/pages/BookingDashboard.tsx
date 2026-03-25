@@ -571,6 +571,14 @@ export function BookingDashboard(): React.ReactElement {
         if (booking.status === 'completed') backgroundColor = '#3b82f6'
         if (booking.status === 'pending_review') backgroundColor = '#6366f1'
 
+        // Override color to grey for overdue bookings (past date, not completed/cancelled)
+        const now = new Date()
+        now.setHours(0, 0, 0, 0)
+        const bookingDate = new Date(year, month - 1, day)
+        if (bookingDate < now && booking.status !== 'completed' && booking.status !== 'cancelled') {
+          backgroundColor = '#9ca3af'
+        }
+
         const event: CalendarEvent = {
           id: booking._id,
           title: `${booking.company} - ${booking.purpose}`,
