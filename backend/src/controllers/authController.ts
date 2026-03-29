@@ -17,10 +17,18 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { name, firstName, middleName, lastName, email, password, phone, company } = req.body;
 
+    // Capitalize first letter of each word in a name
+    const toProperCase = (str: string): string =>
+      str.trim().replace(/\b\w/g, (c) => c.toUpperCase());
+
+    const properFirst = firstName ? toProperCase(firstName) : '';
+    const properMiddle = middleName ? toProperCase(middleName) : '';
+    const properLast = lastName ? toProperCase(lastName) : '';
+
     // Compose full name from parts if provided, otherwise use name field
     const fullName = firstName && lastName
-      ? [firstName, middleName, lastName].filter(Boolean).join(' ')
-      : name;
+      ? [properFirst, properMiddle, properLast].filter(Boolean).join(' ')
+      : name ? toProperCase(name) : '';
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -39,9 +47,9 @@ export const register = async (req: Request, res: Response) => {
     // Create user
     const user = await User.create({
       name: fullName,
-      firstName: firstName || '',
-      middleName: middleName || '',
-      lastName: lastName || '',
+      firstName: properFirst,
+      middleName: properMiddle,
+      lastName: properLast,
       email,
       password,
       phone,
