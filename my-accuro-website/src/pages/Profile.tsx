@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Building, Camera, Save, AlertCircle, X } from 'lucide-react';
+import { User, Mail, Phone, Building, Camera, Save, AlertCircle, X, CheckCircle, XCircle, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import authService from '../services/authService';
 import { compressImage } from '../utils/imageCompression';
@@ -24,6 +24,8 @@ export function Profile() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [verificationMessage, setVerificationMessage] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -302,9 +304,48 @@ export function Profile() {
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter your email"
               />
-              {user?.isEmailVerified && (
-                <p className="mt-1 text-sm text-green-600">Email verified</p>
-              )}
+              {/* Email Verification Status */}
+              <div className="mt-2">
+                {user?.isEmailVerified ? (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                    <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                    <span className="text-sm text-green-700 dark:text-green-300 font-medium">Email verified</span>
+                  </div>
+                ) : (
+                  <div className="px-3 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
+                    <div className="flex items-center gap-2 mb-2">
+                      <XCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                      <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">Email not verified</span>
+                    </div>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
+                      Please verify your email to access all features. Check your inbox for a verification link.
+                    </p>
+                    {verificationMessage && (
+                      <p className="text-xs text-green-600 dark:text-green-400 mb-2">{verificationMessage}</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setResendingVerification(true);
+                        setVerificationMessage('');
+                        try {
+                          await authService.resendVerificationEmail(user?.email || formData.email);
+                          setVerificationMessage('Verification email sent! Please check your inbox.');
+                        } catch (err: any) {
+                          setVerificationMessage(err.response?.data?.message || 'Failed to send verification email.');
+                        } finally {
+                          setResendingVerification(false);
+                        }
+                      }}
+                      disabled={resendingVerification}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60 border border-amber-300 dark:border-amber-700 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Send className="w-3 h-3" />
+                      {resendingVerification ? 'Sending...' : 'Resend Verification Email'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Phone Field */}

@@ -210,6 +210,11 @@ class AuthService {
     const user = this.getCurrentUser();
     return user && (user.role === 'admin' || user.role === 'superadmin');
   }
+
+  async resendVerificationEmail(email: string) {
+    const response = await api.post('/auth/resend-verification', { email });
+    return response;
+  }
 }
 
 export default new AuthService();
