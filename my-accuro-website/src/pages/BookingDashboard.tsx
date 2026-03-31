@@ -51,6 +51,9 @@ import {
   CheckSquare2,
   Pencil,
   MessageCircle,
+  UserCheck,
+  ArrowRightLeft,
+  Loader2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
@@ -110,6 +113,13 @@ interface Booking {
   rescheduleReason?: string
   originalDate?: string
   originalTime?: string
+  assignedTechnician?: {
+    _id: string
+    name: string
+    email: string
+    phone?: string
+    profilePicture?: string
+  } | null
 }
 // Define type for new booking without id and createdAt
 interface NewBooking {
@@ -175,6 +185,7 @@ const productCategories: string[] = [
 const statusOptions: string[] = [
   'pending',
   'confirmed',
+  'in_progress',
   'rescheduled',
   'cancelled',
 ]
@@ -205,6 +216,16 @@ export function BookingDashboard(): React.ReactElement {
   const [reviewProof, setReviewProof] = useState<CompletionProof | null>(null)
   const [revisionMode, setRevisionMode] = useState<boolean>(false)
   const [revisionProof, setRevisionProof] = useState<CompletionProof | null>(null)
+
+  // Dispatch & Reassign modal state
+  const [isDispatchModalOpen, setIsDispatchModalOpen] = useState<boolean>(false)
+  const [isReassignModalOpen, setIsReassignModalOpen] = useState<boolean>(false)
+  const [dispatchBooking, setDispatchBooking] = useState<Booking | null>(null)
+  const [reassignBooking, setReassignBooking] = useState<Booking | null>(null)
+  const [availableTechnicians, setAvailableTechnicians] = useState<Array<{ _id: string; name: string; email: string; phone?: string; profilePicture?: string; isAvailable: boolean }>>([])
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState<string>('')
+  const [techLoading, setTechLoading] = useState<boolean>(false)
+  const [dispatchLoading, setDispatchLoading] = useState<boolean>(false)
   const [rejectedProofMap, setRejectedProofMap] = useState<Record<string, CompletionProof>>({})
   const [rescheduleReason, setRescheduleReason] = useState<string>('')
   const [editedBooking, setEditedBooking] = useState<Booking | null>(null)
@@ -667,6 +688,86 @@ export function BookingDashboard(): React.ReactElement {
       toast.error(errorMessage)
     }
   }
+  // Open dispatch modal for confirming a booking with technician assignment
+  const openDispatchModal = async (booking: Booking): Promise<void> => {
+    setDispatchBooking(booking)
+    setSelectedTechnicianId('')
+    setIsDispatchModalOpen(true)
+    setTechLoading(true)
+    try {
+      const response = await bookingService.checkTechnicianAvailability(booking.date, booking.time)
+      setAvailableTechnicians(response.data)
+    } catch (err: any) {
+      toast.error('Failed to load technicians')
+      setAvailableTechnicians([])
+    } finally {
+      setTechLoading(false)
+    }
+  }
+
+  // Handle confirm & dispatch
+  const handleConfirmAndDispatch = async (): Promise<void> => {
+    if (!dispatchBooking || !selectedTechnicianId) {
+      toast.error('Please select a technician')
+      return
+    }
+    setDispatchLoading(true)
+    try {
+      const response = await bookingService.confirmAndDispatch(dispatchBooking._id, selectedTechnicianId)
+      if (response.hasConflict) {
+        toast.success(response.message || 'Booking confirmed with conflict warning', { duration: 5000 })
+      } else {
+        toast.success(response.message || 'Booking confirmed and dispatched')
+      }
+      await fetchBookings()
+      setIsDispatchModalOpen(false)
+      setDispatchBooking(null)
+      setIsDetailModalOpen(false)
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to confirm and dispatch')
+    } finally {
+      setDispatchLoading(false)
+    }
+  }
+
+  // Open reassign modal
+  const openReassignModal = async (booking: Booking): Promise<void> => {
+    setReassignBooking(booking)
+    setSelectedTechnicianId('')
+    setIsReassignModalOpen(true)
+    setTechLoading(true)
+    try {
+      const response = await bookingService.checkTechnicianAvailability(booking.date, booking.time)
+      setAvailableTechnicians(response.data)
+    } catch (err: any) {
+      toast.error('Failed to load technicians')
+      setAvailableTechnicians([])
+    } finally {
+      setTechLoading(false)
+    }
+  }
+
+  // Handle reassign technician
+  const handleReassignTechnician = async (): Promise<void> => {
+    if (!reassignBooking || !selectedTechnicianId) {
+      toast.error('Please select a technician')
+      return
+    }
+    setDispatchLoading(true)
+    try {
+      const response = await bookingService.reassignTechnician(reassignBooking._id, selectedTechnicianId)
+      toast.success(response.message || 'Technician reassigned successfully')
+      await fetchBookings()
+      setIsReassignModalOpen(false)
+      setReassignBooking(null)
+      setIsDetailModalOpen(false)
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to reassign technician')
+    } finally {
+      setDispatchLoading(false)
+    }
+  }
+
   // Handle completion - called after proof is created
   const handleBookingCompleted = async (): Promise<void> => {
     // Refresh bookings and rejected proofs from server
@@ -3136,6 +3237,33 @@ export function BookingDashboard(): React.ReactElement {
                               </div>
                             </div>
                           )}
+                          {selectedBooking.assignedTechnician && (
+                            <div className="flex items-center">
+                              <UserCheck className="h-5 w-5 text-blue-500 mr-2" />
+                              <div>
+                                <div className="text-sm font-medium text-gray-500">
+                                  Assigned Technician
+                                </div>
+                                <div className="mt-1 text-sm text-gray-900 font-medium">
+                                  {selectedBooking.assignedTechnician.name}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {selectedBooking.assignedTechnician.email}
+                                  {selectedBooking.assignedTechnician.phone && ` | ${selectedBooking.assignedTechnician.phone}`}
+                                </div>
+                                {isSuperAdmin && ['confirmed', 'in_progress'].includes(selectedBooking.status) && (
+                                  <button
+                                    type="button"
+                                    className="mt-1 text-xs text-blue-600 hover:text-blue-800 underline"
+                                    onClick={() => openReassignModal(selectedBooking)}
+                                  >
+                                    <ArrowRightLeft className="h-3 w-3 inline mr-1" />
+                                    Reassign Technician
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          )}
                           <div className="flex items-center">
                             <FileText className="h-5 w-5 text-gray-400 mr-2" />
                             <div>
@@ -3254,20 +3382,16 @@ export function BookingDashboard(): React.ReactElement {
                     <div className="flex flex-wrap justify-end gap-2">
                       {selectedBooking.status === 'pending' && (
                         <>
-                          <button
-                            type="button"
-                            className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:w-auto sm:text-sm"
-                            onClick={() => {
-                              updateBookingStatus(
-                                selectedBooking._id,
-                                'confirmed',
-                              )
-                              setIsDetailModalOpen(false)
-                            }}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Confirm
-                          </button>
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:w-auto sm:text-sm"
+                              onClick={() => openDispatchModal(selectedBooking)}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Confirm & Dispatch
+                            </button>
+                          )}
                           <button
                             type="button"
                             className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:w-auto sm:text-sm"
@@ -3795,6 +3919,188 @@ export function BookingDashboard(): React.ReactElement {
         bookings={pastBookings}
         darkMode={darkMode}
       />
+
+      {/* Dispatch Modal - Confirm & Assign Technician */}
+      {isDispatchModalOpen && dispatchBooking && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsDispatchModalOpen(false)} />
+            <div className={`relative rounded-lg shadow-xl max-w-md w-full p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h3 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Confirm & Dispatch Technician
+              </h3>
+              <div className={`mb-4 p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <strong>{dispatchBooking.contactName}</strong> - {dispatchBooking.company}
+                </p>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {new Date(dispatchBooking.date).toLocaleDateString()} at {dispatchBooking.time} | {dispatchBooking.location}
+                </p>
+              </div>
+              <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Select Technician <span className="text-red-500">*</span>
+              </label>
+              {techLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                  <span className="ml-2 text-sm text-gray-500">Loading technicians...</span>
+                </div>
+              ) : availableTechnicians.length === 0 ? (
+                <div className={`text-center py-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  No technicians found. Please assign the technician role to users first.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {availableTechnicians.map((tech) => (
+                    <label
+                      key={tech._id}
+                      className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedTechnicianId === tech._id
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                          : darkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="technician"
+                        value={tech._id}
+                        checked={selectedTechnicianId === tech._id}
+                        onChange={() => setSelectedTechnicianId(tech._id)}
+                        className="mr-3"
+                      />
+                      <div className="flex-1">
+                        <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {tech.name}
+                        </div>
+                        <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {tech.email}
+                        </div>
+                      </div>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        tech.isAvailable
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {tech.isAvailable ? 'Available' : 'Busy'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  className={`px-4 py-2 text-sm font-medium rounded-md ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  onClick={() => setIsDispatchModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50"
+                  disabled={!selectedTechnicianId || dispatchLoading}
+                  onClick={handleConfirmAndDispatch}
+                >
+                  {dispatchLoading ? (
+                    <><Loader2 className="h-4 w-4 animate-spin inline mr-1" /> Dispatching...</>
+                  ) : (
+                    <><CheckCircle className="h-4 w-4 inline mr-1" /> Confirm & Dispatch</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reassign Technician Modal */}
+      {isReassignModalOpen && reassignBooking && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4">
+            <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsReassignModalOpen(false)} />
+            <div className={`relative rounded-lg shadow-xl max-w-md w-full p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <h3 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Reassign Technician
+              </h3>
+              <div className={`mb-4 p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <strong>{reassignBooking.contactName}</strong> - {reassignBooking.company}
+                </p>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Currently assigned to: <strong>{reassignBooking.assignedTechnician && typeof reassignBooking.assignedTechnician === 'object' ? reassignBooking.assignedTechnician.name : 'Unknown'}</strong>
+                </p>
+              </div>
+              <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Select New Technician <span className="text-red-500">*</span>
+              </label>
+              {techLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                  <span className="ml-2 text-sm text-gray-500">Loading technicians...</span>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {availableTechnicians.map((tech) => (
+                    <label
+                      key={tech._id}
+                      className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedTechnicianId === tech._id
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                          : darkMode ? 'border-gray-600 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="reassign-technician"
+                        value={tech._id}
+                        checked={selectedTechnicianId === tech._id}
+                        onChange={() => setSelectedTechnicianId(tech._id)}
+                        className="mr-3"
+                      />
+                      <div className="flex-1">
+                        <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {tech.name}
+                        </div>
+                        <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {tech.email}
+                        </div>
+                      </div>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        tech.isAvailable
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {tech.isAvailable ? 'Available' : 'Busy'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  className={`px-4 py-2 text-sm font-medium rounded-md ${darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                  onClick={() => setIsReassignModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  disabled={!selectedTechnicianId || dispatchLoading}
+                  onClick={handleReassignTechnician}
+                >
+                  {dispatchLoading ? (
+                    <><Loader2 className="h-4 w-4 animate-spin inline mr-1" /> Reassigning...</>
+                  ) : (
+                    <><ArrowRightLeft className="h-4 w-4 inline mr-1" /> Reassign</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   </div>
   )

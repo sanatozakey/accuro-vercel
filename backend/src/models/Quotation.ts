@@ -10,6 +10,18 @@ export interface IQuotationItem {
   specifications?: string;
 }
 
+export interface IQuotationHistoryEntry {
+  totalAmount?: number;
+  validUntil?: Date;
+  paymentTerms?: string;
+  deliveryTerms?: string;
+  termsAndConditions?: string;
+  currency?: string;
+  quotedAt?: Date;
+  declinedAt?: Date;
+  declineReason?: string;
+}
+
 export interface IQuotation extends Document {
   quotationNumber: string;
   userId: mongoose.Types.ObjectId;
@@ -21,9 +33,9 @@ export interface IQuotation extends Document {
   items: IQuotationItem[];
   additionalRequirements?: string;
 
-  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  status: 'pending' | 'quoted' | 'accepted' | 'declined' | 'rejected' | 'expired';
 
-  // Admin fields (filled when approved)
+  // Admin fields (filled when quoted)
   validUntil?: Date;
   totalAmount?: number;
   currency: 'PHP' | 'USD';
@@ -32,13 +44,21 @@ export interface IQuotation extends Document {
   adminNotes?: string;
   termsAndConditions?: string;
 
+  // Customer response fields
+  declineReason?: string;
+
+  // Re-quotation history (tracks negotiation rounds)
+  quotationHistory: IQuotationHistoryEntry[];
+
   // PDF
   pdfUrl?: string;
 
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
-  approvedAt?: Date;
+  quotedAt?: Date;
+  acceptedAt?: Date;
+  declinedAt?: Date;
   rejectedAt?: Date;
 }
 
@@ -106,7 +126,7 @@ const QuotationSchema = new Schema<IQuotation>(
     },
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected', 'expired'],
+      enum: ['pending', 'quoted', 'accepted', 'declined', 'rejected', 'expired'],
       default: 'pending',
       index: true,
     },
@@ -142,11 +162,33 @@ const QuotationSchema = new Schema<IQuotation>(
       trim: true,
       maxlength: 5000,
     },
+    declineReason: {
+      type: String,
+      trim: true,
+      maxlength: 2000,
+    },
+    quotationHistory: [{
+      totalAmount: Number,
+      validUntil: Date,
+      paymentTerms: String,
+      deliveryTerms: String,
+      termsAndConditions: String,
+      currency: String,
+      quotedAt: Date,
+      declinedAt: Date,
+      declineReason: String,
+    }],
     pdfUrl: {
       type: String,
       trim: true,
     },
-    approvedAt: {
+    quotedAt: {
+      type: Date,
+    },
+    acceptedAt: {
+      type: Date,
+    },
+    declinedAt: {
       type: Date,
     },
     rejectedAt: {

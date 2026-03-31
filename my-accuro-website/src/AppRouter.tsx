@@ -31,6 +31,8 @@ const RequestQuotation = lazy(() => import('./pages/RequestQuotation'))
 const StockSettings = lazy(() => import('./pages/admin/StockSettings'))
 const AdminChatDashboard = lazy(() => import('./pages/AdminChatDashboard'))
 const CustomerBookings = lazy(() => import('./pages/CustomerBookings'))
+const TechnicianDashboard = lazy(() => import('./pages/TechnicianDashboard').then(module => ({ default: module.TechnicianDashboard })))
+const TechnicianAssignments = lazy(() => import('./pages/TechnicianAssignments').then(module => ({ default: module.TechnicianAssignments })))
 
 // Redirects /account?tab=bookings&bookingId=... to /dashboard?tab=bookings&bookingId=...
 function AccountRedirect() {
@@ -179,6 +181,28 @@ export function AppRouter({ showSplash }: AppRouterProps) {
               </ProtectedRoute>
             }
           />
+          {/* Technician routes */}
+          <Route
+            path="/technician/dashboard"
+            element={
+              <ProtectedRoute technicianOrAdmin={true}>
+                <Layout showSplash={showSplash}>
+                  <TechnicianDashboard />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/technician/assignments"
+            element={
+              <ProtectedRoute technicianOrAdmin={true}>
+                <Layout showSplash={showSplash}>
+                  <TechnicianAssignments />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          {/* Admin routes */}
           <Route
             path="/admin/bookings"
             element={

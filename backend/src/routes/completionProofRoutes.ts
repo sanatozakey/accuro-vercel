@@ -26,10 +26,10 @@ router.get('/', authorize('admin', 'superadmin'), getAllCompletionProofs);
 // Get proofs pending review (superadmin only) - must be before /:id
 router.get('/pending-review', authorize('superadmin'), getPendingReviewProofs);
 
-// Create completion proof with file uploads (admin only)
+// Create completion proof with file uploads (technician, admin, or superadmin)
 router.post(
   '/',
-  authorize('admin', 'superadmin'),
+  authorize('technician', 'admin', 'superadmin'),
   proofUpload.array('attachments', 5),
   validateCreateCompletionProof,
   handleValidationErrors,
@@ -42,10 +42,10 @@ router.get('/booking/:bookingId', getCompletionProofByBooking);
 // Get single completion proof
 router.get('/:id', getCompletionProof);
 
-// Update completion proof (admin only)
+// Update completion proof (technician, admin, or superadmin)
 router.put(
   '/:id',
-  authorize('admin', 'superadmin'),
+  authorize('technician', 'admin', 'superadmin'),
   proofUpload.array('attachments', 5),
   updateCompletionProof
 );
@@ -56,15 +56,15 @@ router.put('/:id/approve', authorize('superadmin'), approveCompletionProof);
 // Reject a completion proof (superadmin only)
 router.put('/:id/reject', authorize('superadmin'), rejectCompletionProof);
 
-// Revise a rejected completion proof (admin resubmits)
+// Revise a rejected completion proof (technician resubmits)
 router.put(
   '/:id/revise',
-  authorize('admin', 'superadmin'),
+  authorize('technician', 'admin', 'superadmin'),
   proofUpload.array('attachments', 5),
   reviseCompletionProof
 );
 
-// Delete attachment from proof (admin only)
-router.delete('/:id/attachments/:filename', authorize('admin', 'superadmin'), deleteAttachment);
+// Delete attachment from proof (technician, admin, or superadmin)
+router.delete('/:id/attachments/:filename', authorize('technician', 'admin', 'superadmin'), deleteAttachment);
 
 export default router;

@@ -59,7 +59,7 @@ export const createQuotation = async (req: AuthRequest, res: Response): Promise<
 export const getQuotations = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user?._id;
-    const isAdmin = req.user?.role === 'admin';
+    const isAdminOrAbove = req.user?.role === 'admin' || req.user?.role === 'superadmin';
 
     if (!userId) {
       res.status(401).json({ success: false, message: 'User not authenticated' });
@@ -70,7 +70,7 @@ export const getQuotations = async (req: AuthRequest, res: Response): Promise<vo
     const limit = parseInt(req.query.limit as string) || 20;
     const status = req.query.status as string;
 
-    const query: any = isAdmin ? {} : { userId };
+    const query: any = isAdminOrAbove ? {} : { userId };
     if (status && status !== 'all') {
       query.status = status;
     }
@@ -111,7 +111,7 @@ export const getQuotationById = async (req: AuthRequest, res: Response): Promise
   try {
     const { id } = req.params;
     const userId = req.user?._id;
-    const isAdmin = req.user?.role === 'admin';
+    const isAdminOrAbove = req.user?.role === 'admin' || req.user?.role === 'superadmin';
 
     if (!userId) {
       res.status(401).json({ success: false, message: 'User not authenticated' });
@@ -125,8 +125,8 @@ export const getQuotationById = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    // Check authorization: admin can see all, users can only see their own
-    if (!isAdmin && quotation.userId.toString() !== userId?.toString()) {
+    // Check authorization: admin/superadmin can see all, users can only see their own
+    if (!isAdminOrAbove && quotation.userId.toString() !== userId?.toString()) {
       res.status(403).json({ success: false, message: 'Not authorized to view this quotation' });
       return;
     }
@@ -144,13 +144,13 @@ export const getQuotationById = async (req: AuthRequest, res: Response): Promise
   }
 };
 
-// Update quotation (admin only)
+// Update quotation (admin/superadmin only)
 export const updateQuotation = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const isAdmin = req.user?.role === 'admin';
+    const isAdminOrAbove = req.user?.role === 'admin' || req.user?.role === 'superadmin';
 
-    if (!isAdmin) {
+    if (!isAdminOrAbove) {
       res.status(403).json({ success: false, message: 'Admin access required' });
       return;
     }
@@ -179,13 +179,14 @@ export const updateQuotation = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-// Approve quotation (admin only)
-export const approveQuotation = async (req: AuthRequest, res: Response): Promise<void> => {
+// Send quote to customer (admin/superadmin) - sets pricing and sends for customer approval
+// Also handles re-quotation when customer has declined
+export const sendQuote = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const isAdmin = req.user?.role === 'admin';
+    const isAdminOrAbove = req.user?.role === 'admin' || req.user?.role === 'superadmin';
 
-    if (!isAdmin) {
+    if (!isAdminOrAbove) {
       res.status(403).json({ success: false, message: 'Admin access required' });
       return;
     }
@@ -200,6 +201,14 @@ export const approveQuotation = async (req: AuthRequest, res: Response): Promise
       currency,
     } = req.body;
 
+    if (!totalAmount || !validUntil) {
+      res.status(400).json({
+        success: false,
+        message: 'Total amount and valid until date are required',
+      });
+      return;
+    }
+
     const quotation = await Quotation.findById(id);
 
     if (!quotation) {
@@ -207,23 +216,41 @@ export const approveQuotation = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    if (quotation.status !== 'pending') {
+    if (quotation.status !== 'pending' && quotation.status !== 'declined') {
       res.status(400).json({
         success: false,
-        message: `Cannot approve quotation with status: ${quotation.status}`,
+        message: `Cannot send quote for quotation with status: ${quotation.status}`,
       });
       return;
     }
 
-    quotation.status = 'approved';
+    // If re-quoting a declined quotation, save previous quote to history
+    if (quotation.status === 'declined') {
+      quotation.quotationHistory.push({
+        totalAmount: quotation.totalAmount,
+        validUntil: quotation.validUntil,
+        paymentTerms: quotation.paymentTerms,
+        deliveryTerms: quotation.deliveryTerms,
+        termsAndConditions: quotation.termsAndConditions,
+        currency: quotation.currency,
+        quotedAt: quotation.quotedAt,
+        declinedAt: quotation.declinedAt,
+        declineReason: quotation.declineReason,
+      });
+      // Clear decline fields
+      quotation.declineReason = undefined;
+      quotation.declinedAt = undefined;
+    }
+
+    quotation.status = 'quoted';
     quotation.totalAmount = totalAmount;
     quotation.validUntil = validUntil;
-    quotation.paymentTerms = paymentTerms;
-    quotation.deliveryTerms = deliveryTerms;
+    quotation.paymentTerms = paymentTerms || '50% upon order, 50% upon delivery';
+    quotation.deliveryTerms = deliveryTerms || '30-45 days from order confirmation';
     quotation.adminNotes = adminNotes;
     quotation.termsAndConditions = termsAndConditions;
     quotation.currency = currency || quotation.currency;
-    quotation.approvedAt = new Date();
+    quotation.quotedAt = new Date();
 
     await quotation.save();
 
@@ -233,7 +260,7 @@ export const approveQuotation = async (req: AuthRequest, res: Response): Promise
         quotation.userId,
         quotation._id as mongoose.Types.ObjectId,
         quotation.quotationNumber,
-        'approved'
+        'quoted'
       );
     } catch (notificationError) {
       console.error('Failed to send quotation notification:', notificationError);
@@ -241,25 +268,164 @@ export const approveQuotation = async (req: AuthRequest, res: Response): Promise
 
     res.status(200).json({
       success: true,
-      message: 'Quotation approved successfully',
+      message: 'Quote sent to customer for approval',
       data: quotation,
     });
   } catch (error: any) {
-    console.error('Error approving quotation:', error);
+    console.error('Error sending quote:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to approve quotation',
+      message: error.message || 'Failed to send quote',
     });
   }
 };
 
-// Reject quotation (admin only)
+// Customer accepts a quoted quotation
+export const acceptQuotation = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?._id;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'User not authenticated' });
+      return;
+    }
+
+    const quotation = await Quotation.findById(id);
+
+    if (!quotation) {
+      res.status(404).json({ success: false, message: 'Quotation not found' });
+      return;
+    }
+
+    // Only the quotation owner can accept
+    if (quotation.userId.toString() !== userId.toString()) {
+      res.status(403).json({ success: false, message: 'Not authorized to accept this quotation' });
+      return;
+    }
+
+    if (quotation.status !== 'quoted') {
+      res.status(400).json({
+        success: false,
+        message: `Cannot accept quotation with status: ${quotation.status}`,
+      });
+      return;
+    }
+
+    // Check if quotation has expired
+    if (quotation.validUntil && new Date(quotation.validUntil) < new Date()) {
+      quotation.status = 'expired';
+      await quotation.save();
+      res.status(400).json({
+        success: false,
+        message: 'This quotation has expired. Please request a new quotation.',
+      });
+      return;
+    }
+
+    quotation.status = 'accepted';
+    quotation.acceptedAt = new Date();
+
+    await quotation.save();
+
+    // Notify admin that customer accepted
+    try {
+      await NotificationService.notifyQuotationStatusChange(
+        quotation.userId,
+        quotation._id as mongoose.Types.ObjectId,
+        quotation.quotationNumber,
+        'accepted'
+      );
+    } catch (notificationError) {
+      console.error('Failed to send quotation notification:', notificationError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Quotation accepted successfully',
+      data: quotation,
+    });
+  } catch (error: any) {
+    console.error('Error accepting quotation:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to accept quotation',
+    });
+  }
+};
+
+// Customer declines a quoted quotation
+export const declineQuotation = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?._id;
+    const { declineReason } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'User not authenticated' });
+      return;
+    }
+
+    const quotation = await Quotation.findById(id);
+
+    if (!quotation) {
+      res.status(404).json({ success: false, message: 'Quotation not found' });
+      return;
+    }
+
+    // Only the quotation owner can decline
+    if (quotation.userId.toString() !== userId.toString()) {
+      res.status(403).json({ success: false, message: 'Not authorized to decline this quotation' });
+      return;
+    }
+
+    if (quotation.status !== 'quoted') {
+      res.status(400).json({
+        success: false,
+        message: `Cannot decline quotation with status: ${quotation.status}`,
+      });
+      return;
+    }
+
+    quotation.status = 'declined';
+    quotation.declinedAt = new Date();
+    quotation.declineReason = declineReason || '';
+
+    await quotation.save();
+
+    // Notify admin that customer declined
+    try {
+      await NotificationService.notifyQuotationStatusChange(
+        quotation.userId,
+        quotation._id as mongoose.Types.ObjectId,
+        quotation.quotationNumber,
+        'declined'
+      );
+    } catch (notificationError) {
+      console.error('Failed to send quotation notification:', notificationError);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Quotation declined',
+      data: quotation,
+    });
+  } catch (error: any) {
+    console.error('Error declining quotation:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to decline quotation',
+    });
+  }
+};
+
+// Reject quotation (admin/superadmin only)
 export const rejectQuotation = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const isAdmin = req.user?.role === 'admin';
+    const isAdminOrAbove = req.user?.role === 'admin' || req.user?.role === 'superadmin';
 
-    if (!isAdmin) {
+    if (!isAdminOrAbove) {
       res.status(403).json({ success: false, message: 'Admin access required' });
       return;
     }
@@ -313,13 +479,13 @@ export const rejectQuotation = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-// Delete quotation (admin only)
+// Delete quotation (admin/superadmin only)
 export const deleteQuotation = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const isAdmin = req.user?.role === 'admin';
+    const isAdminOrAbove = req.user?.role === 'admin' || req.user?.role === 'superadmin';
 
-    if (!isAdmin) {
+    if (!isAdminOrAbove) {
       res.status(403).json({ success: false, message: 'Admin access required' });
       return;
     }
@@ -344,19 +510,21 @@ export const deleteQuotation = async (req: AuthRequest, res: Response): Promise<
   }
 };
 
-// Get quotation statistics (admin only)
+// Get quotation statistics (admin/superadmin only)
 export const getQuotationStats = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const isAdmin = req.user?.role === 'admin';
+    const isAdminOrAbove = req.user?.role === 'admin' || req.user?.role === 'superadmin';
 
-    if (!isAdmin) {
+    if (!isAdminOrAbove) {
       res.status(403).json({ success: false, message: 'Admin access required' });
       return;
     }
 
-    const [pending, approved, rejected, expired] = await Promise.all([
+    const [pending, quoted, accepted, declined, rejected, expired] = await Promise.all([
       Quotation.countDocuments({ status: 'pending' }),
-      Quotation.countDocuments({ status: 'approved' }),
+      Quotation.countDocuments({ status: 'quoted' }),
+      Quotation.countDocuments({ status: 'accepted' }),
+      Quotation.countDocuments({ status: 'declined' }),
       Quotation.countDocuments({ status: 'rejected' }),
       Quotation.countDocuments({ status: 'expired' }),
     ]);
@@ -365,10 +533,12 @@ export const getQuotationStats = async (req: AuthRequest, res: Response): Promis
       success: true,
       data: {
         pending,
-        approved,
+        quoted,
+        accepted,
+        declined,
         rejected,
         expired,
-        total: pending + approved + rejected + expired,
+        total: pending + quoted + accepted + declined + rejected + expired,
       },
     });
   } catch (error: any) {

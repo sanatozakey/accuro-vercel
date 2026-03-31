@@ -109,14 +109,14 @@ export const getUserActivity = async (req: AuthRequest, res: Response): Promise<
         },
       });
 
-      if (quotation.status === 'approved' && quotation.approvedAt) {
+      if (quotation.status === 'accepted' && quotation.acceptedAt) {
         activities.push({
-          id: `${quotation._id}-approved`,
+          id: `${quotation._id}-accepted`,
           type: 'quotation',
-          title: 'Quotation Approved',
-          description: `Quotation ${quotation.quotationNumber} was approved`,
+          title: 'Quotation Accepted',
+          description: `Quotation ${quotation.quotationNumber} was accepted by customer`,
           status: quotation.status,
-          date: quotation.approvedAt,
+          date: quotation.acceptedAt,
           metadata: {
             quotationNumber: quotation.quotationNumber,
             totalAmount: quotation.totalAmount,

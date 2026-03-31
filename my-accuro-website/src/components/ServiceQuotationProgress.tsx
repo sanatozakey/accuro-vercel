@@ -40,10 +40,12 @@ export function ServiceQuotationProgress() {
     switch (status) {
       case 'completed':
         return { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20', text: 'Completed', progress: 100 };
+      case 'in_progress':
+        return { icon: Calendar, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'In Progress', progress: 75 };
       case 'confirmed':
-        return { icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'Confirmed', progress: 66 };
+        return { icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'Confirmed', progress: 50 };
       case 'pending':
-        return { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'Pending', progress: 33 };
+        return { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'Pending', progress: 25 };
       case 'cancelled':
         return { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20', text: 'Cancelled', progress: 0 };
       default:
@@ -53,12 +55,18 @@ export function ServiceQuotationProgress() {
 
   const getQuotationStatus = (status: string) => {
     switch (status) {
-      case 'approved':
-        return { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20', text: 'Approved', progress: 100 };
+      case 'accepted':
+        return { icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20', text: 'Accepted', progress: 100 };
+      case 'quoted':
+        return { icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'Quote Ready', progress: 66 };
       case 'pending':
-        return { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'Pending Review', progress: 50 };
+        return { icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-50 dark:bg-yellow-900/20', text: 'Pending Review', progress: 33 };
+      case 'declined':
+        return { icon: XCircle, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', text: 'Declined', progress: 50 };
       case 'rejected':
         return { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20', text: 'Rejected', progress: 0 };
+      case 'expired':
+        return { icon: Clock, color: 'text-gray-600', bg: 'bg-gray-50 dark:bg-gray-900/20', text: 'Expired', progress: 0 };
       default:
         return { icon: FileText, color: 'text-gray-600', bg: 'bg-gray-50 dark:bg-gray-900/20', text: 'Submitted', progress: 25 };
     }

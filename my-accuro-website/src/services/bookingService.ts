@@ -11,16 +11,33 @@ export interface BookingData {
   location: string;
   product: string;
   additionalInfo?: string;
+  quotationId?: string;
+}
+
+export interface TechnicianInfo {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  profilePicture?: string;
+}
+
+export interface TechnicianAvailability extends TechnicianInfo {
+  isAvailable: boolean;
 }
 
 export interface Booking extends BookingData {
   _id: string;
   userId?: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled' | 'pending_review';
+  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'rescheduled' | 'pending_review';
   conclusion?: string;
   rescheduleReason?: string;
   originalDate?: string;
   originalTime?: string;
+  assignedTechnician?: TechnicianInfo | string;
+  assignedAt?: string;
+  assignedBy?: string;
+  quotationId?: any;
   createdAt: string;
   updatedAt: string;
 }
@@ -34,6 +51,8 @@ export interface BookingsResponse {
 export interface BookingResponse {
   success: boolean;
   data: Booking;
+  hasConflict?: boolean;
+  message?: string;
 }
 
 class BookingService {
@@ -95,6 +114,42 @@ class BookingService {
 
   async checkAvailability(date: string, time: string): Promise<{ success: boolean; data: any }> {
     const response = await api.get(`/bookings/check-availability`, {
+      params: { date, time },
+    });
+    return response.data;
+  }
+
+  // Confirm booking and dispatch technician (superadmin only)
+  async confirmAndDispatch(id: string, assignedTechnician: string): Promise<BookingResponse> {
+    const response = await api.put<BookingResponse>(`/bookings/${id}/confirm-dispatch`, {
+      assignedTechnician,
+    });
+    return response.data;
+  }
+
+  // Reassign technician (superadmin only)
+  async reassignTechnician(id: string, assignedTechnician: string): Promise<BookingResponse> {
+    const response = await api.put<BookingResponse>(`/bookings/${id}/reassign`, {
+      assignedTechnician,
+    });
+    return response.data;
+  }
+
+  // Mark booking as in-progress (technician)
+  async startBooking(id: string): Promise<BookingResponse> {
+    const response = await api.put<BookingResponse>(`/bookings/${id}/start`);
+    return response.data;
+  }
+
+  // Get technician assignments
+  async getMyAssignments(params?: { status?: string; startDate?: string; endDate?: string }): Promise<BookingsResponse> {
+    const response = await api.get<BookingsResponse>('/bookings/my-assignments', { params });
+    return response.data;
+  }
+
+  // Check technician availability for a date/time (superadmin only)
+  async checkTechnicianAvailability(date: string, time: string): Promise<{ success: boolean; data: TechnicianAvailability[] }> {
+    const response = await api.get('/bookings/technician-availability', {
       params: { date, time },
     });
     return response.data;

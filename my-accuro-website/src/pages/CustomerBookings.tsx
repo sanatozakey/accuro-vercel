@@ -82,7 +82,7 @@ export function CustomerBookings() {
     ? bookings
     : bookings.filter((b) => b.status === statusFilter);
 
-  const statuses = ['all', 'pending', 'confirmed', 'completed', 'cancelled', 'rescheduled', 'pending_review'];
+  const statuses = ['all', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'rescheduled', 'pending_review'];
 
   if (loading) {
     return (
@@ -308,6 +308,22 @@ export function CustomerBookings() {
                   )}
                 </div>
               </div>
+
+              {/* Assigned Technician */}
+              {selectedBooking.assignedTechnician && typeof selectedBooking.assignedTechnician === 'object' && (
+                <div className="border dark:border-gray-700 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
+                  <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Your Assigned Technician</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-200 dark:bg-blue-700 rounded-full flex items-center justify-center text-blue-700 dark:text-blue-200 font-bold">
+                      {selectedBooking.assignedTechnician.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">{selectedBooking.assignedTechnician.name}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{selectedBooking.assignedTechnician.email}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Additional Info */}
               {selectedBooking.additionalInfo && (

@@ -90,3 +90,13 @@ export const adminOrSuperAdmin = (req: AuthRequest, res: Response, next: NextFun
   }
   next();
 };
+
+export const technicianOrAbove = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user || !['technician', 'admin', 'superadmin'].includes(req.user.role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Access denied. Technician privileges or above required.',
+    });
+  }
+  next();
+};

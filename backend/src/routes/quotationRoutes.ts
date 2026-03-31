@@ -4,7 +4,9 @@ import {
   getQuotations,
   getQuotationById,
   updateQuotation,
-  approveQuotation,
+  sendQuote,
+  acceptQuotation,
+  declineQuotation,
   rejectQuotation,
   deleteQuotation,
   getQuotationStats,
@@ -21,11 +23,15 @@ router.use(protect);
 router.post('/', validateCreateQuotation, handleValidationErrors, createQuotation);
 router.get('/', getQuotations);
 
+// Customer approval/decline routes
+router.put('/:id/accept', acceptQuotation);
+router.put('/:id/decline', declineQuotation);
+
 // Admin-only routes (static paths must come before /:id param route)
 router.get('/stats/overview', adminOnly, getQuotationStats);
 router.get('/:id', getQuotationById);
 router.put('/:id', adminOnly, updateQuotation);
-router.put('/:id/approve', adminOnly, approveQuotation);
+router.put('/:id/send-quote', adminOnly, sendQuote);
 router.put('/:id/reject', adminOnly, rejectQuotation);
 router.delete('/:id', adminOnly, deleteQuotation);
 

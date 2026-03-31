@@ -1,6 +1,6 @@
 import api from './api';
 
-export type UserRole = 'user' | 'admin' | 'superadmin';
+export type UserRole = 'user' | 'technician' | 'admin' | 'superadmin';
 
 export interface User {
   _id: string;
@@ -39,18 +39,21 @@ export interface UpdateUserData {
 // Role hierarchy and permissions
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   user: 1,
-  admin: 2,
-  superadmin: 3,
+  technician: 2,
+  admin: 3,
+  superadmin: 4,
 };
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   user: 'User',
+  technician: 'Technician',
   admin: 'Admin',
   superadmin: 'Super Admin',
 };
 
 export const ROLE_COLORS: Record<UserRole, { bg: string; text: string }> = {
   user: { bg: 'bg-gray-100', text: 'text-gray-700' },
+  technician: { bg: 'bg-blue-100', text: 'text-blue-700' },
   admin: { bg: 'bg-purple-100', text: 'text-purple-700' },
   superadmin: { bg: 'bg-red-100', text: 'text-red-700' },
 };
@@ -109,6 +112,10 @@ const userService = {
     if (ROLE_HIERARCHY[currentUserRole] > ROLE_HIERARCHY.user) {
       roles.push('user');
     }
+    // Only superadmin can assign technician role
+    if (currentUserRole === 'superadmin') {
+      roles.push('technician');
+    }
     if (ROLE_HIERARCHY[currentUserRole] > ROLE_HIERARCHY.admin) {
       roles.push('admin');
     }
@@ -117,6 +124,12 @@ const userService = {
       roles.push('superadmin');
     }
     return roles;
+  },
+
+  // Get all technicians (for dispatch dropdown)
+  getTechnicians: async (): Promise<{ success: boolean; data: any[] }> => {
+    const response = await api.get('/users/technicians');
+    return response.data;
   },
 };
 

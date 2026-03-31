@@ -27,6 +27,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
   isAuthenticated: boolean;
+  isTechnician: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
 }
@@ -101,6 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     logout,
     updateUser,
     isAuthenticated: !!user,
+    isTechnician: user?.role === 'technician',
     isAdmin: user?.role === 'admin' || user?.role === 'superadmin',
     isSuperAdmin: user?.role === 'superadmin',
   };

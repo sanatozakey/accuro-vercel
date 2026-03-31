@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IStatusHistoryEntry {
   status: string;
   changedAt: Date;
-  changedBy?: mongoose.Types.ObjectId;
+  changedBy?: any;
   note?: string;
 }
 
@@ -21,7 +21,7 @@ export interface IBooking extends Document {
   location: string;
   product: string;
   additionalInfo?: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled' | 'pending_review';
+  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'rescheduled' | 'pending_review';
   statusHistory: IStatusHistoryEntry[];
   conclusion?: string;
   cancellationReason?: string;
@@ -29,6 +29,12 @@ export interface IBooking extends Document {
   originalDate?: Date;
   originalTime?: string;
   canReview: boolean;
+  // Technician dispatch fields
+  assignedTechnician?: any;
+  assignedAt?: Date;
+  assignedBy?: any;
+  // Quotation link
+  quotationId?: any;
   // Google Calendar sync fields
   googleEventId?: string;
   googleSyncStatus: GoogleSyncStatus;
@@ -91,7 +97,7 @@ const BookingSchema: Schema = new Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'completed', 'cancelled', 'rescheduled', 'pending_review'],
+      enum: ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'rescheduled', 'pending_review'],
       default: 'pending',
     },
     statusHistory: [{
@@ -132,6 +138,23 @@ const BookingSchema: Schema = new Schema(
       default: false,
       // Set to true when booking is completed
     },
+    // Technician dispatch fields
+    assignedTechnician: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    assignedAt: {
+      type: Date,
+    },
+    assignedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    // Quotation link
+    quotationId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Quotation',
+    },
     // Google Calendar sync fields
     googleEventId: {
       type: String,
@@ -159,5 +182,6 @@ BookingSchema.index({ date: 1, status: 1 });
 BookingSchema.index({ userId: 1 });
 BookingSchema.index({ contactEmail: 1 });
 BookingSchema.index({ googleEventId: 1 }, { sparse: true });
+BookingSchema.index({ assignedTechnician: 1, status: 1 });
 
 export default mongoose.model<IBooking>('Booking', BookingSchema);

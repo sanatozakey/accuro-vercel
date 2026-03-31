@@ -45,6 +45,16 @@ export const createCompletionProof = async (req: AuthRequest, res: Response) => 
       });
     }
 
+    // Only the assigned technician or superadmin can submit completion proof
+    const isSuperAdmin = req.user!.role === 'superadmin';
+    const isAssignedTechnician = booking.assignedTechnician?.toString() === req.user!._id.toString();
+    if (!isSuperAdmin && !isAssignedTechnician) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only the assigned technician or a super admin can submit a completion proof for this booking',
+      });
+    }
+
     // Check if proof already exists for this booking
     const existingProof = await CompletionProof.findOne({ bookingId });
     if (existingProof) {
@@ -105,7 +115,6 @@ export const createCompletionProof = async (req: AuthRequest, res: Response) => 
       }
     }
 
-    const isSuperAdmin = req.user!.role === 'superadmin';
     const proofStatus = isSuperAdmin ? 'approved' : 'pending_review';
 
     // Create completion proof
@@ -402,6 +411,19 @@ export const reviseCompletionProof = async (req: AuthRequest, res: Response) => 
         success: false,
         message: 'Only rejected reports can be revised',
       });
+    }
+
+    // Only the assigned technician or superadmin can revise
+    const relatedBooking = await Booking.findById(proof.bookingId);
+    if (relatedBooking) {
+      const isSuperAdmin = req.user!.role === 'superadmin';
+      const isAssignedTechnician = relatedBooking.assignedTechnician?.toString() === req.user!._id.toString();
+      if (!isSuperAdmin && !isAssignedTechnician) {
+        return res.status(403).json({
+          success: false,
+          message: 'Only the assigned technician or a super admin can revise this completion proof',
+        });
+      }
     }
 
     // Save current state to revision history

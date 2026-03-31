@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Booking from '../models/Booking';
+import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import emailService from '../utils/emailService';
 import ActivityLog from '../models/ActivityLog';
@@ -88,7 +89,10 @@ export const getBookings = async (req: Request, res: Response) => {
       };
     }
 
-    const bookings = await Booking.find(query).sort({ date: 1, time: 1 });
+    const bookings = await Booking.find(query)
+      .sort({ date: 1, time: 1 })
+      .populate('assignedTechnician', 'name email phone profilePicture')
+      .populate('quotationId', 'quotationNumber totalAmount status');
 
     res.status(200).json({
       success: true,
@@ -108,7 +112,9 @@ export const getBookings = async (req: Request, res: Response) => {
 // @access  Private
 export const getBooking = async (req: Request, res: Response) => {
   try {
-    const booking = await Booking.findById(req.params.id);
+    const booking = await Booking.findById(req.params.id)
+      .populate('assignedTechnician', 'name email phone profilePicture')
+      .populate('quotationId', 'quotationNumber totalAmount status');
 
     if (!booking) {
       return res.status(404).json({
@@ -474,9 +480,9 @@ export const deleteBooking = async (req: Request, res: Response) => {
 // @access  Private
 export const getMyBookings = async (req: AuthRequest, res: Response) => {
   try {
-    const bookings = await Booking.find({ userId: req.user!._id }).sort({
-      date: 1,
-    });
+    const bookings = await Booking.find({ userId: req.user!._id })
+      .sort({ date: 1 })
+      .populate('assignedTechnician', 'name email phone profilePicture');
 
     res.status(200).json({
       success: true,
@@ -817,6 +823,400 @@ export const checkAvailability = async (req: Request, res: Response) => {
         slotsRemaining: availability.maxPerSlot - availability.timeSlotCount,
         dayBookingsRemaining: availability.maxPerDay - availability.dayCount,
       },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Confirm booking and dispatch technician (superadmin only)
+// @route   PUT /api/bookings/:id/confirm-dispatch
+// @access  Private/SuperAdmin
+export const confirmAndDispatch = async (req: AuthRequest, res: Response) => {
+  try {
+    const { assignedTechnician } = req.body;
+
+    if (!assignedTechnician) {
+      return res.status(400).json({
+        success: false,
+        message: 'Assigned technician is required to confirm a booking',
+      });
+    }
+
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    if (booking.status !== 'pending' && booking.status !== 'rescheduled') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot confirm booking with status: ${booking.status}`,
+      });
+    }
+
+    // Verify technician exists and has technician role
+    const technician = await User.findById(assignedTechnician);
+    if (!technician || technician.role !== 'technician') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid technician. User must have the technician role.',
+      });
+    }
+
+    // Check technician availability (warn if conflict)
+    const conflictingBookings = await Booking.find({
+      assignedTechnician,
+      date: booking.date,
+      time: booking.time,
+      status: { $in: ['confirmed', 'in_progress'] },
+      _id: { $ne: booking._id },
+    });
+
+    const hasConflict = conflictingBookings.length > 0;
+
+    // Update booking
+    const originalStatus = booking.status;
+    booking.status = 'confirmed';
+    booking.assignedTechnician = assignedTechnician;
+    booking.assignedAt = new Date();
+    booking.assignedBy = req.user!._id;
+
+    // Add status history entry
+    booking.statusHistory.push({
+      status: 'confirmed',
+      changedAt: new Date(),
+      changedBy: req.user!._id,
+      note: `Confirmed and dispatched to technician: ${technician.name}`,
+    });
+
+    await booking.save();
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: req.user!._id,
+        userName: req.user!.name,
+        userEmail: req.user!.email,
+        action: 'BOOKING_UPDATED',
+        resourceType: 'booking',
+        resourceId: booking._id.toString(),
+        details: `Booking confirmed and dispatched to ${technician.name} for ${booking.company} (${booking.date.toLocaleDateString()} at ${booking.time})`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
+
+    // Notify the assigned technician
+    try {
+      await NotificationService.createNotification({
+        userId: technician._id.toString(),
+        type: 'booking',
+        title: 'New Assignment',
+        message: `You have been assigned to a booking with ${booking.company} on ${booking.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at ${booking.time}. Location: ${booking.location}`,
+        relatedId: booking._id.toString(),
+        relatedType: 'booking',
+      });
+    } catch (notificationError) {
+      console.error('Failed to notify technician:', notificationError);
+    }
+
+    // Notify the customer
+    if (booking.userId) {
+      try {
+        await NotificationService.notifyBookingStatusChange(
+          booking.userId,
+          booking._id.toString(),
+          originalStatus,
+          'confirmed',
+          {
+            company: booking.company,
+            date: booking.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+            time: booking.time,
+          }
+        );
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError);
+      }
+    }
+
+    // Populate technician info for response
+    await booking.populate('assignedTechnician', 'name email phone profilePicture');
+
+    res.status(200).json({
+      success: true,
+      message: hasConflict
+        ? `Booking confirmed and dispatched to ${technician.name}. Warning: This technician has a conflicting booking at the same time.`
+        : `Booking confirmed and dispatched to ${technician.name}`,
+      data: booking,
+      hasConflict,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Reassign technician to a booking (superadmin only)
+// @route   PUT /api/bookings/:id/reassign
+// @access  Private/SuperAdmin
+export const reassignTechnician = async (req: AuthRequest, res: Response) => {
+  try {
+    const { assignedTechnician } = req.body;
+
+    if (!assignedTechnician) {
+      return res.status(400).json({
+        success: false,
+        message: 'New technician ID is required',
+      });
+    }
+
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    if (!['confirmed', 'in_progress'].includes(booking.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot reassign technician for booking with status: ${booking.status}`,
+      });
+    }
+
+    // Verify new technician
+    const technician = await User.findById(assignedTechnician);
+    if (!technician || technician.role !== 'technician') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid technician. User must have the technician role.',
+      });
+    }
+
+    const oldTechnicianId = booking.assignedTechnician;
+    booking.assignedTechnician = assignedTechnician;
+    booking.assignedAt = new Date();
+    booking.assignedBy = req.user!._id;
+
+    booking.statusHistory.push({
+      status: booking.status,
+      changedAt: new Date(),
+      changedBy: req.user!._id,
+      note: `Reassigned to technician: ${technician.name}`,
+    });
+
+    await booking.save();
+
+    // Notify new technician
+    try {
+      await NotificationService.createNotification({
+        userId: technician._id.toString(),
+        type: 'booking',
+        title: 'New Assignment',
+        message: `You have been assigned to a booking with ${booking.company} on ${booking.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at ${booking.time}.`,
+        relatedId: booking._id.toString(),
+        relatedType: 'booking',
+      });
+    } catch (notificationError) {
+      console.error('Failed to notify new technician:', notificationError);
+    }
+
+    // Notify old technician of removal
+    if (oldTechnicianId) {
+      try {
+        await NotificationService.createNotification({
+          userId: oldTechnicianId.toString(),
+          type: 'booking',
+          title: 'Assignment Removed',
+          message: `Your assignment to the booking with ${booking.company} on ${booking.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} has been reassigned.`,
+          relatedId: booking._id.toString(),
+          relatedType: 'booking',
+        });
+      } catch (notificationError) {
+        console.error('Failed to notify old technician:', notificationError);
+      }
+    }
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: req.user!._id,
+        userName: req.user!.name,
+        userEmail: req.user!.email,
+        action: 'BOOKING_UPDATED',
+        resourceType: 'booking',
+        resourceId: booking._id.toString(),
+        details: `Booking reassigned to technician: ${technician.name}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
+
+    await booking.populate('assignedTechnician', 'name email phone profilePicture');
+
+    res.status(200).json({
+      success: true,
+      message: `Booking reassigned to ${technician.name}`,
+      data: booking,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Mark booking as in-progress (technician starts the meeting)
+// @route   PUT /api/bookings/:id/start
+// @access  Private/Technician
+export const startBooking = async (req: AuthRequest, res: Response) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found',
+      });
+    }
+
+    if (booking.status !== 'confirmed') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot start booking with status: ${booking.status}`,
+      });
+    }
+
+    // Only the assigned technician or superadmin can start
+    const isSuperAdmin = req.user!.role === 'superadmin';
+    const isAssignedTech = booking.assignedTechnician?.toString() === req.user!._id.toString();
+
+    if (!isSuperAdmin && !isAssignedTech) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only the assigned technician can start this booking',
+      });
+    }
+
+    booking.status = 'in_progress';
+    booking.statusHistory.push({
+      status: 'in_progress',
+      changedAt: new Date(),
+      changedBy: req.user!._id,
+      note: 'Technician started the meeting',
+    });
+
+    await booking.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Booking marked as in progress',
+      data: booking,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Get my technician assignments
+// @route   GET /api/bookings/my-assignments
+// @access  Private/Technician
+export const getMyAssignments = async (req: AuthRequest, res: Response) => {
+  try {
+    const { status, startDate, endDate } = req.query;
+    const technicianId = req.user!._id;
+
+    const query: any = { assignedTechnician: technicianId };
+
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    if (startDate && endDate) {
+      query.date = {
+        $gte: new Date(startDate as string),
+        $lte: new Date(endDate as string),
+      };
+    }
+
+    const bookings = await Booking.find(query)
+      .sort({ date: 1, time: 1 })
+      .populate('userId', 'name email phone')
+      .populate('assignedTechnician', 'name email phone profilePicture');
+
+    res.status(200).json({
+      success: true,
+      count: bookings.length,
+      data: bookings,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Check technician availability for a date/time
+// @route   GET /api/bookings/technician-availability
+// @access  Private/SuperAdmin
+export const checkTechnicianAvailability = async (req: AuthRequest, res: Response) => {
+  try {
+    const { date, time } = req.query;
+
+    if (!date || !time) {
+      return res.status(400).json({
+        success: false,
+        message: 'Date and time are required',
+      });
+    }
+
+    // Get all technicians
+    const technicians = await User.find({ role: 'technician', isDeleted: { $ne: true } })
+      .select('name email phone profilePicture');
+
+    // Get all bookings for that date/time
+    const busyBookings = await Booking.find({
+      date: new Date(date as string),
+      time: time as string,
+      status: { $in: ['confirmed', 'in_progress'] },
+      assignedTechnician: { $exists: true },
+    }).select('assignedTechnician');
+
+    const busyTechIds = busyBookings.map(b => b.assignedTechnician?.toString());
+
+    const techniciansWithAvailability = technicians.map(tech => ({
+      _id: tech._id,
+      name: tech.name,
+      email: tech.email,
+      phone: tech.phone,
+      profilePicture: tech.profilePicture,
+      isAvailable: !busyTechIds.includes(tech._id.toString()),
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: techniciansWithAvailability,
     });
   } catch (error: any) {
     res.status(500).json({

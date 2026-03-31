@@ -10,8 +10,13 @@ import {
   rescheduleBooking,
   completeBooking,
   checkAvailability,
+  confirmAndDispatch,
+  reassignTechnician,
+  startBooking,
+  getMyAssignments,
+  checkTechnicianAvailability,
 } from '../controllers/bookingController';
-import { protect, authorize } from '../middleware/auth';
+import { protect, authorize, technicianOrAbove, superAdminOnly } from '../middleware/auth';
 import {
   validateCreateBooking,
   validateUpdateBooking,
@@ -30,15 +35,26 @@ router.get('/upcoming', getBookings); // Public endpoint for calendar view
 router.get('/check-availability', checkAvailability); // Public endpoint to check slot availability
 router.get('/my', protect, getMyBookings);
 
+// Technician assignment routes (must be before /:id)
+router.get('/my-assignments', protect, technicianOrAbove, getMyAssignments);
+router.get('/technician-availability', protect, superAdminOnly, checkTechnicianAvailability);
+
 router
   .route('/:id')
   .get(protect, getBooking)
   .put(protect, authorize('admin', 'superadmin'), validateUpdateBooking, handleValidationErrors, updateBooking)
   .delete(protect, authorize('admin', 'superadmin'), deleteBooking);
 
-// New booking action routes
+// Booking action routes
 router.put('/:id/cancel', protect, cancelBooking);
 router.put('/:id/reschedule', protect, validateUpdateBooking, handleValidationErrors, rescheduleBooking);
 router.put('/:id/complete', protect, authorize('admin', 'superadmin'), completeBooking);
+
+// Dispatch routes (superadmin only)
+router.put('/:id/confirm-dispatch', protect, superAdminOnly, confirmAndDispatch);
+router.put('/:id/reassign', protect, superAdminOnly, reassignTechnician);
+
+// Technician action routes
+router.put('/:id/start', protect, technicianOrAbove, startBooking);
 
 export default router;

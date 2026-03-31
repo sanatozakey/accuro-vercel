@@ -1,4 +1,4 @@
-// quotationService - Admin-facing quotation management (CRUD, approve/reject, stats)
+// quotationService - Admin-facing quotation management (CRUD, send quote, approve/reject, stats)
 // For customer-facing cart-to-quote flow, see quoteService.ts
 import api from './api';
 
@@ -12,6 +12,18 @@ export interface QuotationItem {
   specifications?: string;
 }
 
+export interface QuotationHistoryEntry {
+  totalAmount?: number;
+  validUntil?: string;
+  paymentTerms?: string;
+  deliveryTerms?: string;
+  termsAndConditions?: string;
+  currency?: string;
+  quotedAt?: string;
+  declinedAt?: string;
+  declineReason?: string;
+}
+
 export interface Quotation {
   _id: string;
   quotationNumber: string;
@@ -22,7 +34,7 @@ export interface Quotation {
   company: string;
   items: QuotationItem[];
   additionalRequirements?: string;
-  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  status: 'pending' | 'quoted' | 'accepted' | 'declined' | 'rejected' | 'expired';
   validUntil?: string;
   totalAmount?: number;
   currency: 'PHP' | 'USD';
@@ -30,10 +42,14 @@ export interface Quotation {
   deliveryTerms?: string;
   adminNotes?: string;
   termsAndConditions?: string;
+  declineReason?: string;
+  quotationHistory: QuotationHistoryEntry[];
   pdfUrl?: string;
   createdAt: string;
   updatedAt: string;
-  approvedAt?: string;
+  quotedAt?: string;
+  acceptedAt?: string;
+  declinedAt?: string;
   rejectedAt?: string;
 }
 
@@ -47,9 +63,9 @@ export interface CreateQuotationData {
   currency?: 'PHP' | 'USD';
 }
 
-export interface UpdateQuotationData {
-  totalAmount?: number;
-  validUntil?: string;
+export interface SendQuoteData {
+  totalAmount: number;
+  validUntil: string;
   paymentTerms?: string;
   deliveryTerms?: string;
   adminNotes?: string;
@@ -78,13 +94,26 @@ class QuotationService {
     return response.data;
   }
 
-  async updateQuotation(id: string, data: UpdateQuotationData) {
+  async updateQuotation(id: string, data: Partial<SendQuoteData>) {
     const response = await api.put(`/quotations/${id}`, data);
     return response.data;
   }
 
-  async approveQuotation(id: string, data: UpdateQuotationData) {
-    const response = await api.put(`/quotations/${id}/approve`, data);
+  // Admin sends quote to customer (replaces old approveQuotation)
+  async sendQuote(id: string, data: SendQuoteData) {
+    const response = await api.put(`/quotations/${id}/send-quote`, data);
+    return response.data;
+  }
+
+  // Customer accepts a quoted quotation
+  async acceptQuotation(id: string) {
+    const response = await api.put(`/quotations/${id}/accept`);
+    return response.data;
+  }
+
+  // Customer declines a quoted quotation
+  async declineQuotation(id: string, declineReason?: string) {
+    const response = await api.put(`/quotations/${id}/decline`, { declineReason });
     return response.data;
   }
 

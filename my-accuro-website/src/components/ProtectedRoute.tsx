@@ -5,10 +5,12 @@ import { useAuth } from '../contexts/AuthContext';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   adminOnly?: boolean;
+  technicianOnly?: boolean;
+  technicianOrAdmin?: boolean;
 }
 
-export function ProtectedRoute({ children, adminOnly = false }: ProtectedRouteProps) {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+export function ProtectedRoute({ children, adminOnly = false, technicianOnly = false, technicianOrAdmin = false }: ProtectedRouteProps) {
+  const { isAuthenticated, isAdmin, isTechnician, loading } = useAuth();
 
   if (loading) {
     return (
@@ -23,6 +25,34 @@ export function ProtectedRoute({ children, adminOnly = false }: ProtectedRoutePr
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (technicianOnly && !isTechnician && !isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <p className="text-gray-600">You do not have permission to access this page.</p>
+          <a href="/" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
+            Go to Home
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (technicianOrAdmin && !isTechnician && !isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+          <p className="text-gray-600">You do not have permission to access this page.</p>
+          <a href="/" className="text-blue-600 hover:text-blue-800 mt-4 inline-block">
+            Go to Home
+          </a>
+        </div>
+      </div>
+    );
   }
 
   if (adminOnly && !isAdmin) {

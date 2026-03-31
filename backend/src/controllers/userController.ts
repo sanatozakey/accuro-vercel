@@ -182,6 +182,27 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// @desc    Get all technicians (for dispatch dropdown)
+// @route   GET /api/users/technicians
+// @access  Private/SuperAdmin
+export const getTechnicians = async (req: AuthRequest, res: Response) => {
+  try {
+    const technicians = await User.find({ role: 'technician', isDeleted: { $ne: true } })
+      .select('name email phone profilePicture')
+      .sort({ name: 1 });
+
+    res.status(200).json({
+      success: true,
+      data: technicians,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
 // @desc    Change user role (Super Admin only for admin/superadmin roles)
 // @route   PATCH /api/users/:id/role
 // @access  Private/Admin or Super Admin
@@ -191,10 +212,10 @@ export const changeUserRole = async (req: AuthRequest, res: Response) => {
     const targetUserId = req.params.id;
 
     // Validate role
-    if (!role || !['user', 'admin', 'superadmin'].includes(role)) {
+    if (!role || !['user', 'technician', 'admin', 'superadmin'].includes(role)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid role. Must be one of: user, admin, superadmin',
+        message: 'Invalid role. Must be one of: user, technician, admin, superadmin',
       });
     }
 
@@ -232,6 +253,14 @@ export const changeUserRole = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({
         success: false,
         message: 'Only super admins can manage admin roles',
+      });
+    }
+
+    // Only super admin can assign/change technician roles
+    if ((role === 'technician' || targetCurrentRole === 'technician') && currentUserRole !== 'superadmin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only super admins can manage technician roles',
       });
     }
 
