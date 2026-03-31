@@ -164,17 +164,24 @@ export function UserDashboard() {
                 <Link to="/request-quote" className="flex items-center gap-3 group">
                   <CheckCircle className="h-5 w-5 text-blue-500 flex-shrink-0" />
                   <span className="text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    Step 3: Submit a quotation request
+                    Step 3: Submit a quotation request and receive your custom quote
                   </span>
                   <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all duration-200" />
                 </Link>
-                <div className="flex items-center gap-3 pt-1">
-                  <span className="text-sm text-gray-500 dark:text-gray-400 ml-8">Or:</span>
-                  <Link to="/booking" className="flex items-center gap-2 text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors">
-                    Book a consultation with our experts
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
+                <Link to="/my-quotations" className="flex items-center gap-3 group">
+                  <CheckCircle className="h-5 w-5 text-blue-500 flex-shrink-0" />
+                  <span className="text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    Step 4: Review, accept, or request a revised quotation
+                  </span>
+                  <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all duration-200" />
+                </Link>
+                <Link to="/booking" className="flex items-center gap-3 group">
+                  <CheckCircle className="h-5 w-5 text-blue-500 flex-shrink-0" />
+                  <span className="text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    Step 5: Book a consultation and get a technician dispatched
+                  </span>
+                  <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all duration-200" />
+                </Link>
               </div>
             </div>
           </section>

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, CheckCircle2, Award, Users, TrendingUp, Search, FileText, ClipboardList } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Award, Users, TrendingUp, Search, FileText, ClipboardList, UserCheck, CalendarCheck } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { TestimonialsSection } from '../components/TestimonialsSection'
@@ -78,13 +78,13 @@ export function Home() {
           <div className="text-center mb-12 space-y-4">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold">How It Works</h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Getting the right calibration solution is simple
+              From browsing to service completion — here's your journey with Accuro
             </p>
           </div>
-          <div className="relative max-w-5xl mx-auto">
+          <div className="relative max-w-6xl mx-auto">
             {/* Connector lines (desktop only) */}
-            <div className="hidden md:block absolute top-16 left-[calc(16.67%+24px)] right-[calc(16.67%+24px)] h-0.5 bg-blue-200 dark:bg-blue-800" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8">
+            <div className="hidden lg:block absolute top-16 left-[calc(10%+24px)] right-[calc(10%+24px)] h-0.5 bg-blue-200 dark:bg-blue-800" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-6">
               {/* Step 1 */}
               <div className="flex flex-col items-center text-center space-y-4">
                 <div className="relative z-10 h-12 w-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold shadow-lg">
@@ -93,9 +93,9 @@ export function Home() {
                 <div className="h-14 w-14 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
                   <Search className="h-7 w-7 text-blue-600 dark:text-blue-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Browse Our Products</h3>
-                <p className="text-gray-600 dark:text-gray-400 max-w-xs">
-                  Explore our comprehensive range of Beamex calibration equipment and find the right solution for your needs.
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Browse Products</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
+                  Explore our range of Beamex calibration equipment and find the right solution.
                 </p>
               </div>
               {/* Step 2 */}
@@ -106,9 +106,9 @@ export function Home() {
                 <div className="h-14 w-14 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
                   <FileText className="h-7 w-7 text-blue-600 dark:text-blue-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Request a Quote or Book a Consultation</h3>
-                <p className="text-gray-600 dark:text-gray-400 max-w-xs">
-                  Add products to your quote list and submit a request, or schedule a meeting with our experts to discuss your needs.
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Request a Quote or Book a Meeting</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
+                  Submit a quotation request or schedule a consultation with our team.
                 </p>
               </div>
               {/* Step 3 */}
@@ -119,9 +119,35 @@ export function Home() {
                 <div className="h-14 w-14 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
                   <ClipboardList className="h-7 w-7 text-blue-600 dark:text-blue-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Get Your Custom Quote</h3>
-                <p className="text-gray-600 dark:text-gray-400 max-w-xs">
-                  Our team will review your requirements and prepare a detailed quotation tailored to your business.
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Review & Accept Your Quote</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
+                  Receive a detailed quotation, review it, and accept or request revisions.
+                </p>
+              </div>
+              {/* Step 4 */}
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="relative z-10 h-12 w-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold shadow-lg">
+                  4
+                </div>
+                <div className="h-14 w-14 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                  <UserCheck className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Technician Dispatched</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
+                  A certified technician is assigned to your booking and dispatched to your location.
+                </p>
+              </div>
+              {/* Step 5 */}
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="relative z-10 h-12 w-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-lg font-bold shadow-lg">
+                  5
+                </div>
+                <div className="h-14 w-14 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                  <CalendarCheck className="h-7 w-7 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Service Completed</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 max-w-xs">
+                  Your technician completes the service and submits a verified completion report.
                 </p>
               </div>
             </div>
