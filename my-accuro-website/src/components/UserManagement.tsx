@@ -114,6 +114,13 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [viewingUser, setViewingUser] = useState<User | null>(null);
 
+  // User history (for view dialog)
+  const [userHistory, setUserHistory] = useState<any>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyTab, setHistoryTab] = useState<'bookings' | 'quotations' | 'purchases' | 'reviews' | 'activity'>('bookings');
+  const [historyPage, setHistoryPage] = useState(1);
+  const HISTORY_PER_PAGE = 5;
+
   // Form states
   const [formData, setFormData] = useState<CreateUserData>({
     name: '',
@@ -304,9 +311,22 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
     setShowDeleteDialog(true);
   };
 
-  const openViewDialog = (user: User) => {
+  const openViewDialog = async (user: User) => {
     setViewingUser(user);
     setShowViewDialog(true);
+    setHistoryTab('bookings');
+    setHistoryPage(1);
+    setUserHistory(null);
+    setHistoryLoading(true);
+    try {
+      const response = await userService.getUserHistory(user._id);
+      setUserHistory(response.data);
+    } catch (err: any) {
+      console.error('Failed to load user history:', err);
+      setUserHistory(null);
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   const validateForm = (isEdit: boolean = false): boolean => {
@@ -1354,105 +1374,329 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
         </DialogContent>
       </Dialog>
 
-      {/* View User Dialog */}
-      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className={`max-w-md ${darkMode ? 'bg-gray-800 border-gray-700' : ''}`}>
-          <DialogHeader>
-            <DialogTitle className={darkMode ? 'text-white' : ''}>User Profile</DialogTitle>
-          </DialogHeader>
+      {/* View User Dialog - Full width with transaction history */}
+      {showViewDialog && viewingUser && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-start justify-center min-h-screen px-4 py-8">
+            <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowViewDialog(false)} />
+            <div className={`relative rounded-lg shadow-2xl max-w-4xl w-full ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-4">
+                  {viewingUser.profilePicture ? (
+                    <img src={viewingUser.profilePicture} alt={viewingUser.name} className="h-12 w-12 rounded-full object-cover" />
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                      <span className="text-lg font-bold text-white">{getInitials(viewingUser.name)}</span>
+                    </div>
+                  )}
+                  <div>
+                    <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{viewingUser.name}</h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {getRoleBadge(viewingUser.role)}
+                      {viewingUser.isEmailVerified && (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-green-100 text-green-700">Verified</span>
+                      )}
+                      <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{viewingUser.email}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {canEditUser(viewingUser) && (
+                    <Button size="sm" variant="outline" onClick={() => { setShowViewDialog(false); openEditDialog(viewingUser); }}
+                      className={darkMode ? 'border-gray-600 text-gray-300' : ''}>
+                      <Edit className="h-4 w-4 mr-1" /> Edit
+                    </Button>
+                  )}
+                  <button onClick={() => setShowViewDialog(false)} className={`p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
 
-          {viewingUser && (
-            <div className="space-y-6">
-              {/* Avatar and Name */}
-              <div className="flex items-center gap-4">
-                {viewingUser.profilePicture ? (
-                  <img
-                    src={viewingUser.profilePicture}
-                    alt={viewingUser.name}
-                    className="h-16 w-16 rounded-full object-cover"
-                  />
+              {/* User Info Summary */}
+              <div className={`px-6 py-4 border-b ${darkMode ? 'border-gray-700 bg-gray-750' : 'border-gray-200 bg-gray-50'}`}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  {viewingUser.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                      <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{viewingUser.phone}</span>
+                    </div>
+                  )}
+                  {viewingUser.company && (
+                    <div className="flex items-center gap-2">
+                      <Building className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                      <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>{viewingUser.company}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Calendar className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                    <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Joined {formatDate(viewingUser.createdAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                    <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>Last active: {getRelativeTime(viewingUser.lastLoginAt)}</span>
+                  </div>
+                </div>
+
+                {/* Summary stats from history */}
+                {userHistory?.summary && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                    <div className={`rounded-lg p-3 ${darkMode ? 'bg-gray-700' : 'bg-white'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                      <p className="text-xl font-bold text-blue-600">{userHistory.summary.totalBookings}</p>
+                      <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Bookings ({userHistory.summary.completedBookings} completed)</p>
+                    </div>
+                    <div className={`rounded-lg p-3 ${darkMode ? 'bg-gray-700' : 'bg-white'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                      <p className="text-xl font-bold text-emerald-600">{userHistory.summary.totalQuotes}</p>
+                      <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Quotations</p>
+                    </div>
+                    <div className={`rounded-lg p-3 ${darkMode ? 'bg-gray-700' : 'bg-white'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                      <p className="text-xl font-bold text-purple-600">{userHistory.summary.totalPurchases}</p>
+                      <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Purchases</p>
+                    </div>
+                    <div className={`rounded-lg p-3 ${darkMode ? 'bg-gray-700' : 'bg-white'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                      <p className="text-xl font-bold text-yellow-600">{userHistory.summary.totalReviews}</p>
+                      <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Reviews (avg {userHistory.summary.averageRating})</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* History Tabs */}
+              <div className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className="flex overflow-x-auto px-6">
+                  {([
+                    { id: 'bookings' as const, label: 'Bookings', icon: Calendar },
+                    { id: 'quotations' as const, label: 'Quotations', icon: Star },
+                    { id: 'purchases' as const, label: 'Purchases', icon: Activity },
+                    { id: 'reviews' as const, label: 'Reviews', icon: Star },
+                    { id: 'activity' as const, label: 'Activity Log', icon: History },
+                  ]).map((tab) => {
+                    const Icon = tab.icon;
+                    const count = userHistory?.[tab.id]?.count || userHistory?.recentActivity?.count || 0;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => { setHistoryTab(tab.id); setHistoryPage(1); }}
+                        className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                          historyTab === tab.id
+                            ? 'border-blue-600 text-blue-600'
+                            : `border-transparent ${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-900'}`
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {tab.label}
+                        {!historyLoading && userHistory && (
+                          <span className={`ml-1 px-1.5 py-0.5 rounded-full text-xs ${
+                            historyTab === tab.id ? 'bg-blue-100 text-blue-600' : darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-600'
+                          }`}>
+                            {tab.id === 'activity' ? userHistory.recentActivity?.count || 0 : userHistory[tab.id]?.count || 0}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* History Content */}
+              <div className="px-6 py-4 max-h-[400px] overflow-y-auto">
+                {historyLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
+                    <span className={`ml-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Loading history...</span>
+                  </div>
+                ) : !userHistory ? (
+                  <div className="text-center py-12">
+                    <AlertTriangle className={`h-8 w-8 mx-auto mb-2 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Failed to load user history</p>
+                  </div>
                 ) : (
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                    <span className="text-xl font-bold text-white">{getInitials(viewingUser.name)}</span>
-                  </div>
-                )}
-                <div>
-                  <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {viewingUser.name}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    {getRoleBadge(viewingUser.role)}
-                    {viewingUser.isEmailVerified && (
-                      <span className="text-xs font-medium px-2 py-0.5 rounded bg-green-100 text-green-700">Verified</span>
+                  <>
+                    {/* Bookings Tab */}
+                    {historyTab === 'bookings' && (
+                      userHistory.bookings.count === 0 ? (
+                        <p className={`text-center py-8 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No bookings found</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {userHistory.bookings.data.slice((historyPage - 1) * HISTORY_PER_PAGE, historyPage * HISTORY_PER_PAGE).map((b: any) => (
+                            <div key={b._id} className={`rounded-lg p-4 border ${darkMode ? 'bg-gray-750 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{b.company || b.purpose}</p>
+                                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    {new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {b.time} &bull; {b.location}
+                                  </p>
+                                  <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Product: {b.product}</p>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  b.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                  b.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                                  b.status === 'in_progress' ? 'bg-indigo-100 text-indigo-800' :
+                                  b.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  b.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                  b.status === 'pending_review' ? 'bg-purple-100 text-purple-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>{b.status.replace('_', ' ')}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )
                     )}
-                  </div>
-                </div>
-              </div>
 
-              {/* Details */}
-              <div className={`space-y-3 p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                <div className="flex items-center gap-3">
-                  <Mail className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                  <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>{viewingUser.email}</span>
-                </div>
-                {viewingUser.phone && (
-                  <div className="flex items-center gap-3">
-                    <Phone className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                    <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>{viewingUser.phone}</span>
-                  </div>
-                )}
-                {viewingUser.company && (
-                  <div className="flex items-center gap-3">
-                    <Building className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                    <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>{viewingUser.company}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-3">
-                  <Calendar className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                  <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>
-                    Joined {formatDate(viewingUser.createdAt)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Clock className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                  <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>
-                    Last active: {getRelativeTime(viewingUser.lastLoginAt)}
-                  </span>
-                </div>
-                {viewingUser.loginCount !== undefined && (
-                  <div className="flex items-center gap-3">
-                    <History className={`h-4 w-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                    <span className={darkMode ? 'text-gray-200' : 'text-gray-700'}>
-                      {viewingUser.loginCount} total logins
-                    </span>
-                  </div>
+                    {/* Quotations Tab */}
+                    {historyTab === 'quotations' && (
+                      userHistory.quotes.count === 0 ? (
+                        <p className={`text-center py-8 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No quotations found</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {userHistory.quotes.data.slice((historyPage - 1) * HISTORY_PER_PAGE, historyPage * HISTORY_PER_PAGE).map((q: any) => (
+                            <div key={q._id} className={`rounded-lg p-4 border ${darkMode ? 'bg-gray-750 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{q.quotationNumber || q.company || 'Quote'}</p>
+                                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    {q.items?.length || 0} items &bull; {new Date(q.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </p>
+                                  {q.totalAmount && (
+                                    <p className={`text-sm font-semibold mt-1 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                      {q.currency === 'USD' ? '$' : '₱'}{q.totalAmount.toLocaleString()}
+                                    </p>
+                                  )}
+                                  {q.totalEstimatedPrice && !q.totalAmount && (
+                                    <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                      Est. ${q.totalEstimatedPrice.toLocaleString()}
+                                    </p>
+                                  )}
+                                </div>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  q.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                                  q.status === 'quoted' ? 'bg-blue-100 text-blue-800' :
+                                  q.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  q.status === 'declined' ? 'bg-orange-100 text-orange-800' :
+                                  q.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                  q.status === 'expired' ? 'bg-gray-100 text-gray-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>{q.status}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    )}
+
+                    {/* Purchases Tab */}
+                    {historyTab === 'purchases' && (
+                      userHistory.purchases.count === 0 ? (
+                        <p className={`text-center py-8 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No purchases found</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {userHistory.purchases.data.slice((historyPage - 1) * HISTORY_PER_PAGE, historyPage * HISTORY_PER_PAGE).map((p: any) => (
+                            <div key={p._id} className={`rounded-lg p-4 border ${darkMode ? 'bg-gray-750 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Order #{p.orderNumber}</p>
+                                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    {p.items?.length || 0} items &bull; {new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </p>
+                                  <p className={`text-sm font-semibold mt-1 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>${p.totalAmount?.toFixed(2)}</p>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  p.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' :
+                                  p.orderStatus === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                                  p.orderStatus === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>{p.orderStatus}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    )}
+
+                    {/* Reviews Tab */}
+                    {historyTab === 'reviews' && (
+                      userHistory.reviews.count === 0 ? (
+                        <p className={`text-center py-8 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No reviews found</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {userHistory.reviews.data.slice((historyPage - 1) * HISTORY_PER_PAGE, historyPage * HISTORY_PER_PAGE).map((r: any) => (
+                            <div key={r._id} className={`rounded-lg p-4 border ${darkMode ? 'bg-gray-750 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-1 mb-1">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star key={i} className={`h-3.5 w-3.5 ${i < r.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
+                                    ))}
+                                    <span className={`text-xs ml-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{r.rating}/5</span>
+                                  </div>
+                                  <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{r.comment}</p>
+                                  <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                    {new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </p>
+                                </div>
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${r.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                  {r.isApproved ? 'Approved' : 'Pending'}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    )}
+
+                    {/* Activity Tab */}
+                    {historyTab === 'activity' && (
+                      (userHistory.recentActivity?.count || 0) === 0 ? (
+                        <p className={`text-center py-8 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No activity found</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {userHistory.recentActivity.data.slice((historyPage - 1) * HISTORY_PER_PAGE, historyPage * HISTORY_PER_PAGE).map((log: any) => (
+                            <div key={log._id} className={`rounded-lg p-3 border ${darkMode ? 'bg-gray-750 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <p className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{log.action}</p>
+                                  {log.details && <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{log.details}</p>}
+                                </div>
+                                <span className={`text-xs whitespace-nowrap ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                  {new Date(log.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    )}
+
+                    {/* Pagination for history */}
+                    {(() => {
+                      const totalItems = historyTab === 'activity'
+                        ? userHistory.recentActivity?.count || 0
+                        : userHistory[historyTab === 'quotations' ? 'quotes' : historyTab]?.count || 0;
+                      const totalPages = Math.ceil(totalItems / HISTORY_PER_PAGE);
+                      if (totalPages <= 1) return null;
+                      return (
+                        <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Page {historyPage} of {totalPages}
+                          </p>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" disabled={historyPage === 1} onClick={() => setHistoryPage(p => p - 1)}
+                              className={darkMode ? 'border-gray-600 text-gray-300' : ''}>Prev</Button>
+                            <Button size="sm" variant="outline" disabled={historyPage === totalPages} onClick={() => setHistoryPage(p => p + 1)}
+                              className={darkMode ? 'border-gray-600 text-gray-300' : ''}>Next</Button>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </>
                 )}
               </div>
-
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowViewDialog(false)}
-                  className={darkMode ? 'border-gray-600 text-gray-300' : ''}
-                >
-                  Close
-                </Button>
-                {canEditUser(viewingUser) && (
-                  <Button
-                    onClick={() => {
-                      setShowViewDialog(false);
-                      openEditDialog(viewingUser);
-                    }}
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit User
-                  </Button>
-                )}
-              </DialogFooter>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
