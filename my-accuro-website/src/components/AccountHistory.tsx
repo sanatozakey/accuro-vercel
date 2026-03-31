@@ -22,6 +22,8 @@ import {
   Mail,
   Building,
   Info,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import reviewService, { Review } from '../services/reviewService';
 import quoteService, { Quote } from '../services/quoteService';
@@ -49,6 +51,10 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+
+  // Pagination
+  const ITEMS_PER_PAGE = 5;
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Booking details modal state
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -298,75 +304,80 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
       );
     }
 
+    const paginatedBookings = paginate(bookings);
+
     return (
-      <div className="space-y-4">
-        {bookings.map((booking) => (
-          <div
-            key={booking._id}
-            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
-          >
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-3">
-              <div className="mb-2 md:mb-0">
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                  {booking.company || 'Booking'}
-                </h4>
-                <p className="text-sm text-gray-600">
-                  {booking.product}
-                </p>
+      <div>
+        <div className="space-y-4">
+          {paginatedBookings.map((booking) => (
+            <div
+              key={booking._id}
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
+            >
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-3">
+                <div className="mb-2 md:mb-0">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                    {booking.company || 'Booking'}
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    {booking.product}
+                  </p>
+                </div>
+                {getBookingStatusBadge(booking.status)}
               </div>
-              {getBookingStatusBadge(booking.status)}
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <Calendar className="h-4 w-4 text-blue-600" />
-                <span>
-                  {new Date(booking.date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <Calendar className="h-4 w-4 text-blue-600" />
+                  <span>
+                    {new Date(booking.date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                  <span>{booking.time}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <MapPin className="h-4 w-4 text-blue-600" />
+                  <span>{booking.location}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <Package className="h-4 w-4 text-blue-600" />
+                  <span>Booking ID: {booking._id.slice(-8)}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <Clock className="h-4 w-4 text-blue-600" />
-                <span>{booking.time}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <MapPin className="h-4 w-4 text-blue-600" />
-                <span>{booking.location}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-700">
-                <Package className="h-4 w-4 text-blue-600" />
-                <span>Booking ID: {booking._id.slice(-8)}</span>
+
+              {booking.message && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-600 flex items-start gap-1">
+                    <MessageSquare className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                    <span>{booking.message}</span>
+                  </p>
+                </div>
+              )}
+
+              {/* View Details Button */}
+              <div className="mt-4 pt-3 border-t border-gray-200 flex justify-end">
+                <button
+                  onClick={() => {
+                    setSelectedBooking(booking);
+                    setIsDetailModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
+                >
+                  <Eye className="h-4 w-4" />
+                  View Details
+                </button>
               </div>
             </div>
-
-            {booking.message && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <p className="text-xs text-gray-600 flex items-start gap-1">
-                  <MessageSquare className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                  <span>{booking.message}</span>
-                </p>
-              </div>
-            )}
-
-            {/* View Details Button */}
-            <div className="mt-4 pt-3 border-t border-gray-200 flex justify-end">
-              <button
-                onClick={() => {
-                  setSelectedBooking(booking);
-                  setIsDetailModalOpen(true);
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition"
-              >
-                <Eye className="h-4 w-4" />
-                View Details
-              </button>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        {renderPagination(bookings.length)}
       </div>
     );
   };
@@ -386,9 +397,12 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
       );
     }
 
+    const paginatedPurchases = paginate(purchases);
+
     return (
-      <div className="space-y-4">
-        {purchases.map((purchase) => (
+      <div>
+        <div className="space-y-4">
+          {paginatedPurchases.map((purchase) => (
           <div
             key={purchase._id}
             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
@@ -477,6 +491,8 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
             )}
           </div>
         ))}
+        </div>
+        {renderPagination(purchases.length)}
       </div>
     );
   };
@@ -494,9 +510,12 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
       );
     }
 
+    const paginatedReviews = paginate(reviews);
+
     return (
-      <div className="space-y-4">
-        {reviews.map((review) => (
+      <div>
+        <div className="space-y-4">
+          {paginatedReviews.map((review) => (
           <div
             key={review._id}
             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
@@ -566,6 +585,8 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
             </div>
           </div>
         ))}
+        </div>
+        {renderPagination(reviews.length)}
       </div>
     );
   };
@@ -592,9 +613,15 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
       );
     }
 
+    const allQuoteItems = [...quotes.map(q => ({ type: 'quote' as const, data: q })), ...bookings.map(b => ({ type: 'booking' as const, data: b }))];
+    const paginatedQuoteItems = paginate(allQuoteItems);
+
     return (
-      <div className="space-y-4">
-        {quotes.map((quote) => (
+      <div>
+        <div className="space-y-4">
+          {paginatedQuoteItems.filter(item => item.type === 'quote').map((item) => {
+            const quote = item.data as Quote;
+            return (
           <div
             key={quote._id}
             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
@@ -666,10 +693,13 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
 
-        {/* Show quote-related bookings */}
-        {bookings.map((booking) => (
+          {/* Show quote-related bookings */}
+          {paginatedQuoteItems.filter(item => item.type === 'booking').map((item) => {
+            const booking = item.data as Booking;
+            return (
           <div
             key={`booking-${booking._id}`}
             className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
@@ -720,7 +750,10 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
+        </div>
+        {renderPagination(allQuoteItems.length)}
       </div>
     );
   };
@@ -772,9 +805,12 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
       }
     };
 
+    const paginatedLogs = paginate(activityLogs);
+
     return (
-      <div className="space-y-3">
-        {activityLogs.map((log) => {
+      <div>
+        <div className="space-y-3">
+          {paginatedLogs.map((log) => {
           const Icon = getActivityIcon(log.resourceType);
           const colorClass = getActivityColor(log.resourceType);
 
@@ -815,6 +851,52 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
             </div>
           );
         })}
+        </div>
+        {renderPagination(activityLogs.length)}
+      </div>
+    );
+  };
+
+  // Pagination helper
+  const paginate = <T,>(items: T[]): T[] => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return items.slice(start, start + ITEMS_PER_PAGE);
+  };
+
+  const getTotalPages = (totalItems: number): number => {
+    return Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+  };
+
+  const renderPagination = (totalItems: number) => {
+    const totalPages = getTotalPages(totalItems);
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, totalItems)}–{Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} of {totalItems}
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Prev
+          </button>
+          <span className="text-sm text-gray-600 dark:text-gray-400 px-2">
+            {currentPage} / {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            Next
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </button>
+        </div>
       </div>
     );
   };
@@ -837,7 +919,7 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => { setActiveTab(tab.id); setCurrentPage(1); }}
                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 ${
                   activeTab === tab.id
                     ? 'border-blue-600 text-blue-600 bg-white'
