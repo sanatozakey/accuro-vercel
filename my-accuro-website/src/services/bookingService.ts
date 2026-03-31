@@ -17,14 +17,37 @@ export interface BookingData {
 export interface TechnicianInfo {
   _id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   phone?: string;
   profilePicture?: string;
+  technicianNumber?: number;
+  specialization?: string;
 }
 
 export interface TechnicianAvailability extends TechnicianInfo {
   isAvailable: boolean;
 }
+
+// Helper to get technician display label
+export const getTechnicianLabel = (tech: TechnicianInfo | TechnicianAvailability): string => {
+  if (tech.technicianNumber) {
+    return `Technician ${tech.technicianNumber}`;
+  }
+  return tech.name;
+};
+
+export const getTechnicianRealName = (tech: TechnicianInfo): string => {
+  if (tech.firstName && tech.lastName) {
+    return `${tech.firstName} ${tech.lastName}`;
+  }
+  // Fallback: if name is still the default "Technician X", show nothing
+  if (tech.name && !tech.name.match(/^Technician \d+$/)) {
+    return tech.name;
+  }
+  return '';
+};
 
 export interface Booking extends BookingData {
   _id: string;

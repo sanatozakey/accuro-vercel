@@ -91,7 +91,7 @@ export const getBookings = async (req: Request, res: Response) => {
 
     const bookings = await Booking.find(query)
       .sort({ date: 1, time: 1 })
-      .populate('assignedTechnician', 'name email phone profilePicture')
+      .populate('assignedTechnician', 'name firstName lastName email phone profilePicture technicianNumber specialization')
       .populate('quotationId', 'quotationNumber totalAmount status');
 
     res.status(200).json({
@@ -113,7 +113,7 @@ export const getBookings = async (req: Request, res: Response) => {
 export const getBooking = async (req: Request, res: Response) => {
   try {
     const booking = await Booking.findById(req.params.id)
-      .populate('assignedTechnician', 'name email phone profilePicture')
+      .populate('assignedTechnician', 'name firstName lastName email phone profilePicture technicianNumber specialization')
       .populate('quotationId', 'quotationNumber totalAmount status');
 
     if (!booking) {
@@ -482,7 +482,7 @@ export const getMyBookings = async (req: AuthRequest, res: Response) => {
   try {
     const bookings = await Booking.find({ userId: req.user!._id })
       .sort({ date: 1 })
-      .populate('assignedTechnician', 'name email phone profilePicture');
+      .populate('assignedTechnician', 'name firstName lastName email phone profilePicture technicianNumber specialization');
 
     res.status(200).json({
       success: true,
@@ -950,7 +950,7 @@ export const confirmAndDispatch = async (req: AuthRequest, res: Response) => {
     }
 
     // Populate technician info for response
-    await booking.populate('assignedTechnician', 'name email phone profilePicture');
+    await booking.populate('assignedTechnician', 'name firstName lastName email phone profilePicture technicianNumber specialization');
 
     res.status(200).json({
       success: true,
@@ -1068,7 +1068,7 @@ export const reassignTechnician = async (req: AuthRequest, res: Response) => {
       console.error('Failed to log activity:', logError);
     }
 
-    await booking.populate('assignedTechnician', 'name email phone profilePicture');
+    await booking.populate('assignedTechnician', 'name firstName lastName email phone profilePicture technicianNumber specialization');
 
     res.status(200).json({
       success: true,
@@ -1162,7 +1162,7 @@ export const getMyAssignments = async (req: AuthRequest, res: Response) => {
     const bookings = await Booking.find(query)
       .sort({ date: 1, time: 1 })
       .populate('userId', 'name email phone')
-      .populate('assignedTechnician', 'name email phone profilePicture');
+      .populate('assignedTechnician', 'name firstName lastName email phone profilePicture technicianNumber specialization');
 
     res.status(200).json({
       success: true,
@@ -1193,7 +1193,7 @@ export const checkTechnicianAvailability = async (req: AuthRequest, res: Respons
 
     // Get all technicians
     const technicians = await User.find({ role: 'technician', isDeleted: { $ne: true } })
-      .select('name email phone profilePicture');
+      .select('name firstName lastName email phone profilePicture technicianNumber specialization');
 
     // Get all bookings for that date/time
     const busyBookings = await Booking.find({
@@ -1208,9 +1208,13 @@ export const checkTechnicianAvailability = async (req: AuthRequest, res: Respons
     const techniciansWithAvailability = technicians.map(tech => ({
       _id: tech._id,
       name: tech.name,
+      firstName: tech.firstName,
+      lastName: tech.lastName,
       email: tech.email,
       phone: tech.phone,
       profilePicture: tech.profilePicture,
+      technicianNumber: tech.technicianNumber,
+      specialization: tech.specialization,
       isAvailable: !busyTechIds.includes(tech._id.toString()),
     }));
 

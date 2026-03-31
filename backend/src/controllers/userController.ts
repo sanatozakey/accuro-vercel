@@ -188,8 +188,8 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
 export const getTechnicians = async (req: AuthRequest, res: Response) => {
   try {
     const technicians = await User.find({ role: 'technician', isDeleted: { $ne: true } })
-      .select('name email phone profilePicture')
-      .sort({ name: 1 });
+      .select('name firstName lastName email phone profilePicture technicianNumber specialization')
+      .sort({ technicianNumber: 1, name: 1 });
 
     res.status(200).json({
       success: true,
@@ -269,6 +269,19 @@ export const changeUserRole = async (req: AuthRequest, res: Response) => {
 
     // Update role
     targetUser.role = role;
+
+    // Auto-assign technicianNumber when promoting to technician
+    if (role === 'technician' && !targetUser.technicianNumber) {
+      const lastTechnician = await User.findOne({ technicianNumber: { $exists: true } })
+        .sort({ technicianNumber: -1 });
+      targetUser.technicianNumber = (lastTechnician?.technicianNumber || 0) + 1;
+    }
+
+    // Clear technicianNumber if demoted from technician
+    if (role !== 'technician' && oldRole === 'technician') {
+      targetUser.technicianNumber = undefined;
+    }
+
     await targetUser.save();
 
     // Log activity

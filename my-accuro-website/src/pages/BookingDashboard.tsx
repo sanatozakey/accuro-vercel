@@ -59,7 +59,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
-import bookingService from '../services/bookingService'
+import bookingService, { getTechnicianLabel, getTechnicianRealName } from '../services/bookingService'
 import userService, { User as UserType } from '../services/userService'
 import analyticsService from '../services/analyticsService'
 import reviewService, { Review } from '../services/reviewService'
@@ -3245,8 +3245,13 @@ export function BookingDashboard(): React.ReactElement {
                                   Assigned Technician
                                 </div>
                                 <div className="mt-1 text-sm text-gray-900 font-medium">
-                                  {selectedBooking.assignedTechnician.name}
+                                  {getTechnicianLabel(selectedBooking.assignedTechnician)}
                                 </div>
+                                {getTechnicianRealName(selectedBooking.assignedTechnician) && (
+                                  <div className="text-xs text-gray-700">
+                                    {getTechnicianRealName(selectedBooking.assignedTechnician)}
+                                  </div>
+                                )}
                                 <div className="text-xs text-gray-500">
                                   {selectedBooking.assignedTechnician.email}
                                   {selectedBooking.assignedTechnician.phone && ` | ${selectedBooking.assignedTechnician.phone}`}
@@ -3970,8 +3975,13 @@ export function BookingDashboard(): React.ReactElement {
                       />
                       <div className="flex-1">
                         <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {tech.name}
+                          {getTechnicianLabel(tech)}
                         </div>
+                        {getTechnicianRealName(tech) && (
+                          <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                            {getTechnicianRealName(tech)}
+                          </div>
+                        )}
                         <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           {tech.email}
                         </div>
@@ -4027,7 +4037,7 @@ export function BookingDashboard(): React.ReactElement {
                   <strong>{reassignBooking.contactName}</strong> - {reassignBooking.company}
                 </p>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Currently assigned to: <strong>{reassignBooking.assignedTechnician && typeof reassignBooking.assignedTechnician === 'object' ? reassignBooking.assignedTechnician.name : 'Unknown'}</strong>
+                  Currently assigned to: <strong>{reassignBooking.assignedTechnician && typeof reassignBooking.assignedTechnician === 'object' ? getTechnicianLabel(reassignBooking.assignedTechnician) : 'Unknown'}</strong>
                 </p>
               </div>
               <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -4059,8 +4069,13 @@ export function BookingDashboard(): React.ReactElement {
                       />
                       <div className="flex-1">
                         <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {tech.name}
+                          {getTechnicianLabel(tech)}
                         </div>
+                        {getTechnicianRealName(tech) && (
+                          <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                            {getTechnicianRealName(tech)}
+                          </div>
+                        )}
                         <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                           {tech.email}
                         </div>

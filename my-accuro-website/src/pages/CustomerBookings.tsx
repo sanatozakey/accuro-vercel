@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Calendar, Eye, Clock, CheckCircle, XCircle, MapPin, Briefcase, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import bookingService, { Booking } from '../services/bookingService';
+import bookingService, { Booking, getTechnicianLabel, getTechnicianRealName } from '../services/bookingService';
 
 export function CustomerBookings() {
   const { user } = useAuth();
@@ -314,12 +314,26 @@ export function CustomerBookings() {
                 <div className="border dark:border-gray-700 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
                   <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Your Assigned Technician</h3>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-200 dark:bg-blue-700 rounded-full flex items-center justify-center text-blue-700 dark:text-blue-200 font-bold">
-                      {selectedBooking.assignedTechnician.name?.charAt(0).toUpperCase()}
+                    <div className="w-10 h-10 bg-blue-200 dark:bg-blue-700 rounded-full flex items-center justify-center text-blue-700 dark:text-blue-200 font-bold text-sm">
+                      {selectedBooking.assignedTechnician.technicianNumber
+                        ? `T${selectedBooking.assignedTechnician.technicianNumber}`
+                        : selectedBooking.assignedTechnician.name?.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{selectedBooking.assignedTechnician.name}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{selectedBooking.assignedTechnician.email}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {getTechnicianLabel(selectedBooking.assignedTechnician)}
+                      </p>
+                      {getTechnicianRealName(selectedBooking.assignedTechnician) && (
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          {getTechnicianRealName(selectedBooking.assignedTechnician)}
+                        </p>
+                      )}
+                      {selectedBooking.assignedTechnician.specialization && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {selectedBooking.assignedTechnician.specialization}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{selectedBooking.assignedTechnician.email}</p>
                     </div>
                   </div>
                 </div>

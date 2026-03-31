@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Phone, Building, Camera, Save, AlertCircle, X, CheckCircle, XCircle, Send } from 'lucide-react';
+import { User, Mail, Phone, Building, Camera, Save, AlertCircle, X, CheckCircle, XCircle, Send, Wrench, Info } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import authService from '../services/authService';
 import { compressImage } from '../utils/imageCompression';
@@ -10,6 +10,8 @@ export function Profile() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isTechnician = user?.role === 'technician';
+
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     middleName: user?.middleName || '',
@@ -17,7 +19,10 @@ export function Profile() {
     email: user?.email || '',
     phone: user?.phone || '',
     company: user?.company || '',
+    specialization: (user as any)?.specialization || '',
   });
+
+  const techProfileIncomplete = isTechnician && (!user?.firstName || !user?.lastName || !user?.phone);
 
   const [profilePicture, setProfilePicture] = useState<string>(user?.profilePicture || '');
   const [loading, setLoading] = useState(false);
@@ -112,6 +117,7 @@ export function Profile() {
       if (formData.email && formData.email.trim()) updateData.email = formData.email.trim();
       if (formData.phone && formData.phone.trim()) updateData.phone = formData.phone.trim();
       if (formData.company && formData.company.trim()) updateData.company = formData.company.trim();
+      if (isTechnician) updateData.specialization = formData.specialization ? formData.specialization.trim() : '';
 
       // Handle profile picture changes
       // If profilePicture is a new base64 image, send it
@@ -159,6 +165,33 @@ export function Profile() {
             <h1 className="text-3xl font-bold text-white text-center">Edit Profile</h1>
           </div>
 
+          {/* Technician Profile Completion Banner */}
+          {techProfileIncomplete && (
+            <div className="mx-6 mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                    Complete Your Technician Profile
+                  </h3>
+                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                    Your name, phone number, and specialization will be visible to customers when you are assigned to their bookings. Please fill in your details below.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Technician Badge */}
+          {isTechnician && user?.technicianNumber && (
+            <div className="mx-6 mt-4 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-sm font-medium rounded-full">
+                <Wrench className="w-4 h-4" />
+                Technician {user.technicianNumber}
+              </span>
+            </div>
+          )}
+
           {/* Profile Picture Section */}
           <div className="px-6 py-8 border-b border-gray-200 dark:border-gray-700">
             <div className="flex flex-col items-center">
@@ -178,7 +211,7 @@ export function Profile() {
                   ) : (
                     <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center border-4 border-white shadow-lg">
                       <span className="text-4xl font-bold text-white">
-                        {getInitials(formData.name || 'U')}
+                        {getInitials(`${formData.firstName} ${formData.lastName}`.trim() || 'U')}
                       </span>
                     </div>
                   )}
@@ -381,6 +414,28 @@ export function Profile() {
                 placeholder="Enter your company name"
               />
             </div>
+
+            {/* Specialization Field (Technicians only) */}
+            {isTechnician && (
+              <div className="mb-6">
+                <label htmlFor="specialization" className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  <Wrench className="w-4 h-4 mr-2 text-gray-400" />
+                  Specialization
+                </label>
+                <input
+                  type="text"
+                  id="specialization"
+                  name="specialization"
+                  value={formData.specialization}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., Pressure Calibration, Temperature Calibration"
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  This will be shown to customers when you are assigned to their bookings.
+                </p>
+              </div>
+            )}
 
             {/* Submit Button */}
             <div className="flex space-x-4">

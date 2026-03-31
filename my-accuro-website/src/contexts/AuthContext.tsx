@@ -13,6 +13,8 @@ interface User {
   company?: string;
   profilePicture?: string;
   isEmailVerified?: boolean;
+  technicianNumber?: number;
+  specialization?: string;
 }
 
 interface LoginResponse {

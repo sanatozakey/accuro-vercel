@@ -34,6 +34,9 @@ export interface IUser extends Document {
   isDeleted: boolean;
   deletedAt?: Date;
   // Two-factor authentication
+  // Technician fields
+  technicianNumber?: number;
+  specialization?: string;
   twoFactorEnabled: boolean;
   twoFactorSecret?: string;
   twoFactorBackupCodes?: string[];
@@ -147,6 +150,16 @@ const UserSchema: Schema = new Schema(
     },
     deletedAt: {
       type: Date,
+    },
+    // Technician fields
+    technicianNumber: {
+      type: Number,
+      unique: true,
+      sparse: true, // Allow null but unique when present
+    },
+    specialization: {
+      type: String,
+      trim: true,
     },
     // Two-factor authentication
     twoFactorEnabled: {

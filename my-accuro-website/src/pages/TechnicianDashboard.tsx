@@ -131,18 +131,47 @@ export function TechnicianDashboard() {
     return '';
   };
 
+  const profileIncomplete = !user?.firstName || !user?.lastName || !user?.phone;
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-navy-900 text-white py-6">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-3xl md:text-4xl font-bold">Welcome, {user?.name}</h1>
-            <span className="px-3 py-1 bg-blue-600 rounded-full text-sm font-medium">Technician</span>
+            <h1 className="text-3xl md:text-4xl font-bold">
+              Welcome, {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.name}
+            </h1>
+            <span className="px-3 py-1 bg-blue-600 rounded-full text-sm font-medium">
+              {(user as any)?.technicianNumber ? `Technician ${(user as any).technicianNumber}` : 'Technician'}
+            </span>
           </div>
           <p className="text-gray-300">Manage your assignments and service reports</p>
         </div>
       </div>
+
+      {/* Profile Completion Banner */}
+      {profileIncomplete && (
+        <div className="container mx-auto px-4 mt-4">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Complete Your Profile</p>
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  Customers will see your name and details when you are assigned to their bookings.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/profile"
+              className="inline-flex items-center gap-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition"
+            >
+              Edit Profile <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">

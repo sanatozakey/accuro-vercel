@@ -383,6 +383,7 @@ export const updateDetails = async (req: AuthRequest, res: Response) => {
     if (req.body.phone !== undefined) fieldsToUpdate.phone = req.body.phone;
     if (req.body.company !== undefined) fieldsToUpdate.company = req.body.company;
     if (req.body.profilePicture !== undefined) fieldsToUpdate.profilePicture = req.body.profilePicture;
+    if (req.body.specialization !== undefined) fieldsToUpdate.specialization = req.body.specialization;
 
     const user = await User.findByIdAndUpdate(req.user!._id, fieldsToUpdate, {
       new: true,
