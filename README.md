@@ -133,18 +133,6 @@ npm start                    # Starts on http://localhost:3000
 | **Admin** | All technician features + manage all bookings, send quotation pricing, chat support |
 | **Superadmin** | All admin features + dispatch technicians, review completion reports, manage user roles, analytics |
 
-### Pre-Seeded Accounts
-
-The following accounts are created automatically on first server startup:
-
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@accuro.com.ph | AdminPassword123! |
-| Technician 1 | technician1@accuro.com.ph | TechPassword123! |
-| Technician 2 | technician2@accuro.com.ph | TechPassword123! |
-| Technician 3 | technician3@accuro.com.ph | TechPassword123! |
-
-Superadmin is created when `SUPERADMIN_EMAIL` and `SUPERADMIN_PASSWORD` env vars are set.
 
 ## User Flows
 
