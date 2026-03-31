@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { MenuIcon, XIcon, User, LogOut, Settings, ShieldCheck, LayoutDashboard, Sun, Moon, Home, Package, Info, MessageSquare, Mail, Calendar, FileText } from 'lucide-react'
+import { MenuIcon, XIcon, User, LogOut, Settings, ShieldCheck, LayoutDashboard, Sun, Moon, Home, Package, Info, MessageSquare, Mail, Calendar, FileText, Wrench } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import {
@@ -16,7 +16,7 @@ import { NotificationBell } from './NotificationBell'
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const { user, isAuthenticated, isAdmin, logout } = useAuth()
+  const { user, isAuthenticated, isAdmin, isTechnician, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
 
@@ -127,6 +127,12 @@ export function Navbar() {
                           {user?.role === 'superadmin' ? 'Super Admin' : 'Admin'}
                         </span>
                       )}
+                      {isTechnician && (
+                        <span className="inline-flex items-center mt-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                          <Wrench size={12} className="mr-1" />
+                          {user?.technicianNumber ? `Technician ${user.technicianNumber}` : 'Technician'}
+                        </span>
+                      )}
                     </div>
                     <Link
                       to="/profile"
@@ -148,6 +154,18 @@ export function Navbar() {
                         My Dashboard
                       </div>
                     </Link>
+                    {isTechnician && (
+                      <Link
+                        to="/technician/dashboard"
+                        className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <div className="flex items-center">
+                          <Wrench size={16} className="mr-2" />
+                          Technician Dashboard
+                        </div>
+                      </Link>
+                    )}
                     {isAdmin && (
                       <Link
                         to="/admin/bookings"
@@ -250,6 +268,12 @@ export function Navbar() {
                           {user?.role === 'superadmin' ? 'Super Admin' : 'Admin'}
                         </span>
                       )}
+                      {isTechnician && (
+                        <span className="inline-flex items-center mt-1 text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">
+                          <Wrench size={10} className="mr-1" />
+                          {user?.technicianNumber ? `Technician ${user.technicianNumber}` : 'Technician'}
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
@@ -338,6 +362,16 @@ export function Navbar() {
                           <LayoutDashboard size={20} />
                           <span className="font-medium">My Dashboard</span>
                         </Link>
+                        {isTechnician && (
+                          <Link
+                            to="/technician/dashboard"
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <Wrench size={20} />
+                            <span className="font-medium">Technician Dashboard</span>
+                          </Link>
+                        )}
                         {isAdmin && (
                           <Link
                             to="/admin/bookings"
