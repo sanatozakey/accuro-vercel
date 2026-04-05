@@ -256,6 +256,16 @@ export function AppRouter({ showSplash }: AppRouterProps) {
             }
           />
           <Route
+            path="/my-quotations"
+            element={
+              <ProtectedRoute>
+                <Layout showSplash={showSplash}>
+                  <CustomerQuotations />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/stock-settings"
             element={
               <ProtectedRoute adminOnly={true}>
