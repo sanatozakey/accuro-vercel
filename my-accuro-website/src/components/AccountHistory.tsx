@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   History,
   Star,
@@ -15,6 +16,7 @@ import {
   MessageSquare,
   Package,
   MapPin,
+  ThumbsDown,
   X,
   User,
   Phone,
@@ -60,6 +62,9 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
   // Quotation details modal state
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
 
   // Handle URL parameters for tab and bookingId
   useEffect(() => {
@@ -449,6 +454,45 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
     }
   };
 
+  const handleAcceptQuotation = async (id: string) => {
+    try {
+      setActionLoading(true);
+      await quotationService.acceptQuotation(id);
+      toast.success('Quotation accepted successfully!');
+      // Refresh quotations list
+      const quotationsData = await quotationService.getQuotations({});
+      setQuotations(quotationsData.data || []);
+      // Update the modal with fresh data
+      const updated = (await quotationService.getQuotationById(id)).data;
+      setSelectedQuotation(updated);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to accept quotation');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeclineQuotation = async () => {
+    if (!selectedQuotation) return;
+    try {
+      setActionLoading(true);
+      await quotationService.declineQuotation(selectedQuotation._id, declineReason || undefined);
+      toast.success('Quotation declined.');
+      setShowDeclineModal(false);
+      setDeclineReason('');
+      // Refresh quotations list
+      const quotationsData = await quotationService.getQuotations({});
+      setQuotations(quotationsData.data || []);
+      // Update modal
+      const updated = (await quotationService.getQuotationById(selectedQuotation._id)).data;
+      setSelectedQuotation(updated);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to decline quotation');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const renderQuotesTab = () => {
     if (quotations.length === 0) {
       return (
@@ -517,6 +561,20 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
                 <p className="text-sm text-gray-600 mt-1">
                   {quotation.items.length} item(s) requested
                 </p>
+                {quotation.totalAmount != null && (
+                  <p className="text-sm font-semibold text-green-600 mt-1">
+                    Total: {quotation.currency === 'PHP' ? '\u20B1' : '$'}{quotation.totalAmount.toLocaleString()}
+                  </p>
+                )}
+                {quotation.validUntil && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Valid until: {new Date(quotation.validUntil).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </p>
+                )}
               </div>
             </div>
           ))}
@@ -1140,7 +1198,29 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-end">
+            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex items-center justify-between">
+              <div>
+                {selectedQuotation.status === 'quoted' && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleAcceptQuotation(selectedQuotation._id)}
+                      disabled={actionLoading}
+                      className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium disabled:opacity-50 flex items-center gap-2"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      {actionLoading ? 'Processing...' : 'Accept Quote'}
+                    </button>
+                    <button
+                      onClick={() => setShowDeclineModal(true)}
+                      disabled={actionLoading}
+                      className="px-5 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium disabled:opacity-50 flex items-center gap-2"
+                    >
+                      <ThumbsDown className="h-4 w-4" />
+                      Decline
+                    </button>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={() => {
                   setIsQuotationModalOpen(false);
@@ -1149,6 +1229,50 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Decline Reason Modal */}
+      {showDeclineModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <ThumbsDown className="h-5 w-5 text-orange-600" />
+                Decline Quotation
+              </h3>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">
+                Please provide a reason for declining this quotation (optional). The admin may send a revised quote.
+              </p>
+              <textarea
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                placeholder="Reason for declining (optional)..."
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none text-sm"
+                rows={4}
+              />
+            </div>
+            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeclineModal(false);
+                  setDeclineReason('');
+                }}
+                className="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeclineQuotation}
+                disabled={actionLoading}
+                className="px-5 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium disabled:opacity-50"
+              >
+                {actionLoading ? 'Declining...' : 'Confirm Decline'}
               </button>
             </div>
           </div>
