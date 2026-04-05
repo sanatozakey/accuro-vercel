@@ -57,6 +57,10 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
+  // Quotation details modal state
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
+  const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
+
   // Handle URL parameters for tab and bookingId
   useEffect(() => {
     const tab = searchParams.get('tab') as TabType;
@@ -484,13 +488,16 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
                   </div>
                   {getQuotationStatusBadge(quotation.status)}
                 </div>
-                <a
-                  href={`/my-quotations`}
+                <button
+                  onClick={() => {
+                    setSelectedQuotation(quotation);
+                    setIsQuotationModalOpen(true);
+                  }}
                   className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
                 >
                   <Eye className="h-4 w-4" />
                   View Details
-                </a>
+                </button>
               </div>
 
               <div className="ml-8">
@@ -926,6 +933,218 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
                 onClick={() => {
                   setIsDetailModalOpen(false);
                   setSelectedBooking(null);
+                }}
+                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quotation Details Modal */}
+      {isQuotationModalOpen && selectedQuotation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-6 w-6 text-white" />
+                  <h3 className="text-xl font-bold text-white">Quotation Details</h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsQuotationModalOpen(false);
+                    setSelectedQuotation(null);
+                  }}
+                  className="text-white hover:text-gray-200 transition"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              {/* Quotation Number & Status */}
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Quotation Number</p>
+                  <p className="font-semibold text-lg text-gray-900 dark:text-gray-100">{selectedQuotation.quotationNumber}</p>
+                </div>
+                {getQuotationStatusBadge(selectedQuotation.status)}
+              </div>
+
+              {/* Customer Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Building className="h-4 w-4 text-blue-600" />
+                    Company
+                  </h4>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="font-medium text-gray-900">{selectedQuotation.company}</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <User className="h-4 w-4 text-blue-600" />
+                    Contact
+                  </h4>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-900">{selectedQuotation.customerName}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-900">{selectedQuotation.customerEmail}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-900">{selectedQuotation.customerPhone}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items */}
+              <div className="mb-6">
+                <h4 className="font-semibold text-gray-900 flex items-center gap-2 mb-3">
+                  <Package className="h-4 w-4 text-blue-600" />
+                  Requested Items
+                </h4>
+                <div className="space-y-2">
+                  {selectedQuotation.items.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-gray-50 rounded-lg p-3"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-900">{item.productName}</p>
+                        {item.specifications && (
+                          <p className="text-xs text-gray-500 mt-1">{item.specifications}</p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium text-gray-900">Qty: {item.quantity}</p>
+                        {item.unitPrice != null && (
+                          <p className="text-xs text-gray-500">
+                            {selectedQuotation.currency === 'PHP' ? '\u20B1' : '$'}{item.unitPrice.toFixed(2)} each
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pricing (if quoted) */}
+              {selectedQuotation.totalAmount != null && (
+                <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-gray-900">Total Amount</span>
+                    <span className="text-xl font-bold text-blue-600">
+                      {selectedQuotation.currency === 'PHP' ? '\u20B1' : '$'}{selectedQuotation.totalAmount.toFixed(2)}
+                    </span>
+                  </div>
+                  {selectedQuotation.validUntil && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Valid until: {new Date(selectedQuotation.validUntil).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
+                  )}
+                  {selectedQuotation.paymentTerms && (
+                    <p className="text-sm text-gray-600 mt-1">Payment Terms: {selectedQuotation.paymentTerms}</p>
+                  )}
+                  {selectedQuotation.deliveryTerms && (
+                    <p className="text-sm text-gray-600 mt-1">Delivery Terms: {selectedQuotation.deliveryTerms}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Additional Requirements */}
+              {selectedQuotation.additionalRequirements && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-blue-600" />
+                    Additional Requirements
+                  </h4>
+                  <p className="text-gray-700 bg-gray-50 rounded-lg p-4 whitespace-pre-wrap">
+                    {selectedQuotation.additionalRequirements}
+                  </p>
+                </div>
+              )}
+
+              {/* Admin Notes */}
+              {selectedQuotation.adminNotes && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                    <Info className="h-4 w-4 text-blue-600" />
+                    Admin Notes
+                  </h4>
+                  <p className="text-gray-700 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    {selectedQuotation.adminNotes}
+                  </p>
+                </div>
+              )}
+
+              {/* Decline Reason */}
+              {selectedQuotation.declineReason && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                    <XCircle className="h-4 w-4 text-red-600" />
+                    Decline Reason
+                  </h4>
+                  <p className="text-gray-700 bg-red-50 rounded-lg p-4">
+                    {selectedQuotation.declineReason}
+                  </p>
+                </div>
+              )}
+
+              {/* Dates */}
+              <div className="pt-4 border-t border-gray-200 space-y-1">
+                <p className="text-xs text-gray-500">
+                  Requested on {new Date(selectedQuotation.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+                {selectedQuotation.quotedAt && (
+                  <p className="text-xs text-gray-500">
+                    Quoted on {new Date(selectedQuotation.quotedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
+                )}
+                {selectedQuotation.acceptedAt && (
+                  <p className="text-xs text-green-600">
+                    Accepted on {new Date(selectedQuotation.acceptedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-end">
+              <button
+                onClick={() => {
+                  setIsQuotationModalOpen(false);
+                  setSelectedQuotation(null);
                 }}
                 className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
               >
