@@ -222,6 +222,34 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    // Send in-app notifications to all admins and superadmins
+    try {
+      const adminUsers = await User.find({
+        role: { $in: ['admin', 'superadmin'] },
+      }).select('_id').lean();
+
+      for (const admin of adminUsers) {
+        await NotificationService.createNotification({
+          userId: (admin as any)._id.toString(),
+          type: 'booking',
+          title: 'New Booking Request',
+          message: `New meeting request from ${booking.contactName} (${booking.company}) on ${booking.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at ${booking.time}.`,
+          relatedId: booking._id.toString(),
+          relatedType: 'booking',
+          actionUrl: `/admin/bookings`,
+        });
+
+        // Emit real-time socket event to each admin
+        socketService.emitToUser((admin as any)._id.toString(), 'notification', {
+          type: 'booking',
+          title: 'New Booking Request',
+          message: `New meeting request from ${booking.contactName} (${booking.company})`,
+        });
+      }
+    } catch (adminNotificationError) {
+      console.error('Failed to send admin in-app notifications:', adminNotificationError);
+    }
+
     // Send emails
     try {
       // Send confirmation email to customer

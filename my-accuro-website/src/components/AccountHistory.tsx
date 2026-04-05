@@ -15,7 +15,6 @@ import {
   MessageSquare,
   Package,
   MapPin,
-  Truck,
   X,
   User,
   Phone,
@@ -26,13 +25,12 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import reviewService, { Review } from '../services/reviewService';
-import quoteService, { Quote } from '../services/quoteService';
+import quotationService, { Quotation } from '../services/quotationService';
 import activityLogService, { ActivityLog } from '../services/activityLogService';
 import bookingService, { Booking } from '../services/bookingService';
-import purchaseHistoryService, { PurchaseHistory } from '../services/purchaseHistoryService';
 import { LoadingSpinner } from './LoadingSpinner';
 
-type TabType = 'bookings' | 'purchases' | 'quotes' | 'reviews' | 'activity';
+type TabType = 'bookings' | 'quotes' | 'reviews' | 'activity';
 
 interface AccountHistoryProps {
   className?: string;
@@ -47,9 +45,8 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
 
   // Data states
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [purchases, setPurchases] = useState<PurchaseHistory[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
 
   // Pagination
@@ -63,7 +60,7 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
   // Handle URL parameters for tab and bookingId
   useEffect(() => {
     const tab = searchParams.get('tab') as TabType;
-    if (tab && ['bookings', 'purchases', 'quotes', 'reviews', 'activity'].includes(tab)) {
+    if (tab && ['bookings', 'quotes', 'reviews', 'activity'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -98,27 +95,13 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
           const bookingsData = await bookingService.getMyBookings();
           setBookings(bookingsData.data || []);
           break;
-        case 'purchases':
-          const purchasesData = await purchaseHistoryService.getMyPurchases();
-          setPurchases(purchasesData.data || []);
-          break;
         case 'reviews':
           const reviewsData = await reviewService.getMyReviews();
           setReviews(reviewsData.data || []);
           break;
         case 'quotes':
-          // Fetch both Quote records and quote-related bookings
-          const quotesData = await quoteService.getMyQuotes();
-          const bookingsForQuotes = await bookingService.getMyBookings();
-
-          // Filter bookings that contain quote request data
-          const quoteBookings = bookingsForQuotes.data.filter((booking: Booking) =>
-            booking.additionalInfo && booking.additionalInfo.includes('QUOTE REQUEST FROM CART')
-          );
-
-          setQuotes(quotesData.data || []);
-          // Store quote-related bookings separately
-          setBookings(quoteBookings);
+          const quotationsData = await quotationService.getQuotations({});
+          setQuotations(quotationsData.data || []);
           break;
         case 'activity':
           const activityData = await activityLogService.getMyActivityLogs();
@@ -132,14 +115,11 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
         case 'bookings':
           setBookings([]);
           break;
-        case 'purchases':
-          setPurchases([]);
-          break;
         case 'reviews':
           setReviews([]);
           break;
         case 'quotes':
-          setQuotes([]);
+          setQuotations([]);
           break;
         case 'activity':
           setActivityLogs([]);
@@ -158,16 +138,10 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
       count: bookings.length,
     },
     {
-      id: 'purchases' as TabType,
-      label: 'Purchase History',
-      icon: ShoppingCart,
-      count: purchases.length,
-    },
-    {
       id: 'quotes' as TabType,
       label: 'Quote Requests',
       icon: FileText,
-      count: quotes.length + bookings.filter(b => b.additionalInfo?.includes('QUOTE REQUEST FROM CART')).length,
+      count: quotations.length,
     },
     {
       id: 'reviews' as TabType,
@@ -213,72 +187,6 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
           <Clock className="h-3 w-3 mr-1" />
           Rescheduled
-        </span>
-      ),
-    };
-    return badges[status] || null;
-  };
-
-  const getQuoteStatusBadge = (status: string) => {
-    const badges: Record<string, JSX.Element> = {
-      pending: (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-          <Clock className="h-3 w-3 mr-1" />
-          Pending
-        </span>
-      ),
-      sent: (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Sent
-        </span>
-      ),
-      accepted: (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Accepted
-        </span>
-      ),
-      rejected: (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          <XCircle className="h-3 w-3 mr-1" />
-          Rejected
-        </span>
-      ),
-    };
-    return badges[status] || null;
-  };
-
-  const getOrderStatusBadge = (status: string) => {
-    const badges: Record<string, JSX.Element> = {
-      processing: (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-          <Clock className="h-3 w-3 mr-1" />
-          Processing
-        </span>
-      ),
-      shipped: (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          <Truck className="h-3 w-3 mr-1" />
-          Shipped
-        </span>
-      ),
-      delivered: (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Delivered
-        </span>
-      ),
-      cancelled: (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          <XCircle className="h-3 w-3 mr-1" />
-          Cancelled
-        </span>
-      ),
-      returned: (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-          <AlertCircle className="h-3 w-3 mr-1" />
-          Returned
         </span>
       ),
     };
@@ -382,121 +290,6 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
     );
   };
 
-  const renderPurchasesTab = () => {
-    if (purchases.length === 0) {
-      return (
-        <div className="text-center py-12">
-          <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            No Purchase History
-          </h3>
-          <p className="text-gray-600">
-            Your purchase history will appear here once you make your first purchase
-          </p>
-        </div>
-      );
-    }
-
-    const paginatedPurchases = paginate(purchases);
-
-    return (
-      <div>
-        <div className="space-y-4">
-          {paginatedPurchases.map((purchase) => (
-          <div
-            key={purchase._id}
-            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
-          >
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4">
-              <div className="mb-2 md:mb-0">
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                  Order #{purchase.orderNumber}
-                </h4>
-                <p className="text-sm text-gray-600">
-                  {new Date(purchase.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </p>
-              </div>
-              <div className="flex flex-col items-start md:items-end gap-1">
-                {getOrderStatusBadge(purchase.orderStatus)}
-                <span className="text-sm text-gray-600 capitalize">
-                  Payment: {purchase.paymentStatus}
-                </span>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <h5 className="text-sm font-medium text-gray-700 mb-2">Items:</h5>
-              <div className="space-y-2">
-                {purchase.items.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-900">{item.productName}</p>
-                      <p className="text-gray-600 text-xs">
-                        {item.category} • Qty: {item.quantity}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900">
-                        ${item.totalPrice.toFixed(2)}
-                      </p>
-                      <p className="text-gray-600 text-xs">
-                        ${item.unitPrice.toFixed(2)} each
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 pt-3">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-600">Subtotal:</span>
-                <span className="text-sm text-gray-900">${purchase.subtotal.toFixed(2)}</span>
-              </div>
-              {purchase.tax > 0 && (
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">Tax:</span>
-                  <span className="text-sm text-gray-900">${purchase.tax.toFixed(2)}</span>
-                </div>
-              )}
-              {purchase.shippingCost > 0 && (
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">Shipping:</span>
-                  <span className="text-sm text-gray-900">${purchase.shippingCost.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                <span className="text-base font-semibold text-gray-900">Total:</span>
-                <span className="text-base font-bold text-blue-600">
-                  ${purchase.totalAmount.toFixed(2)}
-                </span>
-              </div>
-            </div>
-
-            {purchase.trackingNumber && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <Truck className="h-4 w-4 text-blue-600" />
-                  <span className="font-medium">Tracking:</span>
-                  <span className="font-mono">{purchase.trackingNumber}</span>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-        </div>
-        {renderPagination(purchases.length)}
-      </div>
-    );
-  };
-
   const renderReviewsTab = () => {
     if (reviews.length === 0) {
       return (
@@ -591,11 +384,69 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
     );
   };
 
-  const renderQuotesTab = () => {
-    const hasQuotes = quotes.length > 0;
-    const hasQuoteBookings = bookings.length > 0;
+  const getQuotationStatusBadge = (status: string) => {
+    const badges: Record<string, JSX.Element> = {
+      pending: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          <Clock className="h-3 w-3 mr-1" />
+          PENDING
+        </span>
+      ),
+      quoted: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          <FileText className="h-3 w-3 mr-1" />
+          QUOTED
+        </span>
+      ),
+      accepted: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          ACCEPTED
+        </span>
+      ),
+      declined: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+          <XCircle className="h-3 w-3 mr-1" />
+          DECLINED
+        </span>
+      ),
+      rejected: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+          <XCircle className="h-3 w-3 mr-1" />
+          REJECTED
+        </span>
+      ),
+      expired: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <AlertCircle className="h-3 w-3 mr-1" />
+          EXPIRED
+        </span>
+      ),
+    };
+    return badges[status] || null;
+  };
 
-    if (!hasQuotes && !hasQuoteBookings) {
+  const getQuotationStatusMessage = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'Your quotation is being reviewed by our team...';
+      case 'quoted':
+        return 'A quote has been provided for your review';
+      case 'accepted':
+        return 'You have accepted this quotation';
+      case 'declined':
+        return 'You have declined this quotation';
+      case 'rejected':
+        return 'This quotation has been rejected';
+      case 'expired':
+        return 'This quotation has expired';
+      default:
+        return '';
+    }
+  };
+
+  const renderQuotesTab = () => {
+    if (quotations.length === 0) {
       return (
         <div className="text-center py-12">
           <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -613,147 +464,57 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
       );
     }
 
-    const allQuoteItems = [...quotes.map(q => ({ type: 'quote' as const, data: q })), ...bookings.map(b => ({ type: 'booking' as const, data: b }))];
-    const paginatedQuoteItems = paginate(allQuoteItems);
+    const paginatedQuotations = paginate(quotations);
 
     return (
       <div>
         <div className="space-y-4">
-          {paginatedQuoteItems.filter(item => item.type === 'quote').map((item) => {
-            const quote = item.data as Quote;
-            return (
-          <div
-            key={quote._id}
-            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
-          >
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4">
-              <div className="mb-2 md:mb-0">
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                  {quote.company}
-                </h4>
-                <p className="text-sm text-gray-600">
-                  {quote.customerName} • {quote.customerEmail}
-                </p>
-              </div>
-              {getQuoteStatusBadge(quote.status)}
-            </div>
-
-            <div className="mb-4">
-              <h5 className="text-sm font-medium text-gray-700 mb-2">Items:</h5>
-              <div className="space-y-2">
-                {quote.items.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-900">{item.productName}</p>
-                      <p className="text-gray-600 text-xs">{item.category}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium text-gray-900">Qty: {item.quantity}</p>
-                      <p className="text-gray-600 text-xs">
-                        ${item.estimatedPrice.toFixed(2)}
-                      </p>
-                    </div>
+          {paginatedQuotations.map((quotation) => (
+            <div
+              key={quotation._id}
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
+            >
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-2">
+                <div className="flex items-center gap-3 mb-2 md:mb-0">
+                  <Clock className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {quotation.quotationNumber}
+                    </h4>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-              <div className="flex items-center text-xs text-gray-500">
-                <Calendar className="h-3.5 w-3.5 mr-1" />
-                {new Date(quote.createdAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </div>
-              <p className="text-sm font-semibold text-gray-900">
-                Total: ${quote.totalEstimatedPrice.toFixed(2)}
-              </p>
-            </div>
-
-            {quote.message && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <p className="text-xs text-gray-600 flex items-start gap-1">
-                  <MessageSquare className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-                  <span>{quote.message}</span>
-                </p>
-              </div>
-            )}
-
-            {quote.adminNotes && (
-              <div className="mt-2 bg-blue-50 border border-blue-200 rounded p-2">
-                <p className="text-xs font-medium text-blue-900 mb-1">Admin Notes:</p>
-                <p className="text-xs text-blue-800">{quote.adminNotes}</p>
-              </div>
-            )}
-          </div>
-          );
-        })}
-
-          {/* Show quote-related bookings */}
-          {paginatedQuoteItems.filter(item => item.type === 'booking').map((item) => {
-            const booking = item.data as Booking;
-            return (
-          <div
-            key={`booking-${booking._id}`}
-            className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition"
-          >
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-4">
-              <div className="mb-2 md:mb-0">
-                <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                  {booking.company}
-                </h4>
-                <p className="text-sm text-gray-600">
-                  {booking.contactName} • {booking.contactEmail}
-                </p>
-                <div className="flex items-center text-xs text-gray-500 mt-1">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  Requested Meeting: {new Date(booking.date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })} at {booking.time}
+                  {getQuotationStatusBadge(quotation.status)}
                 </div>
+                <a
+                  href={`/my-quotations`}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                >
+                  <Eye className="h-4 w-4" />
+                  View Details
+                </a>
               </div>
-              {getBookingStatusBadge(booking.status)}
-            </div>
 
-            <div className="mb-4">
-              <h5 className="text-sm font-medium text-gray-700 mb-2">Quote Request Details:</h5>
-              <div className="bg-gray-50 p-3 rounded text-sm">
-                <pre className="whitespace-pre-wrap text-xs text-gray-800 font-mono">
-                  {booking.additionalInfo}
-                </pre>
+              <div className="ml-8">
+                <p className="text-sm text-gray-500 italic mb-2">
+                  {getQuotationStatusMessage(quotation.status)}
+                </p>
+                <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    <span>Requested: {new Date(quotation.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}</span>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  {quotation.items.length} item(s) requested
+                </p>
               </div>
             </div>
-
-            <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-              <div className="flex items-center text-xs text-gray-500">
-                <Calendar className="h-3.5 w-3.5 mr-1" />
-                Created: {new Date(booking.createdAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </div>
-              <div className="flex items-center text-xs text-gray-600">
-                <MapPin className="h-3.5 w-3.5 mr-1" />
-                {booking.location}
-              </div>
-            </div>
-          </div>
-          );
-        })}
+          ))}
         </div>
-        {renderPagination(allQuoteItems.length)}
+        {renderPagination(quotations.length)}
       </div>
     );
   };
@@ -964,7 +725,6 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
         ) : (
           <>
             {activeTab === 'bookings' && renderBookingsTab()}
-            {activeTab === 'purchases' && renderPurchasesTab()}
             {activeTab === 'reviews' && renderReviewsTab()}
             {activeTab === 'quotes' && renderQuotesTab()}
             {activeTab === 'activity' && renderActivityTab()}
