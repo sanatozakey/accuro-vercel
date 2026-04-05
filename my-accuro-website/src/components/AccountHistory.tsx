@@ -457,14 +457,15 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
   const handleAcceptQuotation = async (id: string) => {
     try {
       setActionLoading(true);
-      await quotationService.acceptQuotation(id);
+      const response = await quotationService.acceptQuotation(id);
       toast.success('Quotation accepted successfully!');
+      // Update modal immediately from response
+      if (response.data) {
+        setSelectedQuotation(response.data);
+      }
       // Refresh quotations list
       const quotationsData = await quotationService.getQuotations({});
       setQuotations(quotationsData.data || []);
-      // Update the modal with fresh data
-      const updated = (await quotationService.getQuotationById(id)).data;
-      setSelectedQuotation(updated);
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to accept quotation');
     } finally {
@@ -476,16 +477,17 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
     if (!selectedQuotation) return;
     try {
       setActionLoading(true);
-      await quotationService.declineQuotation(selectedQuotation._id, declineReason || undefined);
+      const response = await quotationService.declineQuotation(selectedQuotation._id, declineReason || undefined);
       toast.success('Quotation declined.');
       setShowDeclineModal(false);
       setDeclineReason('');
+      // Update modal immediately from response
+      if (response.data) {
+        setSelectedQuotation(response.data);
+      }
       // Refresh quotations list
       const quotationsData = await quotationService.getQuotations({});
       setQuotations(quotationsData.data || []);
-      // Update modal
-      const updated = (await quotationService.getQuotationById(selectedQuotation._id)).data;
-      setSelectedQuotation(updated);
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Failed to decline quotation');
     } finally {

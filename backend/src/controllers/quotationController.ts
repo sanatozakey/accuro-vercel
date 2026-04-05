@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Quotation from '../models/Quotation';
+import User from '../models/User';
 import { NotificationService } from '../services/notificationService';
 import { AuthRequest } from '../middleware/auth';
 
@@ -40,6 +41,27 @@ export const createQuotation = async (req: AuthRequest, res: Response): Promise<
       currency: currency || 'PHP',
       status: 'pending',
     });
+
+    // Notify all admins and superadmins about the new quotation request
+    try {
+      const adminUsers = await User.find({
+        role: { $in: ['admin', 'superadmin'] },
+      }).select('_id').lean();
+
+      for (const admin of adminUsers) {
+        await NotificationService.createNotification({
+          userId: (admin as any)._id.toString(),
+          type: 'quotation',
+          title: 'New Quotation Request',
+          message: `${customerName} from ${company} has requested a quotation (${quotation.quotationNumber}) with ${items.length} item(s).`,
+          relatedId: quotation._id.toString(),
+          relatedType: 'quotation',
+          actionUrl: '/admin/quotations',
+        });
+      }
+    } catch (notificationError) {
+      console.error('Failed to send admin quotation notifications:', notificationError);
+    }
 
     res.status(201).json({
       success: true,
@@ -118,7 +140,7 @@ export const getQuotationById = async (req: AuthRequest, res: Response): Promise
       return;
     }
 
-    const quotation = await Quotation.findById(id).populate('userId', 'name email');
+    const quotation = await Quotation.findById(id);
 
     if (!quotation) {
       res.status(404).json({ success: false, message: 'Quotation not found' });
@@ -126,7 +148,10 @@ export const getQuotationById = async (req: AuthRequest, res: Response): Promise
     }
 
     // Check authorization: admin/superadmin can see all, users can only see their own
-    if (!isAdminOrAbove && quotation.userId.toString() !== userId?.toString()) {
+    const quotationOwnerId = (quotation.userId as any)._id
+      ? (quotation.userId as any)._id.toString()
+      : quotation.userId.toString();
+    if (!isAdminOrAbove && quotationOwnerId !== userId?.toString()) {
       res.status(403).json({ success: false, message: 'Not authorized to view this quotation' });
       return;
     }
@@ -328,7 +353,7 @@ export const acceptQuotation = async (req: AuthRequest, res: Response): Promise<
 
     await quotation.save();
 
-    // Notify admin that customer accepted
+    // Notify the customer
     try {
       await NotificationService.notifyQuotationStatusChange(
         quotation.userId,
@@ -338,6 +363,27 @@ export const acceptQuotation = async (req: AuthRequest, res: Response): Promise<
       );
     } catch (notificationError) {
       console.error('Failed to send quotation notification:', notificationError);
+    }
+
+    // Notify all admins that customer accepted
+    try {
+      const adminUsers = await User.find({
+        role: { $in: ['admin', 'superadmin'] },
+      }).select('_id').lean();
+
+      for (const admin of adminUsers) {
+        await NotificationService.createNotification({
+          userId: (admin as any)._id.toString(),
+          type: 'quotation',
+          title: 'Quotation Accepted by Customer',
+          message: `${quotation.customerName} (${quotation.company}) has accepted quotation ${quotation.quotationNumber}.`,
+          relatedId: quotation._id.toString(),
+          relatedType: 'quotation',
+          actionUrl: '/admin/quotations',
+        });
+      }
+    } catch (adminNotificationError) {
+      console.error('Failed to send admin accept notifications:', adminNotificationError);
     }
 
     res.status(200).json({
@@ -393,7 +439,7 @@ export const declineQuotation = async (req: AuthRequest, res: Response): Promise
 
     await quotation.save();
 
-    // Notify admin that customer declined
+    // Notify the customer
     try {
       await NotificationService.notifyQuotationStatusChange(
         quotation.userId,
@@ -403,6 +449,27 @@ export const declineQuotation = async (req: AuthRequest, res: Response): Promise
       );
     } catch (notificationError) {
       console.error('Failed to send quotation notification:', notificationError);
+    }
+
+    // Notify all admins that customer declined
+    try {
+      const adminUsers = await User.find({
+        role: { $in: ['admin', 'superadmin'] },
+      }).select('_id').lean();
+
+      for (const admin of adminUsers) {
+        await NotificationService.createNotification({
+          userId: (admin as any)._id.toString(),
+          type: 'quotation',
+          title: 'Quotation Declined by Customer',
+          message: `${quotation.customerName} (${quotation.company}) has declined quotation ${quotation.quotationNumber}.${declineReason ? ` Reason: ${declineReason}` : ''}`,
+          relatedId: quotation._id.toString(),
+          relatedType: 'quotation',
+          actionUrl: '/admin/quotations',
+        });
+      }
+    } catch (adminNotificationError) {
+      console.error('Failed to send admin decline notifications:', adminNotificationError);
     }
 
     res.status(200).json({

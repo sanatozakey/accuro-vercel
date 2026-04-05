@@ -143,9 +143,17 @@ export class NotificationService {
         title: 'Quotation Sent',
         message: `Quotation #${quotationNumber} has been sent to you. Please review it at your convenience.`,
       },
+      quoted: {
+        title: 'Quote Received',
+        message: `A quote has been prepared for your request #${quotationNumber}. Please review and accept or decline.`,
+      },
       accepted: {
         title: 'Quotation Accepted',
         message: `Quotation #${quotationNumber} has been accepted. We will process your order shortly.`,
+      },
+      declined: {
+        title: 'Quotation Declined',
+        message: `You have declined quotation #${quotationNumber}. The admin may send a revised quote.`,
       },
       rejected: {
         title: 'Quotation Request Declined',
