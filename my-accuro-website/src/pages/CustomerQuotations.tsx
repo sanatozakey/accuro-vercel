@@ -58,6 +58,14 @@ export function CustomerQuotations() {
     });
   };
 
+  const isQuotationExpired = (q: Quotation) => {
+    if (q.status === 'expired') return true;
+    if (q.status === 'quoted' && q.validUntil && new Date(q.validUntil) < new Date()) return true;
+    return false;
+  };
+
+  const canAcceptQuotation = (q: Quotation) => q.status === 'quoted' && !isQuotationExpired(q);
+
   const formatCurrency = (amount: number, currency: string) => {
     if (currency === 'USD') {
       return `$${amount.toLocaleString()}`;
@@ -292,7 +300,7 @@ export function CustomerQuotations() {
                       <Eye className="h-4 w-4" />
                       View Details
                     </button>
-                    {quotation.status === 'quoted' && (
+                    {canAcceptQuotation(quotation) && (
                       <>
                         <button
                           onClick={() => handleAcceptQuotation(quotation._id)}
@@ -407,8 +415,18 @@ export function CustomerQuotations() {
                 </div>
               </div>
 
+              {/* Expired notice */}
+              {isQuotationExpired(selectedQuotation) && (
+                <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+                  <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Quotation Expired</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    This quotation is no longer valid{selectedQuotation.validUntil ? ` (valid until ${formatDate(selectedQuotation.validUntil)})` : ''}. Please request a new quotation.
+                  </p>
+                </div>
+              )}
+
               {/* Quoted Details - Action needed */}
-              {selectedQuotation.status === 'quoted' && (
+              {canAcceptQuotation(selectedQuotation) && (
                 <div className="border-2 border-blue-400 dark:border-blue-500 rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
                   <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-3">
                     Quote Prepared - Your Action Needed

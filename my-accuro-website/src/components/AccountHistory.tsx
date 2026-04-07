@@ -1202,7 +1202,12 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
             {/* Modal Footer */}
             <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex items-center justify-between">
               <div>
-                {selectedQuotation.status === 'quoted' && (
+                {selectedQuotation.status === 'quoted' && selectedQuotation.validUntil && new Date(selectedQuotation.validUntil) < new Date() && (
+                  <div className="text-sm text-gray-600 italic">
+                    This quotation has expired and can no longer be accepted.
+                  </div>
+                )}
+                {selectedQuotation.status === 'quoted' && !(selectedQuotation.validUntil && new Date(selectedQuotation.validUntil) < new Date()) && (
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => handleAcceptQuotation(selectedQuotation._id)}

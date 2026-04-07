@@ -99,6 +99,12 @@ export const getQuotations = async (req: AuthRequest, res: Response): Promise<vo
 
     const skip = (page - 1) * limit;
 
+    // Auto-expire any quoted quotations whose validUntil has passed
+    await Quotation.updateMany(
+      { status: 'quoted', validUntil: { $lt: new Date() } },
+      { $set: { status: 'expired' } }
+    );
+
     const [quotations, total] = await Promise.all([
       Quotation.find(query)
         .sort({ createdAt: -1 })
@@ -154,6 +160,12 @@ export const getQuotationById = async (req: AuthRequest, res: Response): Promise
     if (!isAdminOrAbove && quotationOwnerId !== userId?.toString()) {
       res.status(403).json({ success: false, message: 'Not authorized to view this quotation' });
       return;
+    }
+
+    // Auto-expire if validUntil has passed
+    if (quotation.status === 'quoted' && quotation.validUntil && new Date(quotation.validUntil) < new Date()) {
+      quotation.status = 'expired';
+      await quotation.save();
     }
 
     res.status(200).json({

@@ -52,7 +52,7 @@ async function fetchDashboardData() {
   });
 
   const completedThisMonth = thisMonthBookings.filter((b: Booking) =>
-    b.isCompleted === true
+    b.status === 'completed'
   ).length;
 
   return {
