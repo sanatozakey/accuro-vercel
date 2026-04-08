@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { ExternalLink, Search, Filter, X, ArrowRight } from 'lucide-react'
-import { productCategories, getProductsByCategory, Product } from '../data/products'
+import { productCategories, Product, products as staticProducts } from '../data/products'
+import productService from '../services/productService'
 import { LazyImage } from '../components/LazyImage'
 import { AddToCartButton } from '../components/cart/AddToCartButton'
 import { MiniCart } from '../components/cart/MiniCart'
@@ -46,9 +47,50 @@ export function Products() {
   const setCurrency = (val: 'PHP' | 'USD') => updateParams({ currency: val })
   const setShowDiscontinued = (val: boolean) => updateParams({ discontinued: val ? 'true' : null })
 
+  // Fetch backend products (admin-created) and merge with the static catalog
+  const [backendProducts, setBackendProducts] = useState<Product[]>([])
+  useEffect(() => {
+    let cancelled = false
+    productService
+      .getProducts({ status: 'active' })
+      .then((res) => {
+        if (cancelled) return
+        const mapped: Product[] = (res.data || []).map((p: any) => ({
+          id: p._id,
+          name: p.name,
+          category: p.category,
+          description: p.description,
+          image: p.image || '',
+          beamexUrl: p.beamexUrl,
+          features: p.features,
+          priceRange: p.priceRange,
+          priceRangeUSD: p.priceRangeUSD,
+          estimatedPrice: p.estimatedPrice,
+          estimatedPriceUSD: p.estimatedPriceUSD,
+          specifications: p.specifications,
+        }))
+        setBackendProducts(mapped)
+      })
+      .catch((err) => console.error('Failed to load products from backend:', err))
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Merge: static catalog + backend products that aren't already represented (by name)
+  const allProducts = useMemo(() => {
+    const staticNames = new Set(staticProducts.map((p) => p.name.toLowerCase()))
+    const extras = backendProducts.filter((p) => !staticNames.has(p.name.toLowerCase()))
+    return [...staticProducts, ...extras]
+  }, [backendProducts])
+
   // Filter products based on category, search query, and discontinued status
   const filteredProducts = useMemo(() => {
-    return getProductsByCategory(selectedCategory).filter((product) => {
+    const base =
+      selectedCategory === 'All Products'
+        ? allProducts
+        : allProducts.filter((p) => p.category === selectedCategory)
+    return base.filter((product) => {
       const matchesSearch =
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -59,7 +101,7 @@ export function Products() {
 
       return matchesSearch && matchesDiscontinuedFilter
     })
-  }, [selectedCategory, searchQuery, showDiscontinued])
+  }, [allProducts, selectedCategory, searchQuery, showDiscontinued])
 
   return (
     <div className="w-full bg-background dark:bg-gray-950">
