@@ -429,17 +429,15 @@ const ProductCard = React.memo(function ProductCard({ product, currency }: { pro
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-2 mt-auto">
-          {product.estimatedPrice && (
-            <AddToCartButton
-              product={{
-                id: product.id,
-                name: product.name,
-                category: product.category,
-                image: product.image,
-              }}
-              price={product.estimatedPrice}
-            />
-          )}
+          <AddToCartButton
+            product={{
+              id: product.id,
+              name: product.name,
+              category: product.category,
+              image: product.image,
+            }}
+            price={product.estimatedPrice || 0}
+          />
 
           <Button
             variant="outline"

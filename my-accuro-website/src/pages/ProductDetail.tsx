@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { AddToCartButton } from '../components/cart/AddToCartButton'
 import { MiniCart } from '../components/cart/MiniCart'
 import recommendationService from '../services/recommendationService'
+import productService from '../services/productService'
 import { Card, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 
@@ -23,7 +24,27 @@ export function ProductDetail() {
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
 
-  const product = productId ? getProductById(productId) : undefined
+  const staticProduct = productId ? getProductById(productId) : undefined
+  const [product, setProduct] = useState<Product | undefined>(staticProduct)
+  const [loading, setLoading] = useState(!staticProduct && !!productId)
+
+  useEffect(() => {
+    if (staticProduct || !productId) return
+    let cancelled = false
+    setLoading(true)
+    productService
+      .getProduct(productId)
+      .then((res) => {
+        if (cancelled) return
+        const p: any = res.data
+        setProduct({ ...p, id: p._id })
+      })
+      .catch(() => {})
+      .finally(() => !cancelled && setLoading(false))
+    return () => {
+      cancelled = true
+    }
+  }, [productId, staticProduct])
 
   // Record view interaction for recommendations
   useEffect(() => {
@@ -39,6 +60,17 @@ export function ProductDetail() {
         console.error('Failed to record view interaction:', error)
       })
   }, [isAuthenticated, product])
+
+  if (loading) {
+    return (
+      <div className="w-full bg-background dark:bg-gray-950 min-h-screen">
+        <div className="container mx-auto px-4 py-20 text-center">
+          <Package className="h-20 w-20 text-gray-300 dark:text-gray-600 mx-auto mb-6 animate-pulse" />
+          <p className="text-gray-600 dark:text-gray-400">Loading product...</p>
+        </div>
+      </div>
+    )
+  }
 
   // 404 state
   if (!product) {
@@ -151,17 +183,15 @@ export function ProductDetail() {
 
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                {product.estimatedPrice && (
-                  <AddToCartButton
-                    product={{
-                      id: product.id as any,
-                      name: product.name,
-                      category: product.category,
-                      image: product.image,
-                    }}
-                    price={product.estimatedPrice}
-                  />
-                )}
+                <AddToCartButton
+                  product={{
+                    id: product.id as any,
+                    name: product.name,
+                    category: product.category,
+                    image: product.image,
+                  }}
+                  price={product.estimatedPrice || 0}
+                />
 
                 <Button
                   asChild
