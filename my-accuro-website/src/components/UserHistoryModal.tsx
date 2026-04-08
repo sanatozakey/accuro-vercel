@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Calendar, ShoppingCart, FileText, Star, Activity, Loader } from 'lucide-react';
+import { X, User, Calendar, FileText, Star, Activity, Loader } from 'lucide-react';
 import userService from '../services/userService';
 import { AccountHistory } from './AccountHistory';
 
@@ -44,10 +44,8 @@ export function UserHistoryModal({
       setHistoryData({
         summary: {
           totalBookings: 0,
-          totalPurchases: 0,
           totalQuotes: 0,
           totalReviews: 0,
-          totalSpent: 0,
           averageRating: 0,
         },
         activityLogs: [],
@@ -116,18 +114,6 @@ export function UserHistoryModal({
                     </div>
                   </div>
 
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-green-600 font-medium">Purchases</p>
-                        <p className="text-2xl font-bold text-green-900">
-                          {historyData.summary?.totalPurchases || 0}
-                        </p>
-                      </div>
-                      <ShoppingCart className="h-8 w-8 text-green-600" />
-                    </div>
-                  </div>
-
                   <div className="bg-purple-50 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -152,17 +138,6 @@ export function UserHistoryModal({
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600 font-medium">Total Spent</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          ${(historyData.summary?.totalSpent || 0).toFixed(2)}
-                        </p>
-                      </div>
-                      <Activity className="h-8 w-8 text-gray-600" />
-                    </div>
-                  </div>
                 </div>
 
                 {/* Average Rating */}
@@ -183,26 +158,25 @@ export function UserHistoryModal({
                 {/* Account History Component - This will handle tabs */}
                 <div className="mt-6">
                   {historyData.summary.totalBookings === 0 &&
-                   historyData.summary.totalPurchases === 0 &&
                    historyData.summary.totalQuotes === 0 &&
                    historyData.summary.totalReviews === 0 ? (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
                       <Activity className="h-12 w-12 text-blue-400 mx-auto mb-3" />
                       <p className="text-lg font-medium text-blue-900 mb-2">No Activity Yet</p>
                       <p className="text-sm text-blue-700">
-                        {userName} hasn't made any bookings, purchases, or quote requests yet.
+                        {userName} hasn't made any bookings or quote requests yet.
                         Their activity will appear here once they start using the platform.
                       </p>
                     </div>
                   ) : (
                     <>
                       <p className="text-sm text-gray-500 mb-4 italic">
-                        Note: This view shows {userName}'s complete account history including bookings, purchases, quotes, reviews, and activity logs.
+                        Note: This view shows {userName}'s complete account history including bookings, quotes, reviews, and activity logs.
                       </p>
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <p className="text-sm text-blue-800">
                           <strong>Admin View:</strong> The statistics above show {userName}'s complete history summary.
-                          To view detailed records, you can access the user's individual booking, purchase, quote, and review records
+                          To view detailed records, you can access the user's individual booking, quote, and review records
                           from their respective management sections in the admin dashboard.
                         </p>
                       </div>

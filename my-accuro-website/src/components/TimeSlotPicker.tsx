@@ -38,9 +38,24 @@ export function TimeSlotPicker({ selectedDate, selectedTime, onTimeSelect }: Tim
     const checkAvailability = async () => {
       setLoading(true)
       try {
-        // Check availability for each time slot using the backend API
+        // If the selected date is today, drop any time slots that are
+        // already in the past (compared to current local time).
         const allSlots = generateTimeSlots()
-        const slotPromises = allSlots.map(async (time) => {
+        const now = new Date()
+        const sel = new Date(selectedDate)
+        const isToday =
+          sel.getFullYear() === now.getFullYear() &&
+          sel.getMonth() === now.getMonth() &&
+          sel.getDate() === now.getDate()
+        const futureSlots = isToday
+          ? allSlots.filter((time) => {
+              const [h, m] = time.split(':').map(Number)
+              const slotMinutes = h * 60 + m
+              const nowMinutes = now.getHours() * 60 + now.getMinutes()
+              return slotMinutes > nowMinutes
+            })
+          : allSlots
+        const slotPromises = futureSlots.map(async (time) => {
           try {
             const response = await bookingService.checkAvailability(selectedDate, time)
             const data = response.data
@@ -68,8 +83,20 @@ export function TimeSlotPicker({ selectedDate, selectedTime, onTimeSelect }: Tim
         setTimeSlots(results)
       } catch (err) {
         console.error('Error checking availability:', err)
-        // If error, show all slots as available
-        const slots = generateTimeSlots().map((time) => ({
+        // If error, show all (still-future) slots as available
+        const now2 = new Date()
+        const sel2 = new Date(selectedDate)
+        const isToday2 =
+          sel2.getFullYear() === now2.getFullYear() &&
+          sel2.getMonth() === now2.getMonth() &&
+          sel2.getDate() === now2.getDate()
+        const fallbackSlots = isToday2
+          ? generateTimeSlots().filter((time) => {
+              const [h, m] = time.split(':').map(Number)
+              return h * 60 + m > now2.getHours() * 60 + now2.getMinutes()
+            })
+          : generateTimeSlots()
+        const slots = fallbackSlots.map((time) => ({
           time,
           available: true,
           slotsRemaining: 3,

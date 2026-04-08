@@ -16,6 +16,8 @@ export function QuotationDashboard({ isInline = false, darkMode: propDarkMode }:
   const [quotations, setQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [userFilter, setUserFilter] = useState('all');
+  const [userSearch, setUserSearch] = useState('');
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [showSendQuoteModal, setShowSendQuoteModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -187,6 +189,35 @@ export function QuotationDashboard({ isInline = false, darkMode: propDarkMode }:
               </button>
             ))}
           </div>
+          {/* User filter */}
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <label className="text-sm text-gray-600 dark:text-gray-400">User:</label>
+            <select
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+              className="px-3 py-1.5 rounded-lg text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+            >
+              <option value="all">All users</option>
+              {Array.from(
+                new Map(
+                  quotations.map((q) => [q.customerEmail, { email: q.customerEmail, name: q.customerName }])
+                ).values()
+              )
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((u) => (
+                  <option key={u.email} value={u.email}>
+                    {u.name} ({u.email})
+                  </option>
+                ))}
+            </select>
+            <input
+              type="text"
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              placeholder="Search by name, email, or company..."
+              className="px-3 py-1.5 rounded-lg text-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white flex-1 min-w-[200px]"
+            />
+          </div>
         </div>
 
         {/* Stats Overview */}
@@ -238,7 +269,18 @@ export function QuotationDashboard({ isInline = false, darkMode: propDarkMode }:
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {quotations.map((quotation) => (
+              {quotations
+                .filter((q) => userFilter === 'all' || q.customerEmail === userFilter)
+                .filter((q) => {
+                  if (!userSearch.trim()) return true;
+                  const s = userSearch.toLowerCase();
+                  return (
+                    q.customerName?.toLowerCase().includes(s) ||
+                    q.customerEmail?.toLowerCase().includes(s) ||
+                    q.company?.toLowerCase().includes(s)
+                  );
+                })
+                .map((quotation) => (
                 <tr key={quotation._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                     {quotation.quotationNumber}

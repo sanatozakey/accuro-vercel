@@ -55,6 +55,10 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
   const ITEMS_PER_PAGE = 5;
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Quote sub-tab filter
+  type QuoteStatusFilter = 'all' | 'pending' | 'quoted' | 'accepted' | 'declined' | 'rejected' | 'expired';
+  const [quoteStatusFilter, setQuoteStatusFilter] = useState<QuoteStatusFilter>('all');
+
   // Booking details modal state
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -496,6 +500,49 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
   };
 
   const renderQuotesTab = () => {
+    const filteredQuotations =
+      quoteStatusFilter === 'all'
+        ? quotations
+        : quotations.filter((q) => q.status === quoteStatusFilter);
+
+    const subTabs: { key: QuoteStatusFilter; label: string }[] = [
+      { key: 'all', label: 'All' },
+      { key: 'pending', label: 'Pending' },
+      { key: 'quoted', label: 'Quoted' },
+      { key: 'accepted', label: 'Accepted' },
+      { key: 'declined', label: 'Declined' },
+      { key: 'rejected', label: 'Rejected' },
+      { key: 'expired', label: 'Expired' },
+    ];
+
+    const subTabBar = (
+      <div className="flex flex-wrap gap-2 mb-4">
+        {subTabs.map((t) => {
+          const count =
+            t.key === 'all'
+              ? quotations.length
+              : quotations.filter((q) => q.status === t.key).length;
+          const active = quoteStatusFilter === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => {
+                setQuoteStatusFilter(t.key);
+                setCurrentPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+                active
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              {t.label} ({count})
+            </button>
+          );
+        })}
+      </div>
+    );
+
     if (quotations.length === 0) {
       return (
         <div className="text-center py-12">
@@ -514,10 +561,16 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
       );
     }
 
-    const paginatedQuotations = paginate(quotations);
+    const paginatedQuotations = paginate(filteredQuotations);
 
     return (
       <div>
+        {subTabBar}
+        {filteredQuotations.length === 0 && (
+          <div className="text-center py-8 text-sm text-gray-500">
+            No quotations match this filter.
+          </div>
+        )}
         <div className="space-y-4">
           {paginatedQuotations.map((quotation) => (
             <div
@@ -581,7 +634,7 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
             </div>
           ))}
         </div>
-        {renderPagination(quotations.length)}
+        {renderPagination(filteredQuotations.length)}
       </div>
     );
   };

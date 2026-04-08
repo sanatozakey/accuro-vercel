@@ -3,6 +3,8 @@ import { AuthRequest } from '../middleware/auth';
 import Review from '../models/Review';
 import PurchaseHistory from '../models/PurchaseHistory';
 import Quote from '../models/Quote';
+import Quotation from '../models/Quotation';
+import User from '../models/User';
 import Booking from '../models/Booking';
 import ActivityLog from '../models/ActivityLog';
 
@@ -235,19 +237,24 @@ export const getUserHistory = async (req: AuthRequest, res: Response) => {
   try {
     const { userId } = req.params;
 
+    // Look up user email so we can also match quotations stored by customerEmail
+    const userDoc = await User.findById(userId).select('email');
+    const userEmail = userDoc?.email;
+
     // Fetch all user-related data in parallel
-    const [reviews, purchases, quotes, bookings, activityLogs] = await Promise.all([
+    const [reviews, quotes, quotations, bookings, activityLogs] = await Promise.all([
       Review.find({ user: userId })
         .sort({ createdAt: -1 })
         .populate('booking', 'product date status'),
 
-      PurchaseHistory.find({ user: userId })
-        .sort({ createdAt: -1 })
-        .populate('relatedQuote', 'customerName')
-        .populate('relatedBooking', 'company date'),
-
       Quote.find({ userId })
         .sort({ createdAt: -1 }),
+
+      Quotation.find(
+        userEmail
+          ? { $or: [{ userId }, { customerEmail: userEmail }] }
+          : { userId }
+      ).sort({ createdAt: -1 }),
 
       Booking.find({ userId })
         .sort({ date: -1 }),
@@ -258,17 +265,13 @@ export const getUserHistory = async (req: AuthRequest, res: Response) => {
     ]);
 
     // Calculate summary statistics
-    const totalPurchases = purchases.length;
-    const totalSpent = purchases
-      .filter(p => p.paymentStatus === 'completed')
-      .reduce((sum, p) => sum + p.totalAmount, 0);
-
     const totalReviews = reviews.length;
     const averageRating = reviews.length > 0
       ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
       : 0;
 
-    const totalQuotes = quotes.length;
+    // Total quotes = legacy Quote requests + Quotation requests
+    const totalQuotes = quotes.length + quotations.length;
     const totalBookings = bookings.length;
     const completedBookings = bookings.filter(b => b.status === 'completed').length;
 
@@ -277,8 +280,6 @@ export const getUserHistory = async (req: AuthRequest, res: Response) => {
       data: {
         userId,
         summary: {
-          totalPurchases,
-          totalSpent,
           totalReviews,
           averageRating: Math.round(averageRating * 10) / 10,
           totalQuotes,
@@ -289,13 +290,9 @@ export const getUserHistory = async (req: AuthRequest, res: Response) => {
           count: reviews.length,
           data: reviews,
         },
-        purchases: {
-          count: purchases.length,
-          data: purchases,
-        },
         quotes: {
-          count: quotes.length,
-          data: quotes,
+          count: quotes.length + quotations.length,
+          data: [...quotes, ...quotations],
         },
         bookings: {
           count: bookings.length,
