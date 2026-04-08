@@ -273,7 +273,7 @@ export const validateCreateProduct: ValidationChain[] = [
         throw new Error('Image must be a valid URL or base64 data URI');
       }
       // Check base64 size (max 5MB)
-      if (isBase64 && value.length > 5 * 1024 * 1024) {
+      if (isBase64 && value.length > 8 * 1024 * 1024) {
         throw new Error('Image size too large (max 5MB)');
       }
       return true;
@@ -356,7 +356,7 @@ export const validateUpdateProduct: ValidationChain[] = [
         throw new Error('Image must be a valid URL or base64 data URI');
       }
       // Check base64 size (max 5MB)
-      if (isBase64 && value.length > 5 * 1024 * 1024) {
+      if (isBase64 && value.length > 8 * 1024 * 1024) {
         throw new Error('Image size too large (max 5MB)');
       }
       return true;

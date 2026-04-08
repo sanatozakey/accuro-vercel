@@ -649,11 +649,11 @@ export function BookingDashboard(): React.ReactElement {
           : !booking.isCompleted,
       )
     }
-    // Sort by most recent booking date first (newest at top)
+    // Sort by most recently created bookings first (newest submissions on top)
     result = [...result].sort((a, b) => {
-      const dateA = new Date(`${a.date} ${a.time || '00:00'}`).getTime()
-      const dateB = new Date(`${b.date} ${b.time || '00:00'}`).getTime()
-      return dateB - dateA
+      const ta = new Date(b.createdAt).getTime() || 0
+      const tb = new Date(a.createdAt).getTime() || 0
+      return ta - tb
     })
     setFilteredBookings(result)
     setBookingPage(1) // Reset to first page on filter change

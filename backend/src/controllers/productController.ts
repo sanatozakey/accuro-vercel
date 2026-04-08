@@ -5,8 +5,6 @@ import { AuthRequest } from '../middleware/auth';
 import ActivityLog from '../models/ActivityLog';
 import { getStockStatus, getStockLabel, prepareProductWithStock } from '../utils/stockUtils';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 
 // @desc    Get all products
 // @route   GET /api/products
@@ -398,22 +396,8 @@ export const bulkImportProducts = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads/products');
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
+// Configure multer for file uploads — use memory storage so this works on
+// serverless platforms (Vercel) where the filesystem is read-only.
 const fileFilter = (req: any, file: any, cb: any) => {
   // Accept images only
   if (!file.originalname.match(/\.(jpg|JPG|jpeg|JPEG|png|PNG|gif|GIF|webp|WEBP)$/)) {
@@ -423,14 +407,14 @@ const fileFilter = (req: any, file: any, cb: any) => {
 };
 
 export const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(),
   limits: {
-    fileSize: 2 * 1024 * 1024, // 2MB max file size
+    fileSize: 5 * 1024 * 1024, // 5MB max file size
   },
   fileFilter: fileFilter,
 });
 
-// @desc    Upload product image
+// @desc    Upload product image (returns base64 data URI for storage in DB)
 // @route   POST /api/products/upload-image
 // @access  Private/Admin
 export const uploadProductImage = async (req: AuthRequest, res: Response) => {
@@ -442,15 +426,18 @@ export const uploadProductImage = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Generate URL for the uploaded file
-    const imageUrl = `/uploads/products/${req.file.filename}`;
+    // Convert the in-memory buffer into a base64 data URI so the image
+    // can be persisted directly in MongoDB without relying on the filesystem.
+    const mime = req.file.mimetype || 'image/jpeg';
+    const base64 = req.file.buffer.toString('base64');
+    const dataUri = `data:${mime};base64,${base64}`;
 
     res.status(200).json({
       success: true,
       message: 'Image uploaded successfully',
       data: {
-        url: imageUrl,
-        filename: req.file.filename,
+        url: dataUri,
+        filename: req.file.originalname,
       },
     });
   } catch (error: any) {
