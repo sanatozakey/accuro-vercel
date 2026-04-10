@@ -883,7 +883,7 @@ export const confirmAndDispatch = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    if (booking.status !== 'pending' && booking.status !== 'rescheduled') {
+    if (booking.status !== 'pending' && booking.status !== 'rescheduled' && booking.status !== 'confirmed') {
       return res.status(400).json({
         success: false,
         message: `Cannot confirm booking with status: ${booking.status}`,
