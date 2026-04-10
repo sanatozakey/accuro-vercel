@@ -462,6 +462,54 @@ class EmailService {
     });
   }
 
+  // Send notification email (generic — used by NotificationService hook)
+  async sendNotificationEmail(params: {
+    email: string;
+    name: string;
+    title: string;
+    message: string;
+    type: string;
+    actionUrl?: string;
+  }): Promise<void> {
+    const typeColors: Record<string, { bg: string; border: string; icon: string; label: string }> = {
+      booking: { bg: '#eff6ff', border: '#2563eb', icon: '📅', label: 'Booking Update' },
+      quotation: { bg: '#f0fdf4', border: '#16a34a', icon: '📋', label: 'Quotation Update' },
+      system: { bg: '#fefce8', border: '#ca8a04', icon: '🔔', label: 'System Notification' },
+      admin_message: { bg: '#faf5ff', border: '#9333ea', icon: '💬', label: 'Message from Accuro' },
+    };
+
+    const style = typeColors[params.type] || typeColors.system;
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const actionLink = params.actionUrl ? `${frontendUrl}${params.actionUrl}` : frontendUrl;
+
+    const html = `
+      ${this.emailHeader(style.label)}
+        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 8px;">Hello ${params.name},</p>
+
+        <div style="background-color: ${style.bg}; padding: 18px 20px; border-left: 4px solid ${style.border}; border-radius: 4px; margin: 20px 0;">
+          <p style="margin: 0 0 6px; font-size: 16px; font-weight: 600; color: #1f2937;">${style.icon} ${params.title}</p>
+          <p style="margin: 0; font-size: 14px; color: #374151; line-height: 1.6;">${params.message}</p>
+        </div>
+
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${actionLink}" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 15px;">
+            View Details
+          </a>
+        </div>
+
+        <p style="margin-top: 16px; font-size: 13px; color: #9ca3af;">
+          You received this email because you have an account with Accuro. You can view all your notifications on the platform.
+        </p>
+      ${this.emailFooter()}
+    `;
+
+    await this.sendEmail({
+      to: params.email,
+      subject: `${params.title} - Accuro`,
+      html,
+    });
+  }
+
   // Send bulk email to multiple recipients (sequential with delay to respect Gmail rate limits)
   async sendBulkEmail(
     recipients: { email: string; name: string }[],

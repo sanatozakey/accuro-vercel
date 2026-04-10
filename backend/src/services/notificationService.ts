@@ -1,6 +1,7 @@
 import Notification from '../models/Notification';
 import User from '../models/User';
 import mongoose from 'mongoose';
+import emailService from '../utils/emailService';
 
 // Conditional socket import for serverless compatibility
 let socketService: any = { emitToUser: () => {}, emitToAdmins: () => {} };
@@ -50,6 +51,24 @@ export class NotificationService {
         isRead: notification.isRead,
         createdAt: notification.createdAt,
       });
+
+      // Send email copy to regular users only (admin/technician emails are not real)
+      try {
+        const user = await User.findById(userId).select('email name role').lean();
+        if (user && (user as any).role === 'user') {
+          await emailService.sendNotificationEmail({
+            email: (user as any).email,
+            name: (user as any).name,
+            title: params.title,
+            message: params.message,
+            type: params.type,
+            actionUrl: params.actionUrl,
+          });
+        }
+      } catch (emailErr) {
+        // Non-blocking — notification was already saved, email is best-effort
+        console.error('Failed to send notification email:', emailErr);
+      }
 
       return notification;
     } catch (error) {
