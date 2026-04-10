@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { useAuth } from './AuthContext'
 
 // Define cart item interface
 export interface CartItem {
@@ -24,18 +25,31 @@ interface CartContextType {
 // Create context
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
+function getCartKey(userId?: string) {
+  return userId ? `cart_${userId}` : 'cart'
+}
+
 // Cart Provider Component
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth()
   const [cart, setCart] = useState<CartItem[]>(() => {
-    // Load cart from localStorage on mount
-    const savedCart = localStorage.getItem('cart')
+    const key = getCartKey(user?._id)
+    const savedCart = localStorage.getItem(key)
     return savedCart ? JSON.parse(savedCart) : []
   })
 
+  // Reload cart when user changes (login/logout/switch)
+  useEffect(() => {
+    const key = getCartKey(user?._id)
+    const savedCart = localStorage.getItem(key)
+    setCart(savedCart ? JSON.parse(savedCart) : [])
+  }, [user?._id])
+
   // Save cart to localStorage whenever it changes
-  React.useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(cart))
-  }, [cart])
+  useEffect(() => {
+    const key = getCartKey(user?._id)
+    localStorage.setItem(key, JSON.stringify(cart))
+  }, [cart, user?._id])
 
   const addToCart = useCallback((item: Omit<CartItem, 'quantity'>) => {
     setCart((prevCart) => {

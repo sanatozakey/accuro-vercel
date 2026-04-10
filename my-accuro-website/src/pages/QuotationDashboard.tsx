@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { FileText, Eye, Check, X, RefreshCw, Filter, RotateCcw } from 'lucide-react';
+import { FileText, Eye, Check, X, RefreshCw, Filter, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import quotationService, { Quotation, QuotationHistoryEntry } from '../services/quotationService';
 
@@ -33,6 +33,15 @@ export function QuotationDashboard({ isInline = false, darkMode: propDarkMode }:
   });
 
   const [rejectNotes, setRejectNotes] = useState('');
+
+  // Pagination
+  const ITEMS_PER_PAGE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, userFilter, userSearch]);
 
   useEffect(() => {
     if (!isInline && user?.role !== 'admin' && user?.role !== 'superadmin') {
@@ -269,18 +278,21 @@ export function QuotationDashboard({ isInline = false, darkMode: propDarkMode }:
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {quotations
-                .filter((q) => userFilter === 'all' || q.customerEmail === userFilter)
-                .filter((q) => {
-                  if (!userSearch.trim()) return true;
-                  const s = userSearch.toLowerCase();
-                  return (
-                    q.customerName?.toLowerCase().includes(s) ||
-                    q.customerEmail?.toLowerCase().includes(s) ||
-                    q.company?.toLowerCase().includes(s)
-                  );
-                })
-                .map((quotation) => (
+              {(() => {
+                const filtered = quotations
+                  .filter((q) => userFilter === 'all' || q.customerEmail === userFilter)
+                  .filter((q) => {
+                    if (!userSearch.trim()) return true;
+                    const s = userSearch.toLowerCase();
+                    return (
+                      q.customerName?.toLowerCase().includes(s) ||
+                      q.customerEmail?.toLowerCase().includes(s) ||
+                      q.company?.toLowerCase().includes(s)
+                    );
+                  });
+                const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+                const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+                return paginated.map((quotation) => (
                 <tr key={quotation._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                     {quotation.quotationNumber}
@@ -346,7 +358,8 @@ export function QuotationDashboard({ isInline = false, darkMode: propDarkMode }:
                     </div>
                   </td>
                 </tr>
-              ))}
+              ));
+              })()}
             </tbody>
           </table>
           {quotations.length === 0 && (
@@ -354,6 +367,59 @@ export function QuotationDashboard({ isInline = false, darkMode: propDarkMode }:
               No quotations found
             </div>
           )}
+
+          {/* Pagination Controls */}
+          {(() => {
+            const filtered = quotations
+              .filter((q) => userFilter === 'all' || q.customerEmail === userFilter)
+              .filter((q) => {
+                if (!userSearch.trim()) return true;
+                const s = userSearch.toLowerCase();
+                return (
+                  q.customerName?.toLowerCase().includes(s) ||
+                  q.customerEmail?.toLowerCase().includes(s) ||
+                  q.company?.toLowerCase().includes(s)
+                );
+              });
+            const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+            if (totalPages <= 1) return null;
+            return (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-md border border-gray-300 dark:border-gray-600 disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-3 py-1 rounded-md text-sm font-medium ${
+                        page === currentPage
+                          ? 'bg-blue-600 text-white'
+                          : 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-md border border-gray-300 dark:border-gray-600 disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
