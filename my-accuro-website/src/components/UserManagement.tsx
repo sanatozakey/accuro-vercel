@@ -117,7 +117,7 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
   // User history (for view dialog)
   const [userHistory, setUserHistory] = useState<any>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyTab, setHistoryTab] = useState<'bookings' | 'quotations' | 'purchases' | 'reviews' | 'activity'>('bookings');
+  const [historyTab, setHistoryTab] = useState<'bookings' | 'quotations' | 'reviews' | 'activity'>('bookings');
   const [historyPage, setHistoryPage] = useState(1);
   const HISTORY_PER_PAGE = 5;
 
@@ -1451,10 +1451,6 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
                       <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Quotations</p>
                     </div>
                     <div className={`rounded-lg p-3 ${darkMode ? 'bg-gray-700' : 'bg-white'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-                      <p className="text-xl font-bold text-purple-600">{userHistory.summary.totalPurchases}</p>
-                      <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Purchases</p>
-                    </div>
-                    <div className={`rounded-lg p-3 ${darkMode ? 'bg-gray-700' : 'bg-white'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
                       <p className="text-xl font-bold text-yellow-600">{userHistory.summary.totalReviews}</p>
                       <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Reviews (avg {userHistory.summary.averageRating})</p>
                     </div>
@@ -1468,7 +1464,6 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
                   {([
                     { id: 'bookings' as const, label: 'Bookings', icon: Calendar },
                     { id: 'quotations' as const, label: 'Quotations', icon: Star },
-                    { id: 'purchases' as const, label: 'Purchases', icon: Activity },
                     { id: 'reviews' as const, label: 'Reviews', icon: Star },
                     { id: 'activity' as const, label: 'Activity Log', icon: History },
                   ]).map((tab) => {
@@ -1579,35 +1574,6 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
                                   q.status === 'expired' ? 'bg-gray-100 text-gray-800' :
                                   'bg-gray-100 text-gray-800'
                                 }`}>{q.status}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )
-                    )}
-
-                    {/* Purchases Tab */}
-                    {historyTab === 'purchases' && (
-                      userHistory.purchases.count === 0 ? (
-                        <p className={`text-center py-8 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No purchases found</p>
-                      ) : (
-                        <div className="space-y-3">
-                          {userHistory.purchases.data.slice((historyPage - 1) * HISTORY_PER_PAGE, historyPage * HISTORY_PER_PAGE).map((p: any) => (
-                            <div key={p._id} className={`rounded-lg p-4 border ${darkMode ? 'bg-gray-750 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Order #{p.orderNumber}</p>
-                                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                    {p.items?.length || 0} items &bull; {new Date(p.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                  </p>
-                                  <p className={`text-sm font-semibold mt-1 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>${p.totalAmount?.toFixed(2)}</p>
-                                </div>
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                                  p.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' :
-                                  p.orderStatus === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                                  p.orderStatus === 'processing' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>{p.orderStatus}</span>
                               </div>
                             </div>
                           ))}
