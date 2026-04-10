@@ -193,9 +193,9 @@ export function About() {
               <CardHeader className="p-0">
                 <div className="h-48 overflow-hidden rounded-t-lg bg-gray-50">
                   <img
-                    src="/images/Beamex MC6-Ex.png"
-                    alt="Beamex MC6-Ex for Oil & Gas"
-                    className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+                    src="https://eco-cdn.iqpc.com/eco/images/channel_content/images/offshore_platform.webp"
+                    alt="Oil & Gas Industry"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
               </CardHeader>
@@ -216,19 +216,19 @@ export function About() {
               <CardHeader className="p-0">
                 <div className="h-48 overflow-hidden rounded-t-lg bg-gray-50">
                   <img
-                    src="/images/Beamex POC8.png"
-                    alt="Beamex POC8 for Pharmaceutical"
-                    className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+                    src="https://www.leadec-services.com/fileadmin/_processed_/d/3/csm_2023_header_beverage_3ab1401edf.jpg"
+                    alt="Food & Beverage Industry"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <Award className="h-5 w-5 text-blue-600" />
-                  <CardTitle className="text-xl">Pharmaceutical</CardTitle>
+                  <CardTitle className="text-xl">Food & Beverage</CardTitle>
                 </div>
                 <CardDescription className="text-base text-gray-700">
-                  Our calibration solutions help pharmaceutical companies maintain
+                  Our calibration solutions help food and beverage companies maintain
                   precise measurements required for quality control and regulatory
                   compliance.
                 </CardDescription>
@@ -239,9 +239,9 @@ export function About() {
               <CardHeader className="p-0">
                 <div className="h-48 overflow-hidden rounded-t-lg bg-gray-50">
                   <img
-                    src="/images/Beamex ePG.png"
-                    alt="Beamex ePG for Power Generation"
-                    className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+                    src="https://www.power-technology.com/wp-content/uploads/sites/21/2018/01/Renewable_Energy_on_the_Grid.jpg"
+                    alt="Power Generation Industry"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
               </CardHeader>
