@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import Booking from '../models/Booking';
 import Analytics from '../models/Analytics';
-import Quote from '../models/Quote';
+import Quotation from '../models/Quotation';
 import Contact from '../models/Contact';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
@@ -155,7 +155,7 @@ export const getDashboardAnalytics = async (req: AuthRequest, res: Response) => 
       ]),
       Booking.countDocuments(bookingFilter),
       User.countDocuments(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
-      Quote.countDocuments(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
+      Quotation.countDocuments(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
       Contact.countDocuments(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
     ]);
 
@@ -426,7 +426,7 @@ export const getQuoteAnalytics = async (req: AuthRequest, res: Response) => {
     const matchFilter = Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {};
 
     const [quotesByStatus, totalQuotes, recentQuotes] = await Promise.all([
-      Quote.aggregate([
+      Quotation.aggregate([
         ...(Object.keys(matchFilter).length > 0 ? [{ $match: matchFilter }] : []),
         {
           $group: {
@@ -435,8 +435,8 @@ export const getQuoteAnalytics = async (req: AuthRequest, res: Response) => {
           },
         },
       ]),
-      Quote.countDocuments(matchFilter),
-      Quote.find(matchFilter)
+      Quotation.countDocuments(matchFilter),
+      Quotation.find(matchFilter)
         .sort({ createdAt: -1 })
         .limit(10)
         .populate('userId', 'name email')
@@ -481,13 +481,13 @@ export const getQuoteDetails = async (req: AuthRequest, res: Response) => {
     const skip = (pageNum - 1) * limitNum;
 
     const [quotes, total] = await Promise.all([
-      Quote.find(matchFilter)
+      Quotation.find(matchFilter)
         .populate('userId', 'name email company')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum)
         .lean(),
-      Quote.countDocuments(matchFilter),
+      Quotation.countDocuments(matchFilter),
     ]);
 
     res.status(200).json({
@@ -899,7 +899,7 @@ export const getPendingActions = async (req: AuthRequest, res: Response) => {
     ] = await Promise.all([
       Booking.countDocuments({ status: 'pending' }),
       Booking.countDocuments({ status: { $in: ['pending', 'rescheduled'] } }),
-      Quote.countDocuments({ status: 'pending' }),
+      Quotation.countDocuments({ status: 'pending' }),
       Contact.countDocuments({ status: 'new' }),
       Booking.countDocuments({
         date: {
@@ -943,11 +943,11 @@ export const getRecentActivity = async (req: AuthRequest, res: Response) => {
         .limit(limitNum)
         .select('_id contactName company product date time status createdAt')
         .lean(),
-      Quote.find()
+      Quotation.find()
         .sort({ createdAt: -1 })
         .limit(limitNum)
         .populate('userId', 'name email')
-        .select('_id status products createdAt userId')
+        .select('_id status items customerName quotationNumber createdAt userId')
         .lean(),
       Contact.find()
         .sort({ createdAt: -1 })
@@ -969,8 +969,8 @@ export const getRecentActivity = async (req: AuthRequest, res: Response) => {
       ...recentQuotes.map((q: any) => ({
         type: 'quote',
         id: q._id,
-        title: `Quote request`,
-        subtitle: q.userId ? `${(q.userId as any).name} - ${q.products?.length || 0} products` : `${q.products?.length || 0} products`,
+        title: `Quote request${q.quotationNumber ? ` #${q.quotationNumber}` : ''}`,
+        subtitle: q.customerName ? `${q.customerName} - ${q.items?.length || 0} products` : q.userId ? `${(q.userId as any).name} - ${q.items?.length || 0} products` : `${q.items?.length || 0} products`,
         status: q.status,
         date: q.createdAt,
       })),
@@ -1020,8 +1020,8 @@ export const getConversionFunnel = async (req: AuthRequest, res: Response) => {
       confirmedBookings,
       completedBookings,
     ] = await Promise.all([
-      Quote.countDocuments(matchFilter),
-      Quote.countDocuments({ ...matchFilter, status: 'accepted' }),
+      Quotation.countDocuments(matchFilter),
+      Quotation.countDocuments({ ...matchFilter, status: 'accepted' }),
       Booking.countDocuments(matchFilter),
       Booking.countDocuments({ ...matchFilter, status: 'confirmed' }),
       Booking.countDocuments({ ...matchFilter, status: 'completed' }),
