@@ -89,7 +89,6 @@ import { Pagination } from '../components/Pagination'
 import { BulkEmailPanel } from '../components/BulkEmailPanel'
 import { RateLimitDashboard } from '../components/RateLimitDashboard'
 import { BookingCalendarView } from '../components/BookingCalendarView'
-import { TwoFactorSetup } from '../components/TwoFactorSetup'
 import { AccountSettings } from '../components/AccountSettings'
 import { AdminChatDashboard } from './AdminChatDashboard'
 import api from '../services/api'
@@ -2972,7 +2971,6 @@ export function BookingDashboard(): React.ReactElement {
         {viewMode === 'security' && (
           <div className="space-y-6">
             <SessionManagement darkMode={darkMode} />
-            <TwoFactorSetup darkMode={darkMode} />
             <AccountSettings darkMode={darkMode} />
           </div>
         )}
