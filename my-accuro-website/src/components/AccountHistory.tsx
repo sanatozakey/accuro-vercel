@@ -630,6 +630,18 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
                     })}
                   </p>
                 )}
+                {quotation.status === 'rejected' && quotation.adminNotes && (
+                  <div className="mt-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+                    <p className="text-sm font-medium text-red-800 dark:text-red-300 mb-1">Rejection Reason:</p>
+                    <p className="text-sm text-red-700 dark:text-red-400">{quotation.adminNotes}</p>
+                  </div>
+                )}
+                {quotation.status === 'declined' && quotation.declineReason && (
+                  <div className="mt-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md p-3">
+                    <p className="text-sm font-medium text-orange-800 dark:text-orange-300 mb-1">Decline Reason:</p>
+                    <p className="text-sm text-orange-700 dark:text-orange-400">{quotation.declineReason}</p>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -1194,14 +1206,18 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
                 </div>
               )}
 
-              {/* Admin Notes */}
+              {/* Admin Notes / Rejection Reason */}
               {selectedQuotation.adminNotes && (
                 <div className="mb-6">
-                  <h4 className="font-semibold text-gray-900 flex items-center gap-2 mb-2">
-                    <Info className="h-4 w-4 text-blue-600" />
-                    Admin Notes
+                  <h4 className={`font-semibold flex items-center gap-2 mb-2 ${selectedQuotation.status === 'rejected' ? 'text-red-800 dark:text-red-300' : 'text-gray-900'}`}>
+                    {selectedQuotation.status === 'rejected' ? (
+                      <XCircle className="h-4 w-4 text-red-600" />
+                    ) : (
+                      <Info className="h-4 w-4 text-blue-600" />
+                    )}
+                    {selectedQuotation.status === 'rejected' ? 'Rejection Reason' : 'Admin Notes'}
                   </h4>
-                  <p className="text-gray-700 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className={`rounded-lg p-4 ${selectedQuotation.status === 'rejected' ? 'text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : 'text-gray-700 bg-blue-50 border border-blue-200'}`}>
                     {selectedQuotation.adminNotes}
                   </p>
                 </div>
