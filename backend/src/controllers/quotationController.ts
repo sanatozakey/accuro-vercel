@@ -4,6 +4,7 @@ import Quotation from '../models/Quotation';
 import User from '../models/User';
 import { NotificationService } from '../services/notificationService';
 import { AuthRequest } from '../middleware/auth';
+import emailService from '../utils/emailService';
 
 // Create new quotation (customer)
 export const createQuotation = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -61,6 +62,27 @@ export const createQuotation = async (req: AuthRequest, res: Response): Promise<
       }
     } catch (notificationError) {
       console.error('Failed to send admin quotation notifications:', notificationError);
+    }
+
+    // Send quotation confirmation email to customer
+    try {
+      await emailService.sendQuotationSubmission({
+        customerName,
+        customerEmail,
+        customerPhone,
+        company,
+        quotationNumber: quotation.quotationNumber,
+        currency: quotation.currency,
+        items: items.map((item: any) => ({
+          productName: item.productName,
+          quantity: item.quantity,
+          specifications: item.specifications,
+        })),
+        additionalRequirements,
+        submittedAt: quotation.createdAt,
+      });
+    } catch (emailError) {
+      console.error('Failed to send quotation confirmation email:', emailError);
     }
 
     res.status(201).json({

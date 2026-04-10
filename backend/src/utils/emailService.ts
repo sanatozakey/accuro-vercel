@@ -379,6 +379,89 @@ class EmailService {
     });
   }
 
+  // Send quotation submission confirmation to customer
+  async sendQuotationSubmission(quotationData: {
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    company: string;
+    quotationNumber: string;
+    currency: string;
+    items: { productName: string; quantity: number; specifications?: string }[];
+    additionalRequirements?: string;
+    submittedAt: Date;
+  }): Promise<void> {
+    const currencySymbol = quotationData.currency === 'USD' ? '$' : '₱';
+
+    const itemRows = quotationData.items
+      .map(
+        (item, index) => `
+        <tr>
+          <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #374151; font-size: 13px;">${index + 1}</td>
+          <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px; font-weight: 500;">${item.productName}</td>
+          <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #374151; font-size: 13px; text-align: center;">${item.quantity}</td>
+          <td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #374151; font-size: 13px;">${item.specifications || '—'}</td>
+        </tr>`
+      )
+      .join('');
+
+    const html = `
+      ${this.emailHeader('Quotation Request Submitted')}
+        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 8px;">Hello ${quotationData.customerName},</p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
+          Thank you for submitting a quotation request with Accuro. Your request has been received and our team will review it shortly.
+        </p>
+
+        <!-- Quotation Info -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 20px;">
+          <tr><td colspan="2" style="padding: 14px 18px; background-color: #eff6ff; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #1e3a8a; font-size: 14px;">Quotation Details</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; width: 160px; color: #6b7280; font-size: 13px;">Quotation Number</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px; font-family: monospace; font-weight: 600;">${quotationData.quotationNumber}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Company</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${quotationData.company}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Contact</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${quotationData.customerName} &middot; ${quotationData.customerPhone}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Currency</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${quotationData.currency}</td></tr>
+          <tr><td style="padding: 12px 18px; color: #6b7280; font-size: 13px;">Date Submitted</td><td style="padding: 12px 18px; color: #1f2937; font-size: 13px;">${quotationData.submittedAt.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
+        </table>
+
+        <!-- Items Table -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 20px; border-collapse: collapse;">
+          <tr style="background-color: #1e3a8a;">
+            <th style="padding: 12px 14px; color: #ffffff; font-size: 12px; text-align: left; font-weight: 600;">#</th>
+            <th style="padding: 12px 14px; color: #ffffff; font-size: 12px; text-align: left; font-weight: 600;">Product</th>
+            <th style="padding: 12px 14px; color: #ffffff; font-size: 12px; text-align: center; font-weight: 600;">Qty</th>
+            <th style="padding: 12px 14px; color: #ffffff; font-size: 12px; text-align: left; font-weight: 600;">Specifications</th>
+          </tr>
+          ${itemRows}
+        </table>
+
+        <p style="color: #374151; font-size: 13px; margin: 0 0 4px;"><strong>Total Items:</strong> ${quotationData.items.length} product(s), ${quotationData.items.reduce((sum, i) => sum + i.quantity, 0)} unit(s)</p>
+
+        ${quotationData.additionalRequirements ? `
+          <h3 style="color: #1e3a8a; font-size: 14px; margin: 20px 0 8px;">Additional Requirements</h3>
+          <div style="background-color: #f1f5f9; padding: 14px 16px; border-left: 4px solid #2563eb; border-radius: 4px; color: #374151; font-size: 13px; line-height: 1.6; white-space: pre-wrap;">${quotationData.additionalRequirements}</div>
+        ` : ''}
+
+        <div style="background-color: #eff6ff; padding: 14px 16px; border-left: 4px solid #2563eb; border-radius: 4px; margin: 24px 0;">
+          <p style="margin: 0; color: #1e40af; font-size: 13px;">
+            <strong>What happens next?</strong><br>
+            Our team will review your quotation request and provide you with a formal quote including pricing, payment terms, and delivery timeline. You will receive an email and in-app notification once your quotation has been processed.
+          </p>
+        </div>
+
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/my-quotations" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 15px;">
+            Track Your Quotation
+          </a>
+        </div>
+      ${this.emailFooter()}
+    `;
+
+    await this.sendEmail({
+      to: quotationData.customerEmail,
+      subject: `Quotation Request Received - ${quotationData.quotationNumber}`,
+      html,
+    });
+  }
+
   // Send bulk email to multiple recipients (sequential with delay to respect Gmail rate limits)
   async sendBulkEmail(
     recipients: { email: string; name: string }[],
