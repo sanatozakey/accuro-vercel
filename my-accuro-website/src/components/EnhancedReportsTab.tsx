@@ -117,17 +117,19 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
       setFetchError('');
 
       // Fetch all data in parallel
-      const [bookingsRes, usersRes, activityRes, dashboardRes] = await Promise.all([
+      const [bookingsRes, usersRes, activityRes, dashboardRes, pendingRes] = await Promise.all([
         bookingService.getAll(),
         userService.getAll(),
         activityLogService.getAllActivityLogs({ limit: 10 }).catch(() => ({ data: [] })),
-        analyticsService.getDashboardAnalytics().catch(() => ({ totalQuotes: 0, totalContacts: 0 })),
+        analyticsService.getDashboardAnalytics().catch(() => ({ data: { totalQuotes: 0, totalContacts: 0 } })),
+        analyticsService.getPendingActions().catch(() => ({ data: { pendingQuotes: 0, unreadContacts: 0 } })),
       ]);
 
       const bookings = bookingsRes.data || [];
       const users = usersRes.data || [];
       const activity = activityRes.data || [];
-      const dashboardData = dashboardRes || { totalQuotes: 0, totalContacts: 0 };
+      const dashboardData = dashboardRes?.data || { totalQuotes: 0, totalContacts: 0 };
+      const pendingData = pendingRes?.data || { pendingQuotes: 0, unreadContacts: 0 };
 
       // Calculate KPIs
       const now = new Date();
@@ -161,8 +163,8 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
         confirmedBookings: bookings.filter((b: any) => b.status === 'confirmed').length,
         completedBookings: bookings.filter((b: any) => b.status === 'completed' || b.isCompleted).length,
         cancelledBookings: bookings.filter((b: any) => b.status === 'cancelled').length,
-        pendingQuotes: 0, // Will be fetched from dashboard if available
-        unreadContacts: 0, // Will be fetched from dashboard if available
+        pendingQuotes: pendingData.pendingQuotes || 0,
+        unreadContacts: pendingData.unreadContacts || 0,
         bookingsTrend,
         usersTrend,
       });
@@ -341,12 +343,13 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
 
         case 'dashboardSummary':
           const dashboardResponse = await analyticsService.getDashboardAnalytics({ startDate, endDate });
-          data = [dashboardResponse];
+          const dashSummary = dashboardResponse?.data || dashboardResponse || {};
+          data = [dashSummary];
           summary = {
-            totalBookings: dashboardResponse.totalBookings || 0,
-            totalUsers: dashboardResponse.totalUsers || 0,
-            totalQuotes: dashboardResponse.totalQuotes || 0,
-            totalContacts: dashboardResponse.totalContacts || 0,
+            totalBookings: dashSummary.totalBookings || 0,
+            totalUsers: dashSummary.totalUsers || 0,
+            totalQuotes: dashSummary.totalQuotes || 0,
+            totalContacts: dashSummary.totalContacts || 0,
           };
           break;
       }
