@@ -79,9 +79,12 @@ export const getConversations = async (req: AuthRequest, res: Response) => {
       .populate('userId', 'name email profileImage')
       .sort({ lastMessageAt: -1 });
 
+    // Filter out conversations where the user has been deleted (userId is null after populate)
+    const validConversations = conversations.filter(c => c.userId != null);
+
     return res.status(200).json({
       success: true,
-      data: conversations,
+      data: validConversations,
     });
   } catch (error: any) {
     console.error('Error in getConversations:', error);

@@ -23,7 +23,7 @@ interface Conversation {
     name: string
     email: string
     profilePicture?: string
-  }
+  } | null
   status: 'active' | 'closed'
   lastMessage: string
   lastMessageAt: string
@@ -217,12 +217,14 @@ export function AdminChatDashboard({ embedded = false }: AdminChatDashboardProps
   }
 
   const filteredConversations = conversations.filter(c => {
+    // Skip conversations where the user has been deleted
+    if (!c.userId) return false
     if (!searchTerm.trim()) return true
     const q = searchTerm.toLowerCase()
     return (
-      c.userId.name.toLowerCase().includes(q) ||
-      c.userId.email.toLowerCase().includes(q) ||
-      c.lastMessage.toLowerCase().includes(q)
+      c.userId.name?.toLowerCase().includes(q) ||
+      c.userId.email?.toLowerCase().includes(q) ||
+      c.lastMessage?.toLowerCase().includes(q)
     )
   })
 
@@ -322,7 +324,7 @@ export function AdminChatDashboard({ embedded = false }: AdminChatDashboardProps
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                      {conv.userId.name.charAt(0).toUpperCase()}
+                      {(conv.userId?.name || '?').charAt(0).toUpperCase()}
                     </div>
                     {conv.status === 'closed' && (
                       <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-gray-400 rounded-full flex items-center justify-center">
@@ -339,13 +341,13 @@ export function AdminChatDashboard({ embedded = false }: AdminChatDashboardProps
                           ? 'text-gray-900 dark:text-white'
                           : 'text-gray-700 dark:text-gray-300'
                       }`}>
-                        {conv.userId.name}
+                        {conv.userId?.name || 'Deleted User'}
                       </p>
                       <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
                         {formatTime(conv.lastMessageAt)}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{conv.userId.email}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{conv.userId?.email || ''}</p>
                     <div className="flex items-center justify-between mt-1">
                       <p className={`text-xs truncate ${
                         conv.unreadByAdmin > 0
@@ -383,14 +385,14 @@ export function AdminChatDashboard({ embedded = false }: AdminChatDashboardProps
                     <ChevronLeft size={20} className="text-gray-600 dark:text-gray-400" />
                   </button>
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                    {selectedConversation.userId.name.charAt(0).toUpperCase()}
+                    {(selectedConversation.userId?.name || '?').charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {selectedConversation.userId.name}
+                      {selectedConversation.userId?.name || 'Deleted User'}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {selectedConversation.userId.email}
+                      {selectedConversation.userId?.email || ''}
                     </p>
                   </div>
                 </div>
