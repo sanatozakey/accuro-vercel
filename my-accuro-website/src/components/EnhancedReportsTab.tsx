@@ -375,6 +375,7 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
         dashboardSummary: 'Dashboard Summary Report',
       };
 
+      setPreviewPage(1);
       setReportData({
         type: reportType,
         title: titleMap[reportType],
@@ -386,6 +387,43 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
       setError(err.response?.data?.message || 'Failed to generate report');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  // Report preview pagination
+  const PREVIEW_PER_PAGE = 20;
+  const [previewPage, setPreviewPage] = useState(1);
+
+  const getTableConfig = (data: any) => {
+    if (!data) return { headers: [] as string[], getRow: (_item: any) => [] as string[] };
+    switch (data.type) {
+      case 'bookings':
+        return {
+          headers: ['#', 'Date', 'Company', 'Contact', 'Product', 'Status'],
+          getRow: (item: any, i: number) => [String(i + 1), new Date(item.date).toLocaleDateString(), item.company, item.contactName, item.product, item.status],
+        };
+      case 'users':
+        return {
+          headers: ['#', 'Date Joined', 'Name', 'Email', 'Role'],
+          getRow: (item: any, i: number) => [String(i + 1), new Date(item.createdAt).toLocaleDateString(), item.name, item.email, item.role],
+        };
+      case 'quotes':
+        return {
+          headers: ['#', 'Date', 'Name', 'Email', 'Status'],
+          getRow: (item: any, i: number) => [String(i + 1), new Date(item.createdAt).toLocaleDateString(), item.userId?.name || 'N/A', item.userId?.email || 'N/A', item.status],
+        };
+      case 'contacts':
+        return {
+          headers: ['#', 'Date', 'Name', 'Email', 'Subject', 'Status'],
+          getRow: (item: any, i: number) => [String(i + 1), new Date(item.createdAt).toLocaleDateString(), `${item.firstName} ${item.lastName}`, item.email, item.subject, item.status],
+        };
+      case 'activityLogs':
+        return {
+          headers: ['#', 'Date', 'User', 'Action', 'Resource', 'Details'],
+          getRow: (item: any, i: number) => [String(i + 1), new Date(item.createdAt).toLocaleDateString(), item.userName, item.action, item.resourceType, item.details || 'N/A'],
+        };
+      default:
+        return { headers: ['#'], getRow: (_item: any, _i: number) => [''] };
     }
   };
 
@@ -446,114 +484,20 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
     doc.setLineWidth(0.5);
     doc.line(14, 63, pageWidth - 14, 63);
 
-    // Summary
-    doc.setFontSize(12);
-    doc.setTextColor(45, 114, 178);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Executive Summary', 14, 72);
+    // Record count
+    doc.setFontSize(10);
+    doc.setTextColor(80, 80, 80);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Total Records: ${reportData.data.length}`, 14, 72);
 
     let yPos = 80;
-    const summaryEntries = Object.entries(reportData.summary);
-    const cardWidth = (pageWidth - 28 - 15) / 4;
-    const cardHeight = 20;
-    let xPos = 14;
-
-    summaryEntries.forEach(([key, value], index) => {
-      if (index > 0 && index % 4 === 0) {
-        yPos += cardHeight + 5;
-        xPos = 14;
-      }
-
-      doc.setFillColor(240, 247, 255);
-      doc.roundedRect(xPos, yPos, cardWidth, cardHeight, 2, 2, 'F');
-
-      doc.setTextColor(100, 100, 100);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      const label = key.replace(/([A-Z])/g, ' $1').trim();
-      doc.text(label.charAt(0).toUpperCase() + label.slice(1), xPos + cardWidth / 2, yPos + 7, { align: 'center' });
-
-      doc.setTextColor(45, 114, 178);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      doc.text(String(value), xPos + cardWidth / 2, yPos + 15, { align: 'center' });
-
-      xPos += cardWidth + 5;
-    });
 
     // Data table
-    yPos = Math.max(yPos + cardHeight + 15, 110);
-    doc.setFontSize(12);
-    doc.setTextColor(45, 114, 178);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Detailed Data', 14, yPos);
-    yPos += 8;
-
-    const getTableData = () => {
-      switch (reportData.type) {
-        case 'bookings':
-          return {
-            headers: ['Date', 'Company', 'Contact', 'Product', 'Status'],
-            body: reportData.data.map((item: any) => [
-              new Date(item.date).toLocaleDateString(),
-              item.company,
-              item.contactName,
-              item.product,
-              item.status,
-            ]),
-          };
-        case 'users':
-          return {
-            headers: ['Joined', 'Name', 'Email', 'Role'],
-            body: reportData.data.map((item: any) => [
-              new Date(item.createdAt).toLocaleDateString(),
-              item.name,
-              item.email,
-              item.role,
-            ]),
-          };
-        case 'quotes':
-          return {
-            headers: ['Date', 'Name', 'Email', 'Status'],
-            body: reportData.data.map((item: any) => [
-              new Date(item.createdAt).toLocaleDateString(),
-              item.userId?.name || 'N/A',
-              item.userId?.email || 'N/A',
-              item.status,
-            ]),
-          };
-        case 'contacts':
-          return {
-            headers: ['Date', 'Name', 'Email', 'Subject', 'Status'],
-            body: reportData.data.map((item: any) => [
-              new Date(item.createdAt).toLocaleDateString(),
-              `${item.firstName} ${item.lastName}`,
-              item.email,
-              item.subject,
-              item.status,
-            ]),
-          };
-        case 'activityLogs':
-          return {
-            headers: ['Date', 'User', 'Action', 'Resource', 'Details'],
-            body: reportData.data.map((item: any) => [
-              new Date(item.createdAt).toLocaleDateString(),
-              item.userName,
-              item.action,
-              item.resourceType,
-              item.details || 'N/A',
-            ]),
-          };
-        default:
-          return { headers: ['Metric', 'Value'], body: [] };
-      }
-    };
-
-    const tableConfig = getTableData();
+    const tableConfig = getTableConfig(reportData);
 
     autoTable(doc, {
       head: [tableConfig.headers],
-      body: tableConfig.body,
+      body: reportData.data.map((item: any, i: number) => tableConfig.getRow(item, i)),
       startY: yPos,
       styles: { fontSize: 8, cellPadding: 3 },
       headStyles: { fillColor: [45, 114, 178], textColor: [255, 255, 255], fontStyle: 'bold' },
@@ -1037,125 +981,122 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
             </CardContent>
           </Card>
 
-          {/* Report Preview */}
-          {reportData && (
-            <Card className={`${bgClass} border ${borderClass}`}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className={textClass}>{reportData.title}</CardTitle>
-                    <p className={`text-sm ${mutedClass}`}>
-                      {new Date(reportData.dateRange.start).toLocaleDateString()} - {new Date(reportData.dateRange.end).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Button onClick={downloadPDF} className="bg-green-600 hover:bg-green-700">
-                    <Download className="h-4 w-4 mr-2" />
-                    Download PDF
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* Summary Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  {Object.entries(reportData.summary).map(([key, value]) => (
-                    <div key={key} className={`p-4 rounded-lg ${cardBgClass} border ${borderClass}`}>
-                      <p className={`text-sm ${mutedClass} capitalize`}>{key.replace(/([A-Z])/g, ' $1').trim()}</p>
-                      <p className={`text-2xl font-bold ${textClass}`}>{String(value)}</p>
+          {/* Report Preview - styled like a formal report document */}
+          {reportData && (() => {
+            const config = getTableConfig(reportData);
+            const totalPages = Math.ceil(reportData.data.length / PREVIEW_PER_PAGE);
+            const paginatedData = reportData.data.slice(
+              (previewPage - 1) * PREVIEW_PER_PAGE,
+              previewPage * PREVIEW_PER_PAGE
+            );
+            const startIndex = (previewPage - 1) * PREVIEW_PER_PAGE;
+
+            return (
+              <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg border ${borderClass} overflow-hidden`}>
+                {/* Report Header */}
+                <div className={`${darkMode ? 'bg-gray-900' : 'bg-slate-50'} px-8 py-6 border-b ${borderClass}`}>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-blue-600 tracking-wide uppercase">Accuro</p>
+                      <p className={`text-xs ${mutedClass}`}>Instrumentation & Calibration Solutions</p>
                     </div>
-                  ))}
+                    <Button onClick={downloadPDF} variant="outline" size="sm" className="gap-2">
+                      <Download className="h-4 w-4" />
+                      Download PDF
+                    </Button>
+                  </div>
+                  <div className="mt-6">
+                    <h2 className={`text-2xl font-bold ${textClass}`}>{reportData.title}</h2>
+                    <div className={`flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm ${mutedClass}`}>
+                      <span>Period: {new Date(reportData.dateRange.start).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} &ndash; {new Date(reportData.dateRange.end).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                      <span>Generated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>Total Records: <strong className={textClass}>{reportData.data.length}</strong></span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Data Preview */}
-                <div className="overflow-x-auto max-h-96">
-                  <table className={`min-w-full divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                    <thead className={cardBgClass}>
-                      <tr>
-                        {reportData.type === 'bookings' && ['Date', 'Company', 'Contact', 'Product', 'Status'].map(h => (
-                          <th key={h} className={`px-4 py-3 text-left text-xs font-medium ${mutedClass} uppercase`}>{h}</th>
-                        ))}
-                        {reportData.type === 'users' && ['Joined', 'Name', 'Email', 'Role'].map(h => (
-                          <th key={h} className={`px-4 py-3 text-left text-xs font-medium ${mutedClass} uppercase`}>{h}</th>
-                        ))}
-                        {reportData.type === 'quotes' && ['Date', 'Name', 'Email', 'Status'].map(h => (
-                          <th key={h} className={`px-4 py-3 text-left text-xs font-medium ${mutedClass} uppercase`}>{h}</th>
-                        ))}
-                        {reportData.type === 'contacts' && ['Date', 'Name', 'Email', 'Subject', 'Status'].map(h => (
-                          <th key={h} className={`px-4 py-3 text-left text-xs font-medium ${mutedClass} uppercase`}>{h}</th>
-                        ))}
-                        {reportData.type === 'activityLogs' && ['Date', 'User', 'Action', 'Resource'].map(h => (
-                          <th key={h} className={`px-4 py-3 text-left text-xs font-medium ${mutedClass} uppercase`}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
-                      {reportData.data.slice(0, 10).map((item: any, index: number) => (
-                        <tr key={index}>
-                          {reportData.type === 'bookings' && (
-                            <>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{new Date(item.date).toLocaleDateString()}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{item.company}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{item.contactName}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{item.product}</td>
-                              <td className="px-4 py-3">
-                                <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-                                  item.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                                  item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  item.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                  'bg-red-100 text-red-800'
-                                }`}>
-                                  {item.status}
-                                </span>
-                              </td>
-                            </>
-                          )}
-                          {reportData.type === 'users' && (
-                            <>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{new Date(item.createdAt).toLocaleDateString()}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{item.name}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{item.email}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass} capitalize`}>{item.role}</td>
-                            </>
-                          )}
-                          {reportData.type === 'quotes' && (
-                            <>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{new Date(item.createdAt).toLocaleDateString()}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{item.userId?.name || 'N/A'}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{item.userId?.email || 'N/A'}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass} capitalize`}>{item.status}</td>
-                            </>
-                          )}
-                          {reportData.type === 'contacts' && (
-                            <>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{new Date(item.createdAt).toLocaleDateString()}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{item.firstName} {item.lastName}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{item.email}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{item.subject}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass} capitalize`}>{item.status}</td>
-                            </>
-                          )}
-                          {reportData.type === 'activityLogs' && (
-                            <>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{new Date(item.createdAt).toLocaleDateString()}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{item.userName}</td>
-                              <td className={`px-4 py-3 text-sm ${textClass}`}>{item.action}</td>
-                              <td className="px-4 py-3">
-                                <span className="text-xs font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-700">{item.resourceType}</span>
-                              </td>
-                            </>
-                          )}
+                {/* Data Table */}
+                <div className="px-8 py-6">
+                  <div className="overflow-x-auto">
+                    <table className={`min-w-full divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                      <thead>
+                        <tr>
+                          {config.headers.map(h => (
+                            <th key={h} className={`px-4 py-3 text-left text-xs font-semibold ${mutedClass} uppercase tracking-wider ${darkMode ? 'bg-gray-900' : 'bg-slate-50'}`}>{h}</th>
+                          ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {reportData.data.length > 10 && (
-                    <p className={`text-center py-4 ${mutedClass}`}>
-                      Showing 10 of {reportData.data.length} records. Download PDF for full report.
-                    </p>
+                      </thead>
+                      <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-100'}`}>
+                        {paginatedData.map((item: any, idx: number) => {
+                          const rowIndex = startIndex + idx;
+                          const cells = config.getRow(item, rowIndex);
+                          return (
+                            <tr key={rowIndex} className={`${rowIndex % 2 === 0 ? '' : (darkMode ? 'bg-gray-750' : 'bg-slate-50/50')} hover:${darkMode ? 'bg-gray-700' : 'bg-blue-50/30'} transition-colors`}>
+                              {cells.map((cell, ci) => {
+                                const isStatus = config.headers[ci] === 'Status';
+                                const isNum = config.headers[ci] === '#';
+                                return (
+                                  <td key={ci} className={`px-4 py-3 text-sm ${isNum ? mutedClass : textClass} ${isNum ? 'w-12' : ''}`}>
+                                    {isStatus ? (
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium capitalize ${
+                                        cell === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                                        cell === 'confirmed' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
+                                        cell === 'pending' || cell === 'pending_review' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
+                                        cell === 'cancelled' || cell === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' :
+                                        cell === 'approved' || cell === 'accepted' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                      }`}>
+                                        {cell.replace(/_/g, ' ')}
+                                      </span>
+                                    ) : cell}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className={`flex items-center justify-between mt-6 pt-4 border-t ${borderClass}`}>
+                      <p className={`text-sm ${mutedClass}`}>
+                        Showing {startIndex + 1}&ndash;{Math.min(startIndex + PREVIEW_PER_PAGE, reportData.data.length)} of {reportData.data.length} records
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={previewPage <= 1}
+                          onClick={() => setPreviewPage(p => p - 1)}
+                        >
+                          Previous
+                        </Button>
+                        <span className={`text-sm ${mutedClass}`}>Page {previewPage} of {totalPages}</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={previewPage >= totalPages}
+                          onClick={() => setPreviewPage(p => p + 1)}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+
+                {/* Report Footer */}
+                <div className={`px-8 py-4 border-t ${borderClass} ${darkMode ? 'bg-gray-900' : 'bg-slate-50'}`}>
+                  <p className={`text-xs ${mutedClass} text-center`}>
+                    Accuro &mdash; Instrumentation & Calibration Solutions &bull; Confidential Report
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
         </>
       )}
     </div>
