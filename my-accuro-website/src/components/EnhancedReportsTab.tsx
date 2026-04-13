@@ -13,7 +13,6 @@ import {
   FileQuestion,
   Activity,
   BarChart3,
-  PieChart as PieChartIcon,
   ArrowRight,
   RefreshCw,
   AlertCircle,
@@ -21,13 +20,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -81,7 +75,6 @@ interface TrendData {
   contacts: number;
 }
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 const ACCURO_LOGO_BASE64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0ZXh0IHg9IjUiIHk9IjI1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjMkQ3MkIyIj5BQ0NVUk88L3RleHQ+PC9zdmc+';
 
@@ -91,8 +84,6 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
   const [refreshing, setRefreshing] = useState(false);
   const [kpiData, setKpiData] = useState<KPIData | null>(null);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
-  const [bookingStatusData, setBookingStatusData] = useState<any[]>([]);
-  const [quoteStatusData, setQuoteStatusData] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
   // Report generation state
@@ -118,13 +109,12 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
       setFetchError('');
 
       // Fetch all data in parallel
-      const [bookingsRes, usersRes, activityRes, dashboardRes, pendingRes, quotesRes] = await Promise.all([
+      const [bookingsRes, usersRes, activityRes, dashboardRes, pendingRes] = await Promise.all([
         bookingService.getAll(),
         userService.getAll(),
         activityLogService.getAllActivityLogs({ limit: 10 }).catch(() => ({ data: [] })),
         analyticsService.getDashboardAnalytics().catch(() => ({ data: { totalQuotes: 0, totalContacts: 0 } })),
         analyticsService.getPendingActions().catch(() => ({ data: { pendingQuotes: 0, unreadContacts: 0 } })),
-        quoteService.getAll().catch(() => ({ data: [] })),
       ]);
 
       const bookings = bookingsRes.data || [];
@@ -170,24 +160,6 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
         bookingsTrend,
         usersTrend,
       });
-
-      // Booking status distribution
-      setBookingStatusData([
-        { name: 'Pending', value: bookings.filter((b: any) => b.status === 'pending').length, color: '#F59E0B' },
-        { name: 'Confirmed', value: bookings.filter((b: any) => b.status === 'confirmed').length, color: '#3B82F6' },
-        { name: 'Completed', value: bookings.filter((b: any) => b.status === 'completed' || b.isCompleted).length, color: '#10B981' },
-        { name: 'Cancelled', value: bookings.filter((b: any) => b.status === 'cancelled').length, color: '#EF4444' },
-      ]);
-
-      // Quotation status distribution
-      const quotes = quotesRes.data || [];
-      setQuoteStatusData([
-        { name: 'Pending', value: quotes.filter((q: any) => q.status === 'pending').length, color: '#F59E0B' },
-        { name: 'Approved', value: quotes.filter((q: any) => q.status === 'approved' || q.status === 'accepted').length, color: '#10B981' },
-        { name: 'Rejected', value: quotes.filter((q: any) => q.status === 'rejected').length, color: '#EF4444' },
-        { name: 'Expired', value: quotes.filter((q: any) => q.status === 'expired').length, color: '#6B7280' },
-        { name: 'Sent', value: quotes.filter((q: any) => q.status === 'sent').length, color: '#8B5CF6' },
-      ].filter(item => item.value > 0));
 
       // Generate trend data for last 7 days (bookings only since we don't have quote/contact arrays)
       const trends: TrendData[] = [];
@@ -722,74 +694,7 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
               </CardContent>
             </Card>
 
-            {/* Booking Status Pie Chart */}
-            <Card className={`${bgClass} border ${borderClass}`}>
-              <CardHeader>
-                <CardTitle className={`text-lg ${textClass}`}>Booking Status Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={bookingStatusData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        labelLine={false}
-                      >
-                        {bookingStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
           </div>
-
-          {/* Quotation Status Distribution */}
-          {quoteStatusData.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className={`${bgClass} border ${borderClass}`}>
-              <CardHeader>
-                <CardTitle className={`text-lg ${textClass}`}>Quotation Status Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={quoteStatusData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        labelLine={false}
-                      >
-                        {quoteStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          )}
 
           {/* Pending Actions */}
           <Card className={`${bgClass} border ${borderClass}`}>

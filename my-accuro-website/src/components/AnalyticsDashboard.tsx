@@ -419,12 +419,91 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
           </div>
         )}
 
-        {/* Quote Status */}
-        {quoteData?.byStatus && quoteData.byStatus.length > 0 && (
+        {/* Booking Status Distribution */}
+        {dashboardData?.statuses && dashboardData.statuses.length > 0 && (
           <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-md p-4 sm:p-6`}>
             <div className="mb-4">
               <h3 className={`text-lg font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                Quote Status
+                Booking Status Distribution
+              </h3>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Breakdown by status ({dashboardData.totalBookings} total)
+              </p>
+            </div>
+
+            <div className="flex items-center">
+              <ResponsiveContainer width="50%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={dashboardData.statuses}
+                    dataKey="count"
+                    nameKey="_id"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={70}
+                    innerRadius={40}
+                    paddingAngle={3}
+                  >
+                    {dashboardData.statuses.map((entry: any, index: number) => {
+                      const colors: Record<string, string> = {
+                        pending: '#f59e0b',
+                        confirmed: '#3b82f6',
+                        completed: '#10b981',
+                        cancelled: '#ef4444',
+                        pending_review: '#f97316',
+                        rescheduled: '#8b5cf6',
+                      };
+                      return <Cell key={`cell-${index}`} fill={colors[entry._id] || COLORS[index % COLORS.length]} />;
+                    })}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+                      border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
+                      borderRadius: '8px',
+                      color: darkMode ? '#f3f4f6' : '#111827',
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+
+              <div className="flex-1 space-y-2">
+                {dashboardData.statuses.map((item: any, index: number) => {
+                  const colors: Record<string, string> = {
+                    pending: 'bg-yellow-500',
+                    confirmed: 'bg-blue-500',
+                    completed: 'bg-green-500',
+                    cancelled: 'bg-red-500',
+                    pending_review: 'bg-orange-500',
+                    rescheduled: 'bg-purple-500',
+                  };
+                  return (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${colors[item._id] || 'bg-gray-500'}`} />
+                        <span className={`text-sm capitalize ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                          {item._id?.replace(/_/g, ' ') || 'Unknown'}
+                        </span>
+                      </div>
+                      <span className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                        {item.count}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Quote Status Distribution */}
+      {quoteData?.byStatus && quoteData.byStatus.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-md p-4 sm:p-6`}>
+            <div className="mb-4">
+              <h3 className={`text-lg font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                Quotation Status Distribution
               </h3>
               <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 Breakdown by status ({quoteData.total} total)
@@ -442,13 +521,16 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
                     cy="50%"
                     outerRadius={70}
                     innerRadius={40}
+                    paddingAngle={3}
                   >
                     {quoteData.byStatus.map((entry: any, index: number) => {
                       const colors: Record<string, string> = {
                         pending: '#fbbf24',
-                        sent: '#3b82f6',
+                        sent: '#8b5cf6',
                         accepted: '#10b981',
+                        approved: '#10b981',
                         rejected: '#ef4444',
+                        expired: '#6b7280',
                       };
                       return <Cell key={`cell-${index}`} fill={colors[entry._id] || COLORS[index % COLORS.length]} />;
                     })}
@@ -468,9 +550,11 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
                 {quoteData.byStatus.map((item: any, index: number) => {
                   const colors: Record<string, string> = {
                     pending: 'bg-yellow-500',
-                    sent: 'bg-blue-500',
+                    sent: 'bg-purple-500',
                     accepted: 'bg-green-500',
+                    approved: 'bg-green-500',
                     rejected: 'bg-red-500',
+                    expired: 'bg-gray-500',
                   };
                   return (
                     <div key={index} className="flex items-center justify-between">
@@ -489,8 +573,8 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Conversion Funnel */}
       {conversionFunnel && (
