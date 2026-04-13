@@ -16,8 +16,6 @@ import {
   Activity,
 } from 'lucide-react';
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   XAxis,
@@ -31,9 +29,17 @@ import {
   Legend,
 } from 'recharts';
 import analyticsService from '../services/analyticsService';
+import bookingService from '../services/bookingService';
 
 interface AnalyticsDashboardProps {
   darkMode?: boolean;
+}
+
+interface ActivityTrendData {
+  date: string;
+  bookings: number;
+  quotes: number;
+  contacts: number;
 }
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -49,6 +55,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [conversionFunnel, setConversionFunnel] = useState<any>(null);
   const [quoteData, setQuoteData] = useState<any>(null);
+  const [activityTrend, setActivityTrend] = useState<ActivityTrendData[]>([]);
 
   const [trendPeriod, setTrendPeriod] = useState<number>(30);
   const [isSampleData, setIsSampleData] = useState(false);
@@ -61,13 +68,14 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
     setLoading(true);
     setError('');
     try {
-      const [dashboard, trends, pending, activity, funnel, quotes] = await Promise.all([
+      const [dashboard, trends, pending, activity, funnel, quotes, bookingsRes] = await Promise.all([
         analyticsService.getDashboardAnalytics(),
         analyticsService.getBookingTrends(trendPeriod),
         analyticsService.getPendingActions(),
         analyticsService.getRecentActivity(10),
         analyticsService.getConversionFunnel(),
         analyticsService.getQuoteAnalytics(),
+        bookingService.getAll().catch(() => ({ data: [] })),
       ]);
 
       setDashboardData(dashboard.data);
@@ -77,6 +85,30 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
       setRecentActivity(activity.data || []);
       setConversionFunnel(funnel.data || null);
       setQuoteData(quotes.data || null);
+
+      // Compute 7-day activity trend
+      const bookings = bookingsRes.data || [];
+      const now = new Date();
+      const trendItems: ActivityTrendData[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(now);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        const dayStart = new Date(dateStr);
+        const dayEnd = new Date(dateStr);
+        dayEnd.setDate(dayEnd.getDate() + 1);
+
+        trendItems.push({
+          date: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+          bookings: bookings.filter((b: any) => {
+            const d = new Date(b.createdAt);
+            return d >= dayStart && d < dayEnd;
+          }).length,
+          quotes: 0,
+          contacts: 0,
+        });
+      }
+      setActivityTrend(trendItems);
     } catch (err: any) {
       console.error('Failed to load analytics:', err);
       setError(err.response?.data?.message || 'Failed to load analytics');
@@ -531,10 +563,11 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
         )}
       </div>
 
-      {/* Top Services - Centered */}
-      {dashboardData?.products && dashboardData.products.length > 0 && (
-        <div className="flex justify-center">
-          <div className={`w-full lg:w-2/3 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-md p-4 sm:p-6`}>
+      {/* Top Services & 7-Day Activity Trend - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top Services */}
+        {dashboardData?.products && dashboardData.products.length > 0 && (
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-md p-4 sm:p-6`}>
             <div className="mb-4">
               <h3 className={`text-lg font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
                 Top Services
@@ -575,8 +608,54 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
               </BarChart>
             </ResponsiveContainer>
           </div>
+        )}
+
+        {/* 7-Day Activity Trend */}
+        <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-md p-4 sm:p-6`}>
+          <div className="mb-4">
+            <h3 className={`text-lg font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+              7-Day Activity Trend
+            </h3>
+            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              Daily activity over the past week
+            </p>
+          </div>
+
+          {activityTrend.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={activityTrend} barGap={2}>
+                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fontSize: 10, fill: darkMode ? '#9ca3af' : '#6b7280' }}
+                  label={{ value: 'Day', position: 'insideBottom', offset: -5, style: { fontSize: 12, fill: darkMode ? '#9ca3af' : '#6b7280' } }}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: darkMode ? '#9ca3af' : '#6b7280' }}
+                  allowDecimals={false}
+                  label={{ value: 'Count', angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: 12, fill: darkMode ? '#9ca3af' : '#6b7280', textAnchor: 'middle' } }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+                    border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
+                    borderRadius: '8px',
+                    color: darkMode ? '#f3f4f6' : '#111827',
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="bookings" fill="#3B82F6" name="Bookings" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="quotes" fill="#8B5CF6" name="Quotes" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="contacts" fill="#F59E0B" name="Contacts" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className={`flex items-center justify-center h-[250px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              <p>No activity data available</p>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Conversion Funnel */}
       {conversionFunnel && (

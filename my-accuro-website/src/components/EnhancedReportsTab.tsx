@@ -19,16 +19,6 @@ import {
   CheckCircle,
   XCircle,
 } from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import bookingService from '../services/bookingService';
@@ -68,14 +58,6 @@ interface KPIData {
   usersTrend: number;
 }
 
-interface TrendData {
-  date: string;
-  bookings: number;
-  quotes: number;
-  contacts: number;
-}
-
-
 const ACCURO_LOGO_BASE64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTAwIDQwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0ZXh0IHg9IjUiIHk9IjI1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjMkQ3MkIyIj5BQ0NVUk88L3RleHQ+PC9zdmc+';
 
 export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps) {
@@ -83,7 +65,6 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [kpiData, setKpiData] = useState<KPIData | null>(null);
-  const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
   // Report generation state
@@ -160,28 +141,6 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
         bookingsTrend,
         usersTrend,
       });
-
-      // Generate trend data for last 7 days (bookings only since we don't have quote/contact arrays)
-      const trends: TrendData[] = [];
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - i);
-        const dateStr = date.toISOString().split('T')[0];
-        const dayStart = new Date(dateStr);
-        const dayEnd = new Date(dateStr);
-        dayEnd.setDate(dayEnd.getDate() + 1);
-
-        trends.push({
-          date: date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-          bookings: bookings.filter((b: any) => {
-            const d = new Date(b.createdAt);
-            return d >= dayStart && d < dayEnd;
-          }).length,
-          quotes: 0,
-          contacts: 0,
-        });
-      }
-      setTrendData(trends);
 
       setRecentActivity(activity.slice(0, 5));
     } catch (err: any) {
@@ -653,47 +612,6 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
                 </div>
               </CardContent>
             </Card>
-          </div>
-
-          {/* Charts Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Trend Chart - Bar chart for discrete daily counts */}
-            <Card className={`${bgClass} border ${borderClass}`}>
-              <CardHeader>
-                <CardTitle className={`text-lg ${textClass}`}>7-Day Activity Trend</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={trendData} barGap={2}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 10, fill: darkMode ? '#9CA3AF' : '#6B7280' }}
-                        label={{ value: 'Day', position: 'insideBottom', offset: -5, style: { fontSize: 12, fill: darkMode ? '#9CA3AF' : '#6B7280' } }}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 10, fill: darkMode ? '#9CA3AF' : '#6B7280' }}
-                        allowDecimals={false}
-                        label={{ value: 'Count', angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: 12, fill: darkMode ? '#9CA3AF' : '#6B7280', textAnchor: 'middle' } }}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
-                          border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
-                          borderRadius: '8px',
-                        }}
-                      />
-                      <Legend />
-                      <Bar dataKey="bookings" fill="#3B82F6" name="Bookings" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="quotes" fill="#8B5CF6" name="Quotes" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="contacts" fill="#F59E0B" name="Contacts" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
           </div>
 
           {/* Pending Actions */}
