@@ -372,53 +372,8 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
         )}
       </div>
 
-      {/* Second Row */}
+      {/* Status Distributions - Side by Side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Services */}
-        {dashboardData?.products && dashboardData.products.length > 0 && (
-          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-md p-4 sm:p-6`}>
-            <div className="mb-4">
-              <h3 className={`text-lg font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                Top Services
-              </h3>
-              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Most requested calibration services
-              </p>
-            </div>
-
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={dashboardData.products.slice(0, 5)} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
-                <XAxis
-                  type="number"
-                  tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
-                  allowDecimals={false}
-                  label={{ value: 'Number of Requests', position: 'insideBottom', offset: -5, style: { fontSize: 12, fill: darkMode ? '#9ca3af' : '#6b7280' } }}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="_id"
-                  width={130}
-                  tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: darkMode ? '#1f2937' : '#ffffff',
-                    border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
-                    borderRadius: '8px',
-                    color: darkMode ? '#f3f4f6' : '#111827',
-                  }}
-                />
-                <Bar dataKey="count" fill="#3b82f6" name="Requests" radius={[0, 4, 4, 0]}>
-                  {dashboardData.products.slice(0, 5).map((_: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-
         {/* Booking Status Distribution */}
         {dashboardData?.statuses && dashboardData.statuses.length > 0 && (
           <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-md p-4 sm:p-6`}>
@@ -452,6 +407,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
                         cancelled: '#ef4444',
                         pending_review: '#f97316',
                         rescheduled: '#8b5cf6',
+                        in_progress: '#6b7280',
                       };
                       return <Cell key={`cell-${index}`} fill={colors[entry._id] || COLORS[index % COLORS.length]} />;
                     })}
@@ -476,6 +432,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
                     cancelled: 'bg-red-500',
                     pending_review: 'bg-orange-500',
                     rescheduled: 'bg-purple-500',
+                    in_progress: 'bg-gray-500',
                   };
                   return (
                     <div key={index} className="flex items-center justify-between">
@@ -495,11 +452,9 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
             </div>
           </div>
         )}
-      </div>
 
-      {/* Quote Status Distribution */}
-      {quoteData?.byStatus && quoteData.byStatus.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Quotation Status Distribution */}
+        {quoteData?.byStatus && quoteData.byStatus.length > 0 && (
           <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-md p-4 sm:p-6`}>
             <div className="mb-4">
               <h3 className={`text-lg font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
@@ -572,6 +527,53 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
                 })}
               </div>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Top Services - Centered */}
+      {dashboardData?.products && dashboardData.products.length > 0 && (
+        <div className="flex justify-center">
+          <div className={`w-full lg:w-2/3 ${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-md p-4 sm:p-6`}>
+            <div className="mb-4">
+              <h3 className={`text-lg font-semibold ${darkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                Top Services
+              </h3>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Most requested calibration services
+              </p>
+            </div>
+
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={dashboardData.products.slice(0, 5)} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
+                  allowDecimals={false}
+                  label={{ value: 'Number of Requests', position: 'insideBottom', offset: -5, style: { fontSize: 12, fill: darkMode ? '#9ca3af' : '#6b7280' } }}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="_id"
+                  width={130}
+                  tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: darkMode ? '#1f2937' : '#ffffff',
+                    border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
+                    borderRadius: '8px',
+                    color: darkMode ? '#f3f4f6' : '#111827',
+                  }}
+                />
+                <Bar dataKey="count" fill="#3b82f6" name="Requests" radius={[0, 4, 4, 0]}>
+                  {dashboardData.products.slice(0, 5).map((_: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       )}
