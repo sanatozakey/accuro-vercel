@@ -273,16 +273,21 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
           </div>
 
           {bookingTrends.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={bookingTrends}>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={bookingTrends} barGap={2}>
                 <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={formatDate}
                   tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
                   interval="preserveStartEnd"
+                  label={{ value: 'Date', position: 'insideBottom', offset: -5, style: { fontSize: 12, fill: darkMode ? '#9ca3af' : '#6b7280' } }}
                 />
-                <YAxis tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                <YAxis
+                  tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
+                  allowDecimals={false}
+                  label={{ value: 'Number of Bookings', angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: 12, fill: darkMode ? '#9ca3af' : '#6b7280', textAnchor: 'middle' } }}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: darkMode ? '#1f2937' : '#ffffff',
@@ -293,9 +298,9 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
                   labelFormatter={(label) => new Date(label).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 />
                 <Legend />
-                <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={2} name="Total" dot={false} />
-                <Line type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={2} name="Completed" dot={false} />
-              </LineChart>
+                <Bar dataKey="total" fill="#3b82f6" name="Total" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="completed" fill="#10b981" name="Completed" radius={[4, 4, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           ) : (
             <div className={`flex items-center justify-center h-[250px] ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -384,11 +389,16 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={dashboardData.products.slice(0, 5)} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#e5e7eb'} />
-                <XAxis type="number" tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }} />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
+                  allowDecimals={false}
+                  label={{ value: 'Number of Requests', position: 'insideBottom', offset: -5, style: { fontSize: 12, fill: darkMode ? '#9ca3af' : '#6b7280' } }}
+                />
                 <YAxis
                   type="category"
                   dataKey="_id"
-                  width={120}
+                  width={130}
                   tick={{ fontSize: 11, fill: darkMode ? '#9ca3af' : '#6b7280' }}
                 />
                 <Tooltip
@@ -399,7 +409,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
                     color: darkMode ? '#f3f4f6' : '#111827',
                   }}
                 />
-                <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]}>
+                <Bar dataKey="count" fill="#3b82f6" name="Requests" radius={[0, 4, 4, 0]}>
                   {dashboardData.products.slice(0, 5).map((_: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}

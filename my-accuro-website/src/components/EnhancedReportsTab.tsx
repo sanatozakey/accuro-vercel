@@ -92,6 +92,7 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
   const [kpiData, setKpiData] = useState<KPIData | null>(null);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [bookingStatusData, setBookingStatusData] = useState<any[]>([]);
+  const [quoteStatusData, setQuoteStatusData] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
   // Report generation state
@@ -117,12 +118,13 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
       setFetchError('');
 
       // Fetch all data in parallel
-      const [bookingsRes, usersRes, activityRes, dashboardRes, pendingRes] = await Promise.all([
+      const [bookingsRes, usersRes, activityRes, dashboardRes, pendingRes, quotesRes] = await Promise.all([
         bookingService.getAll(),
         userService.getAll(),
         activityLogService.getAllActivityLogs({ limit: 10 }).catch(() => ({ data: [] })),
         analyticsService.getDashboardAnalytics().catch(() => ({ data: { totalQuotes: 0, totalContacts: 0 } })),
         analyticsService.getPendingActions().catch(() => ({ data: { pendingQuotes: 0, unreadContacts: 0 } })),
+        quoteService.getAll().catch(() => ({ data: [] })),
       ]);
 
       const bookings = bookingsRes.data || [];
@@ -176,6 +178,16 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
         { name: 'Completed', value: bookings.filter((b: any) => b.status === 'completed' || b.isCompleted).length, color: '#10B981' },
         { name: 'Cancelled', value: bookings.filter((b: any) => b.status === 'cancelled').length, color: '#EF4444' },
       ]);
+
+      // Quotation status distribution
+      const quotes = quotesRes.data || [];
+      setQuoteStatusData([
+        { name: 'Pending', value: quotes.filter((q: any) => q.status === 'pending').length, color: '#F59E0B' },
+        { name: 'Approved', value: quotes.filter((q: any) => q.status === 'approved' || q.status === 'accepted').length, color: '#10B981' },
+        { name: 'Rejected', value: quotes.filter((q: any) => q.status === 'rejected').length, color: '#EF4444' },
+        { name: 'Expired', value: quotes.filter((q: any) => q.status === 'expired').length, color: '#6B7280' },
+        { name: 'Sent', value: quotes.filter((q: any) => q.status === 'sent').length, color: '#8B5CF6' },
+      ].filter(item => item.value > 0));
 
       // Generate trend data for last 7 days (bookings only since we don't have quote/contact arrays)
       const trends: TrendData[] = [];
@@ -729,18 +741,26 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Trend Chart */}
+            {/* Trend Chart - Bar chart for discrete daily counts */}
             <Card className={`${bgClass} border ${borderClass}`}>
               <CardHeader>
                 <CardTitle className={`text-lg ${textClass}`}>7-Day Activity Trend</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64">
+                <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={trendData}>
+                    <BarChart data={trendData} barGap={2}>
                       <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
-                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: darkMode ? '#9CA3AF' : '#6B7280' }} />
-                      <YAxis tick={{ fontSize: 10, fill: darkMode ? '#9CA3AF' : '#6B7280' }} />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 10, fill: darkMode ? '#9CA3AF' : '#6B7280' }}
+                        label={{ value: 'Day', position: 'insideBottom', offset: -5, style: { fontSize: 12, fill: darkMode ? '#9CA3AF' : '#6B7280' } }}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 10, fill: darkMode ? '#9CA3AF' : '#6B7280' }}
+                        allowDecimals={false}
+                        label={{ value: 'Count', angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: 12, fill: darkMode ? '#9CA3AF' : '#6B7280', textAnchor: 'middle' } }}
+                      />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
@@ -749,10 +769,10 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
                         }}
                       />
                       <Legend />
-                      <Line type="monotone" dataKey="bookings" stroke="#3B82F6" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line type="monotone" dataKey="quotes" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 4 }} />
-                      <Line type="monotone" dataKey="contacts" stroke="#F59E0B" strokeWidth={2} dot={{ r: 4 }} />
-                    </LineChart>
+                      <Bar dataKey="bookings" fill="#3B82F6" name="Bookings" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="quotes" fill="#8B5CF6" name="Quotes" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="contacts" fill="#F59E0B" name="Contacts" radius={[4, 4, 0, 0]} />
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -764,7 +784,7 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
                 <CardTitle className={`text-lg ${textClass}`}>Booking Status Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64">
+                <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -790,6 +810,42 @@ export function EnhancedReportsTab({ darkMode = false }: EnhancedReportsTabProps
               </CardContent>
             </Card>
           </div>
+
+          {/* Quotation Status Distribution */}
+          {quoteStatusData.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className={`${bgClass} border ${borderClass}`}>
+              <CardHeader>
+                <CardTitle className={`text-lg ${textClass}`}>Quotation Status Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={quoteStatusData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        labelLine={false}
+                      >
+                        {quoteStatusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          )}
 
           {/* Pending Actions */}
           <Card className={`${bgClass} border ${borderClass}`}>
