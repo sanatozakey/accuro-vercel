@@ -22,6 +22,11 @@ export function CustomerBookings() {
   const [uploading, setUploading] = useState(false);
   const [loadingProof, setLoadingProof] = useState(false);
 
+  // Technician fee payment state
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [feeReceipt, setFeeReceipt] = useState<File | null>(null);
+  const [uploadingFeeProof, setUploadingFeeProof] = useState(false);
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -380,52 +385,170 @@ export function CustomerBookings() {
               </div>
 
               {/* Technician Fee */}
-              {(selectedBooking as any).technicianFee && (
-                <div className={`border rounded-lg p-4 ${
-                  (selectedBooking as any).technicianFee.status === 'paid'
-                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
-                    : (selectedBooking as any).technicianFee.status === 'waived'
-                    ? 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
-                    : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className={`h-5 w-5 ${
-                        (selectedBooking as any).technicianFee.status === 'paid' ? 'text-green-600' :
-                        (selectedBooking as any).technicianFee.status === 'waived' ? 'text-gray-500' :
-                        'text-amber-600'
-                      }`} />
-                      <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Technician Fee</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Service consultation fee</p>
+              {(selectedBooking as any).technicianFee && (() => {
+                const fee = (selectedBooking as any).technicianFee;
+                const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+                return (
+                  <div className={`border rounded-lg p-4 ${
+                    fee.status === 'paid'
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
+                      : fee.status === 'waived'
+                      ? 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
+                      : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className={`h-5 w-5 ${
+                          fee.status === 'paid' ? 'text-green-600' :
+                          fee.status === 'waived' ? 'text-gray-500' :
+                          'text-amber-600'
+                        }`} />
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">Technician Fee</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Service consultation fee</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">
+                          PHP {fee.amount?.toFixed(2)}
+                        </p>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                          fee.status === 'paid'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                            : fee.status === 'waived'
+                            ? 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300'
+                            : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+                        }`}>
+                          {fee.status === 'paid' ? 'Paid' :
+                           fee.status === 'waived' ? 'Waived' :
+                           fee.proofSubmittedAt ? 'Proof Submitted' : 'Pending'}
+                        </span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-gray-900 dark:text-white">
-                        PHP {(selectedBooking as any).technicianFee.amount?.toFixed(2)}
+
+                    {/* Pending: Show QR payment + upload */}
+                    {fee.status === 'pending' && selectedBooking.status === 'confirmed' && (
+                      <div className="mt-3 space-y-3">
+                        {/* Pay via GCash button */}
+                        <button
+                          onClick={() => setShowQrModal(true)}
+                          className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
+                        >
+                          <CreditCard className="h-4 w-4" />
+                          Pay via GCash (PHP {fee.amount?.toFixed(2)})
+                        </button>
+
+                        {/* Upload receipt */}
+                        {fee.proofSubmittedAt ? (
+                          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                              <CheckCircle className="h-4 w-4" />
+                              <p className="text-sm font-medium">Receipt submitted - awaiting admin verification</p>
+                            </div>
+                            <img
+                              src={`${API_URL}/bookings/${selectedBooking._id}/fee-proof`}
+                              alt="Payment receipt"
+                              className="mt-2 max-h-40 rounded-lg border cursor-pointer"
+                              onClick={() => window.open(`${API_URL}/bookings/${selectedBooking._id}/fee-proof`, '_blank')}
+                            />
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-700">
+                            <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                              After paying, upload your GCash receipt screenshot:
+                            </p>
+                            <div className="flex gap-2">
+                              <label className="flex-1 flex items-center justify-center gap-2 py-2 px-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-400 transition text-sm">
+                                <Upload className="h-4 w-4 text-gray-500" />
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {feeReceipt ? feeReceipt.name : 'Choose receipt image'}
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => setFeeReceipt(e.target.files?.[0] || null)}
+                                />
+                              </label>
+                              {feeReceipt && (
+                                <button
+                                  onClick={async () => {
+                                    if (!feeReceipt) return;
+                                    try {
+                                      setUploadingFeeProof(true);
+                                      await bookingService.submitFeeProof(selectedBooking._id, feeReceipt);
+                                      toast.success('Receipt uploaded! Admin will verify your payment.');
+                                      setFeeReceipt(null);
+                                      fetchBookings();
+                                      // Re-fetch booking to update UI
+                                      const updated = await bookingService.getById(selectedBooking._id);
+                                      setSelectedBooking(updated.data);
+                                    } catch (err: any) {
+                                      toast.error(err.response?.data?.message || 'Upload failed');
+                                    } finally {
+                                      setUploadingFeeProof(false);
+                                    }
+                                  }}
+                                  disabled={uploadingFeeProof}
+                                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                                >
+                                  {uploadingFeeProof ? 'Uploading...' : 'Submit'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Paid confirmation */}
+                    {fee.status === 'paid' && fee.paidAt && (
+                      <p className="mt-2 text-xs text-green-600 dark:text-green-400">
+                        Paid on {new Date(fee.paidAt).toLocaleDateString()}
                       </p>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        (selectedBooking as any).technicianFee.status === 'paid'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : (selectedBooking as any).technicianFee.status === 'waived'
-                          ? 'bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-300'
-                          : 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
-                      }`}>
-                        {(selectedBooking as any).technicianFee.status === 'paid' ? 'Paid' :
-                         (selectedBooking as any).technicianFee.status === 'waived' ? 'Waived' : 'Pending'}
-                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* GCash QR Modal */}
+              {showQrModal && (selectedBooking as any).technicianFee && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" onClick={() => setShowQrModal(false)}>
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                    {/* Blue GCash header */}
+                    <div className="bg-blue-600 text-white p-4 text-center">
+                      <h3 className="text-lg font-bold">Pay via GCash</h3>
+                      <p className="text-blue-100 text-sm mt-1">Scan the QR code to pay</p>
+                    </div>
+                    {/* QR Code */}
+                    <div className="p-6 flex flex-col items-center">
+                      <img
+                        src="/images/payment/gcash-qr.png"
+                        alt="GCash QR Code"
+                        className="w-64 h-auto rounded-lg shadow"
+                      />
+                      <div className="mt-4 text-center">
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                          PHP {(selectedBooking as any).technicianFee.amount?.toFixed(2)}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Technician consultation fee</p>
+                      </div>
+                      <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg w-full">
+                        <p className="text-xs text-amber-700 dark:text-amber-300 text-center">
+                          After paying, close this and upload your GCash receipt screenshot below.
+                        </p>
+                      </div>
+                    </div>
+                    {/* Close */}
+                    <div className="p-4 border-t dark:border-gray-700">
+                      <button
+                        onClick={() => setShowQrModal(false)}
+                        className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition"
+                      >
+                        Close
+                      </button>
                     </div>
                   </div>
-                  {(selectedBooking as any).technicianFee.status === 'pending' && selectedBooking.status === 'confirmed' && (
-                    <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-700">
-                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">
-                        Please pay the technician fee to proceed with the meeting.
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Payment via QRPH or cash. Contact your assigned technician for payment details.
-                      </p>
-                    </div>
-                  )}
                 </div>
               )}
 

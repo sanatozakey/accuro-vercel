@@ -3300,59 +3300,79 @@ export function BookingDashboard(): React.ReactElement {
                             </div>
                           )}
                           {/* Technician Fee */}
-                          {(selectedBooking as any).technicianFee && (
-                            <div className={`flex items-center justify-between p-3 rounded-lg border ${
-                              (selectedBooking as any).technicianFee.status === 'paid'
-                                ? 'bg-green-50 border-green-200'
-                                : (selectedBooking as any).technicianFee.status === 'waived'
-                                ? 'bg-gray-50 border-gray-200'
-                                : 'bg-amber-50 border-amber-200'
-                            }`}>
-                              <div>
-                                <div className="text-sm font-medium text-gray-700">Technician Fee</div>
-                                <div className="text-lg font-bold text-gray-900">
-                                  PHP {(selectedBooking as any).technicianFee.amount?.toFixed(2)}
+                          {(selectedBooking as any).technicianFee && (() => {
+                            const fee = (selectedBooking as any).technicianFee;
+                            const feeProofUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/bookings/${selectedBooking._id}/fee-proof`;
+                            return (
+                              <div className={`p-3 rounded-lg border ${
+                                fee.status === 'paid'
+                                  ? 'bg-green-50 border-green-200'
+                                  : fee.status === 'waived'
+                                  ? 'bg-gray-50 border-gray-200'
+                                  : 'bg-amber-50 border-amber-200'
+                              }`}>
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-700">Technician Fee</div>
+                                    <div className="text-lg font-bold text-gray-900">
+                                      PHP {fee.amount?.toFixed(2)}
+                                    </div>
+                                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                      fee.status === 'paid' ? 'bg-green-100 text-green-800' :
+                                      fee.status === 'waived' ? 'bg-gray-100 text-gray-600' :
+                                      'bg-amber-100 text-amber-800'
+                                    }`}>
+                                      {fee.status === 'paid' ? 'PAID' : fee.status === 'waived' ? 'WAIVED' : fee.proofSubmittedAt ? 'PROOF SUBMITTED' : 'PENDING'}
+                                    </span>
+                                  </div>
+                                  {fee.status === 'pending' && (
+                                    <div className="flex gap-2">
+                                      <button
+                                        type="button"
+                                        className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                        onClick={async () => {
+                                          try {
+                                            await bookingService.updateFeeStatus(selectedBooking._id, 'paid')
+                                            toast.success('Fee marked as paid')
+                                            fetchBookings()
+                                          } catch { toast.error('Failed to update fee') }
+                                        }}
+                                      >
+                                        Mark Paid
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                                        onClick={async () => {
+                                          try {
+                                            await bookingService.updateFeeStatus(selectedBooking._id, 'waived')
+                                            toast.success('Fee waived')
+                                            fetchBookings()
+                                          } catch { toast.error('Failed to update fee') }
+                                        }}
+                                      >
+                                        Waive
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
-                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                                  (selectedBooking as any).technicianFee.status === 'paid' ? 'bg-green-100 text-green-800' :
-                                  (selectedBooking as any).technicianFee.status === 'waived' ? 'bg-gray-100 text-gray-600' :
-                                  'bg-amber-100 text-amber-800'
-                                }`}>
-                                  {(selectedBooking as any).technicianFee.status.toUpperCase()}
-                                </span>
+                                {/* Show submitted receipt proof */}
+                                {fee.proofSubmittedAt && (
+                                  <div className="mt-3 border-t pt-3">
+                                    <p className="text-xs font-medium text-gray-600 mb-2">
+                                      GCash Receipt (submitted {new Date(fee.proofSubmittedAt).toLocaleString()}):
+                                    </p>
+                                    <img
+                                      src={feeProofUrl}
+                                      alt="GCash receipt"
+                                      className="max-h-48 rounded-lg border cursor-pointer hover:opacity-90 transition"
+                                      onClick={() => window.open(feeProofUrl, '_blank')}
+                                    />
+                                  </div>
+                                )}
                               </div>
-                              {(selectedBooking as any).technicianFee.status === 'pending' && (
-                                <div className="flex gap-2">
-                                  <button
-                                    type="button"
-                                    className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
-                                    onClick={async () => {
-                                      try {
-                                        await bookingService.updateFeeStatus(selectedBooking._id, 'paid')
-                                        toast.success('Fee marked as paid')
-                                        fetchBookings()
-                                      } catch { toast.error('Failed to update fee') }
-                                    }}
-                                  >
-                                    Mark Paid
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
-                                    onClick={async () => {
-                                      try {
-                                        await bookingService.updateFeeStatus(selectedBooking._id, 'waived')
-                                        toast.success('Fee waived')
-                                        fetchBookings()
-                                      } catch { toast.error('Failed to update fee') }
-                                    }}
-                                  >
-                                    Waive
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                            );
+                          })()}
                           <div className="flex items-center">
                             <FileText className="h-5 w-5 text-gray-400 mr-2" />
                             <div>

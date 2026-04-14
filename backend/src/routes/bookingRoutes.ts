@@ -16,6 +16,8 @@ import {
   getMyAssignments,
   checkTechnicianAvailability,
   updateFeeStatus,
+  submitFeeProof,
+  serveFeeProof,
 } from '../controllers/bookingController';
 import { protect, authorize, technicianOrAbove, superAdminOnly } from '../middleware/auth';
 import {
@@ -24,6 +26,7 @@ import {
   handleValidationErrors,
 } from '../middleware/validation';
 import { bookingLimiter } from '../middleware/rateLimiter';
+import { proofUploadMemory } from '../middleware/upload';
 
 const router = express.Router();
 
@@ -58,7 +61,9 @@ router.put('/:id/reassign', protect, superAdminOnly, reassignTechnician);
 // Technician action routes
 router.put('/:id/start', protect, technicianOrAbove, startBooking);
 
-// Fee management (admin/superadmin)
+// Fee management
 router.put('/:id/fee-status', protect, authorize('admin', 'superadmin'), updateFeeStatus);
+router.post('/:id/fee-proof', protect, proofUploadMemory.single('receipt'), submitFeeProof);
+router.get('/:id/fee-proof', serveFeeProof);
 
 export default router;

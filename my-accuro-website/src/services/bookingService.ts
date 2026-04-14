@@ -176,6 +176,16 @@ class BookingService {
     return response.data;
   }
 
+  // Submit technician fee payment proof (GCash receipt)
+  async submitFeeProof(id: string, file: File): Promise<{ success: boolean; message: string }> {
+    const formData = new FormData();
+    formData.append('receipt', file);
+    const response = await api.post(`/bookings/${id}/fee-proof`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  }
+
   // Check technician availability for a date/time (superadmin only)
   async checkTechnicianAvailability(date: string, time: string): Promise<{ success: boolean; data: TechnicianAvailability[] }> {
     const response = await api.get('/bookings/technician-availability', {

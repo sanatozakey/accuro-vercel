@@ -1297,7 +1297,62 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
     }
     await booking.save();
 
-    res.status(200).json({ success: true, data: booking });
+    // Strip proof binary from response
+    const bookingObj = booking.toObject();
+    if (bookingObj.technicianFee?.proofData) {
+      delete bookingObj.technicianFee.proofData;
+    }
+
+    res.status(200).json({ success: true, data: bookingObj });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
+// @desc    Customer submits technician fee payment proof (GCash receipt screenshot)
+// @route   POST /api/bookings/:id/fee-proof
+// @access  Private
+export const submitFeeProof = async (req: AuthRequest, res: Response) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (!booking.technicianFee || booking.technicianFee.status !== 'pending') {
+      return res.status(400).json({ success: false, message: 'No pending technician fee for this booking' });
+    }
+
+    const file = req.file as Express.Multer.File;
+    if (!file) {
+      return res.status(400).json({ success: false, message: 'Receipt image is required' });
+    }
+
+    booking.technicianFee.proofFilename = file.originalname;
+    booking.technicianFee.proofMimeType = file.mimetype;
+    booking.technicianFee.proofData = file.buffer;
+    booking.technicianFee.proofSubmittedAt = new Date();
+    await booking.save();
+
+    res.status(200).json({ success: true, message: 'Payment proof submitted successfully' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
+// @desc    Serve technician fee proof image
+// @route   GET /api/bookings/:id/fee-proof
+// @access  Public (direct browser access)
+export const serveFeeProof = async (req: Request, res: Response) => {
+  try {
+    const booking = await Booking.findById(req.params.id).select('technicianFee');
+    if (!booking || !booking.technicianFee?.proofData) {
+      return res.status(404).json({ success: false, message: 'Fee proof not found' });
+    }
+
+    res.set('Content-Type', booking.technicianFee.proofMimeType || 'image/png');
+    res.set('Content-Disposition', `inline; filename="${booking.technicianFee.proofFilename || 'receipt.png'}"`);
+    res.send(booking.technicianFee.proofData);
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }

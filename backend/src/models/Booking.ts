@@ -40,6 +40,10 @@ export interface IBooking extends Document {
     amount: number;
     status: 'pending' | 'paid' | 'waived';
     paidAt?: Date;
+    proofFilename?: string;
+    proofMimeType?: string;
+    proofData?: Buffer;
+    proofSubmittedAt?: Date;
   };
   // Google Calendar sync fields
   googleEventId?: string;
@@ -175,6 +179,10 @@ const BookingSchema: Schema = new Schema(
       paidAt: {
         type: Date,
       },
+      proofFilename: String,
+      proofMimeType: String,
+      proofData: Buffer,
+      proofSubmittedAt: Date,
     },
     // Google Calendar sync fields
     googleEventId: {
@@ -195,6 +203,23 @@ const BookingSchema: Schema = new Schema(
   },
   {
     timestamps: true,
+    toJSON: {
+      transform(_doc, ret) {
+        // Strip binary proof data from JSON responses
+        if (ret.technicianFee?.proofData) {
+          delete ret.technicianFee.proofData;
+        }
+        return ret;
+      },
+    },
+    toObject: {
+      transform(_doc, ret) {
+        if (ret.technicianFee?.proofData) {
+          delete ret.technicianFee.proofData;
+        }
+        return ret;
+      },
+    },
   }
 );
 
