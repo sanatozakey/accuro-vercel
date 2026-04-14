@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import bookingService, { Booking, getTechnicianLabel, getTechnicianRealName } from '../services/bookingService';
 import transactionProofService, { TransactionProof } from '../services/transactionProofService';
 import { BookingStatusTracker } from '../components/BookingStatusTracker';
+import { FeeReceiptModal } from '../components/FeeReceiptModal';
 
 export function CustomerBookings() {
   const { user } = useAuth();
@@ -26,6 +27,7 @@ export function CustomerBookings() {
   const [showQrModal, setShowQrModal] = useState(false);
   const [feeReceipt, setFeeReceipt] = useState<File | null>(null);
   const [uploadingFeeProof, setUploadingFeeProof] = useState(false);
+  const [showFeeReceipt, setShowFeeReceipt] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -501,11 +503,20 @@ export function CustomerBookings() {
                       </div>
                     )}
 
-                    {/* Paid confirmation */}
-                    {fee.status === 'paid' && fee.paidAt && (
-                      <p className="mt-2 text-xs text-green-600 dark:text-green-400">
-                        Paid on {new Date(fee.paidAt).toLocaleDateString()}
-                      </p>
+                    {/* Paid: show View Receipt button */}
+                    {fee.status === 'paid' && (
+                      <div className="mt-3 flex items-center justify-between">
+                        <p className="text-xs text-green-600 dark:text-green-400">
+                          {fee.paidAt ? `Paid on ${new Date(fee.paidAt).toLocaleDateString()}` : 'Payment confirmed'}
+                        </p>
+                        <button
+                          onClick={() => setShowFeeReceipt(true)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          View Receipt
+                        </button>
+                      </div>
                     )}
                   </div>
                 );
@@ -550,6 +561,14 @@ export function CustomerBookings() {
                     </div>
                   </div>
                 </div>
+              )}
+
+              {/* Fee Receipt Modal */}
+              {showFeeReceipt && selectedBooking && (selectedBooking as any).technicianFee && (
+                <FeeReceiptModal
+                  booking={selectedBooking as any}
+                  onClose={() => setShowFeeReceipt(false)}
+                />
               )}
 
               {/* Contact & Location */}
