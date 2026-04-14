@@ -102,6 +102,18 @@ class AuthService {
     return response.data;
   }
 
+  async googleLogin(credential: string): Promise<AuthResponse> {
+    const response = await api.post<AuthResponse>('/auth/google', { credential });
+    if (response.data.success && response.data.data?.token) {
+      localStorage.setItem('token', response.data.data.token);
+      if (response.data.data.refreshToken) {
+        localStorage.setItem('refreshToken', response.data.data.refreshToken);
+      }
+      localStorage.setItem('user', JSON.stringify(response.data.data));
+    }
+    return response.data;
+  }
+
   async getMe(): Promise<UserResponse> {
     const response = await api.get<UserResponse>('/auth/me');
     return response.data;

@@ -9,6 +9,7 @@ import ActivityLog from '../models/ActivityLog';
 import RefreshToken from '../models/RefreshToken';
 import { jwtConfig } from '../config/jwt';
 import { verifyTOTP, verifyBackupCode } from '../utils/totp';
+import { OAuth2Client } from 'google-auth-library';
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -303,6 +304,152 @@ export const login = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: error.message || 'Server error',
+    });
+  }
+};
+
+// @desc    Google SSO login/register
+// @route   POST /api/auth/google
+// @access  Public
+export const googleLogin = async (req: Request, res: Response) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google credential is required',
+      });
+    }
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      return res.status(500).json({
+        success: false,
+        message: 'Google OAuth is not configured on the server',
+      });
+    }
+
+    // Verify the Google ID token
+    const client = new OAuth2Client(clientId);
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: clientId,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid Google token',
+      });
+    }
+
+    const { sub: googleId, email, given_name, family_name, picture, email_verified } = payload;
+
+    // Check if user already exists
+    let user = await User.findOne({
+      $or: [{ googleId }, { email }],
+    });
+
+    if (user) {
+      // Link Google account if user exists with email but no googleId
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.authProvider = user.authProvider === 'google' ? 'google' : 'local';
+        if (picture && !user.profilePicture) {
+          user.profilePicture = picture;
+        }
+        await user.save();
+      }
+    } else {
+      // Create new user
+      const name = `${given_name || ''} ${family_name || ''}`.trim() || email!.split('@')[0];
+      user = await User.create({
+        name,
+        firstName: given_name || '',
+        lastName: family_name || '',
+        email,
+        authProvider: 'google',
+        googleId,
+        profilePicture: picture || '',
+        isEmailVerified: email_verified || false,
+        role: 'user',
+      });
+    }
+
+    // Check account lock
+    if (user.isLocked()) {
+      const lockTimeRemaining = Math.ceil((user.lockUntil!.getTime() - Date.now()) / 60000);
+      return res.status(423).json({
+        success: false,
+        message: `Account is locked. Please try again in ${lockTimeRemaining} minute${lockTimeRemaining > 1 ? 's' : ''}.`,
+      });
+    }
+
+    // Track login activity
+    const ipAddress = req.ip || (req.headers['x-forwarded-for'] as string) || 'unknown';
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    user.loginCount = (user.loginCount || 0) + 1;
+    user.lastLoginAt = new Date();
+    user.lastLoginIP = ipAddress;
+    if (!user.loginHistory) user.loginHistory = [];
+    user.loginHistory.unshift({ loginAt: new Date(), ipAddress, userAgent });
+    if (user.loginHistory.length > 20) user.loginHistory = user.loginHistory.slice(0, 20);
+    await user.save();
+
+    // Generate tokens
+    const token = generateToken(user._id.toString());
+    const refreshToken = generateRefreshToken(user._id.toString());
+
+    try {
+      await saveRefreshToken(user._id.toString(), refreshToken, req);
+    } catch (tokenError) {
+      console.error('Failed to save refresh token:', tokenError);
+    }
+
+    // Log activity
+    try {
+      await ActivityLog.create({
+        user: user._id,
+        userName: user.name,
+        userEmail: user.email,
+        action: 'LOGIN',
+        resourceType: 'auth',
+        resourceId: user._id.toString(),
+        details: `Google SSO login: ${user.email}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logError) {
+      console.error('Failed to log activity:', logError);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        firstName: user.firstName,
+        middleName: user.middleName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        company: user.company,
+        profilePicture: user.profilePicture,
+        isEmailVerified: user.isEmailVerified,
+        twoFactorEnabled: user.twoFactorEnabled,
+        token,
+        refreshToken,
+      },
+    });
+  } catch (error: any) {
+    console.error('Google login error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Google authentication failed',
     });
   }
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserPlus, Mail, Lock, User, Phone, Building, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -12,7 +13,7 @@ import { PasswordStrengthMeter } from '../components/PasswordStrengthMeter';
 
 export function Signup() {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -420,6 +421,42 @@ export function Signup() {
                     {loading ? 'Creating account...' : 'Create Account'}
                   </Button>
                 </form>
+
+                {/* Divider */}
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-muted" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="bg-card px-4 text-muted-foreground">or sign up with</span>
+                  </div>
+                </div>
+
+                {/* Google Sign-In */}
+                <div className="flex justify-center">
+                  <GoogleLogin
+                    onSuccess={async (credentialResponse) => {
+                      if (credentialResponse.credential) {
+                        try {
+                          setLoading(true);
+                          setError('');
+                          await googleLogin(credentialResponse.credential);
+                          navigate('/');
+                        } catch (err: any) {
+                          setError(err.response?.data?.message || 'Google sign-up failed');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }
+                    }}
+                    onError={() => {
+                      setError('Google sign-up failed. Please try again.');
+                    }}
+                    size="large"
+                    width="100%"
+                    text="signup_with"
+                  />
+                </div>
 
                 <div className="mt-6 text-center">
                   <p className="text-muted-foreground">

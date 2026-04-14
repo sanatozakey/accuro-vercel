@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AppRouter } from './AppRouter';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -11,6 +12,8 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import './services/sessionTrackingService'; // Initialize session tracking
 
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
+
 // Force fresh deployment - build timestamp
 export function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -21,6 +24,7 @@ export function App() {
 
   return (
     <ErrorBoundary>
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
@@ -59,6 +63,7 @@ export function App() {
       </AuthProvider>
     </ThemeProvider>
     </QueryClientProvider>
+    </GoogleOAuthProvider>
     </ErrorBoundary>
   );
 }

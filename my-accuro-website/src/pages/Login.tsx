@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogIn, Mail, Lock, AlertCircle, Eye, EyeOff, Shield } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -10,7 +11,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 
 export function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -257,6 +258,42 @@ export function Login() {
                     </button>
                   </form>
                 )}
+
+                {/* Divider */}
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-muted" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="bg-card px-4 text-muted-foreground">or continue with</span>
+                  </div>
+                </div>
+
+                {/* Google Sign-In */}
+                <div className="flex justify-center">
+                  <GoogleLogin
+                    onSuccess={async (credentialResponse) => {
+                      if (credentialResponse.credential) {
+                        try {
+                          setLoading(true);
+                          setError('');
+                          await googleLogin(credentialResponse.credential);
+                          navigate('/');
+                        } catch (err: any) {
+                          setError(err.response?.data?.message || 'Google sign-in failed');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }
+                    }}
+                    onError={() => {
+                      setError('Google sign-in failed. Please try again.');
+                    }}
+                    size="large"
+                    width="100%"
+                    text="signin_with"
+                  />
+                </div>
 
                 <div className="mt-6 text-center">
                   <p className="text-muted-foreground">

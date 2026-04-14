@@ -2,6 +2,7 @@ import express from 'express';
 import {
   register,
   login,
+  googleLogin,
   getMe,
   updateDetails,
   updatePassword,
@@ -45,6 +46,7 @@ const router = express.Router();
 // Rate-limited auth routes
 router.post('/register', registerLimiter, validateRegister, handleValidationErrors, register);
 router.post('/login', loginLimiter, validateLogin, handleValidationErrors, login);
+router.post('/google', loginLimiter, googleLogin);
 router.get('/me', protect, getMe);
 router.put('/updatedetails', protect, validateUpdateDetails, handleValidationErrors, updateDetails);
 router.put('/updatepassword', protect, validateUpdatePassword, handleValidationErrors, updatePassword);

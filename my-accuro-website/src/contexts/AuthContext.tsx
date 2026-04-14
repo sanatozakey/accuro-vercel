@@ -25,6 +25,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (data: LoginData) => Promise<LoginResponse | void>;
+  googleLogin: (credential: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
@@ -76,6 +77,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const googleLogin = async (credential: string) => {
+    const response = await authService.googleLogin(credential);
+    if (response.data) {
+      setUser(response.data);
+    }
+  };
+
   const register = async (data: RegisterData) => {
     try {
       const response = await authService.register(data);
@@ -100,6 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     loading,
     login,
+    googleLogin,
     register,
     logout,
     updateUser,

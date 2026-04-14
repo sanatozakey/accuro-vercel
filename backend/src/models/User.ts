@@ -14,6 +14,8 @@ export interface IUser extends Document {
   lastName: string;
   email: string;
   password: string;
+  authProvider: 'local' | 'google';
+  googleId?: string;
   role: 'user' | 'technician' | 'admin' | 'superadmin';
   phone?: string;
   company?: string;
@@ -77,9 +79,21 @@ const UserSchema: Schema = new Schema(
     },
     password: {
       type: String,
-      required: [true, 'Please provide a password'],
+      required: function(this: IUser) {
+        return this.authProvider !== 'google';
+      },
       minlength: 6,
       select: false,
+    },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local',
+    },
+    googleId: {
+      type: String,
+      sparse: true,
+      unique: true,
     },
     role: {
       type: String,
@@ -182,8 +196,8 @@ const UserSchema: Schema = new Schema(
 
 // Hash password before saving
 UserSchema.pre<IUser>('save', async function (next) {
-  if (!this.isModified('password')) {
-    next();
+  if (!this.isModified('password') || !this.password) {
+    return next();
   }
 
   // Use 12 salt rounds for stronger password hashing
