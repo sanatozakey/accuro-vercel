@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, XCircle, FileText, Package, Loader, Edit3, ExternalLink } from 'lucide-react';
+import { X, Check, XCircle, FileText, Package, Loader, Edit3, Eye, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import transactionProofService, { TransactionProof, TransactionItem } from '../services/transactionProofService';
 
@@ -32,6 +32,7 @@ export function TransactionReviewModal({
   const [feedback, setFeedback] = useState('');
   const [editingItems, setEditingItems] = useState(false);
   const [editedItems, setEditedItems] = useState<TransactionItem[]>([]);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   useEffect(() => {
     fetchProof();
@@ -205,25 +206,102 @@ export function TransactionReviewModal({
                 Uploaded Proofs ({proof.attachments.length})
               </h3>
               <div className="space-y-2">
-                {proof.attachments.map((att, idx) => (
-                  <div key={idx} className={`flex items-center justify-between p-3 border ${borderClass} rounded-lg`}>
-                    <div className="flex items-center gap-2">
-                      <FileText className={`h-4 w-4 ${mutedClass}`} />
-                      <span className={`text-sm ${textClass}`}>{att.originalName}</span>
-                      <span className={`text-xs ${mutedClass}`}>({(att.size / 1024).toFixed(1)} KB)</span>
+                {proof.attachments.map((att, idx) => {
+                  const fileUrl = `${API_URL}/transaction-proofs/attachment/${proof._id}/${att.filename}`;
+                  const isImage = att.mimeType?.startsWith('image/');
+                  return (
+                    <div key={idx} className={`flex items-center justify-between p-3 border ${borderClass} rounded-lg`}>
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        {isImage ? (
+                          <img src={fileUrl} alt={att.originalName} className="h-10 w-10 object-cover rounded flex-shrink-0" />
+                        ) : (
+                          <FileText className={`h-4 w-4 ${mutedClass} flex-shrink-0`} />
+                        )}
+                        <span className={`text-sm ${textClass} truncate`}>{att.originalName}</span>
+                        <span className={`text-xs ${mutedClass} flex-shrink-0`}>({(att.size / 1024).toFixed(1)} KB)</span>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => setPreviewIndex(idx)}
+                          className="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+                          title="Preview"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <a
+                          href={fileUrl}
+                          download={att.originalName}
+                          className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                          title="Download"
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </div>
                     </div>
-                    <a
-                      href={`${API_URL}/transaction-proofs/attachment/${proof._id}/${att.filename}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
+
+            {/* Attachment Preview Modal */}
+            {previewIndex !== null && proof.attachments[previewIndex] && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70" onClick={() => setPreviewIndex(null)}>
+                <div className="relative max-w-4xl max-h-[90vh] w-full mx-4" onClick={(e) => e.stopPropagation()}>
+                  {/* Close */}
+                  <button
+                    onClick={() => setPreviewIndex(null)}
+                    className="absolute -top-10 right-0 text-white hover:text-gray-300 z-10"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+
+                  {/* Navigation arrows */}
+                  {proof.attachments.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setPreviewIndex((previewIndex - 1 + proof.attachments.length) % proof.attachments.length)}
+                        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 text-white hover:text-gray-300"
+                      >
+                        <ChevronLeft className="h-8 w-8" />
+                      </button>
+                      <button
+                        onClick={() => setPreviewIndex((previewIndex + 1) % proof.attachments.length)}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 text-white hover:text-gray-300"
+                      >
+                        <ChevronRight className="h-8 w-8" />
+                      </button>
+                    </>
+                  )}
+
+                  {/* File name header */}
+                  <div className="text-white text-center mb-2 text-sm">
+                    {proof.attachments[previewIndex].originalName}
+                    {proof.attachments.length > 1 && (
+                      <span className="text-gray-400 ml-2">({previewIndex + 1} / {proof.attachments.length})</span>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  {(() => {
+                    const att = proof.attachments[previewIndex];
+                    const url = `${API_URL}/transaction-proofs/attachment/${proof._id}/${att.filename}`;
+                    if (att.mimeType?.startsWith('image/')) {
+                      return <img src={url} alt={att.originalName} className="max-h-[80vh] w-auto mx-auto rounded-lg shadow-2xl" />;
+                    } else if (att.mimeType === 'application/pdf') {
+                      return <iframe src={url} title={att.originalName} className="w-full h-[80vh] rounded-lg" />;
+                    } else {
+                      return (
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-8 text-center">
+                          <FileText className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                          <p className="text-gray-600 dark:text-gray-300 mb-4">Preview not available for this file type</p>
+                          <a href={url} download={att.originalName} className="text-blue-600 hover:underline">Download file</a>
+                        </div>
+                      );
+                    }
+                  })()}
+                </div>
+              </div>
+            )}
 
             {/* Customer Notes */}
             {proof.customerNotes && (
