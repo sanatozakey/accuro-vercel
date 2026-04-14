@@ -160,9 +160,10 @@ export const approveTransactionProof = async (req: AuthRequest, res: Response) =
     // Deduct inventory
     const lowStockWarnings: string[] = [];
     for (const item of proof.items) {
-      if (!item.productId) continue;
+      if (!item.productName) continue;
 
-      const product = await Product.findById(item.productId);
+      // productId is a slug (e.g. "logical"), not a MongoDB ObjectId — look up by name
+      const product = await Product.findOne({ name: item.productName });
       if (!product || !product.trackInventory) continue;
 
       product.stockQuantity = Math.max(0, product.stockQuantity - item.quantity);
