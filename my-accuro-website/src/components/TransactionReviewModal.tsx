@@ -17,7 +17,7 @@ interface TransactionReviewModalProps {
   darkMode?: boolean;
 }
 
-const API_URL = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 export function TransactionReviewModal({
   bookingId,
@@ -213,7 +213,7 @@ export function TransactionReviewModal({
                       <span className={`text-xs ${mutedClass}`}>({(att.size / 1024).toFixed(1)} KB)</span>
                     </div>
                     <a
-                      href={`${API_URL}/uploads/proofs/${att.filename}`}
+                      href={`${API_URL}/transaction-proofs/attachment/${proof._id}/${att.filename}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-700"

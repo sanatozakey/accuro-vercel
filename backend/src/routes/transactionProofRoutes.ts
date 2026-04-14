@@ -8,13 +8,17 @@ import {
   rejectTransactionProof,
   reviseTransactionProof,
   adjustTransactionItems,
+  serveAttachment,
 } from '../controllers/transactionProofController';
 import { protect, authorize } from '../middleware/auth';
-import { proofUpload } from '../middleware/upload';
+import { proofUploadMemory } from '../middleware/upload';
 
 const router = express.Router();
 
-// All routes require authentication
+// Serve attachment file from MongoDB (public — browser loads directly)
+router.get('/attachment/:proofId/:filename', serveAttachment);
+
+// All remaining routes require authentication
 router.use(protect);
 
 // Get all transaction proofs (admin/superadmin)
@@ -29,7 +33,7 @@ router.get('/booking/:bookingId', getTransactionProofByBooking);
 // Customer submits payment proof with file uploads
 router.post(
   '/:id/submit',
-  proofUpload.array('attachments', 5),
+  proofUploadMemory.array('attachments', 5),
   submitPaymentProof
 );
 
@@ -42,7 +46,7 @@ router.put('/:id/reject', authorize('superadmin'), rejectTransactionProof);
 // Customer revises after rejection
 router.put(
   '/:id/revise',
-  proofUpload.array('attachments', 5),
+  proofUploadMemory.array('attachments', 5),
   reviseTransactionProof
 );
 

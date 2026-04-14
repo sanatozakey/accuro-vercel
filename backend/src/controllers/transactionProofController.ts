@@ -1,4 +1,6 @@
 import { Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
 import TransactionProof from '../models/TransactionProof';
 import Booking from '../models/Booking';
 import Quotation from '../models/Quotation';
@@ -7,6 +9,29 @@ import Product from '../models/Product';
 interface AuthRequest extends Request {
   user?: any;
 }
+
+// Strip fileData from attachments to keep responses small
+const stripFileData = (proof: any) => {
+  const obj = typeof proof.toObject === 'function' ? proof.toObject() : { ...proof };
+  if (obj.attachments) {
+    obj.attachments = obj.attachments.map((att: any) => {
+      const { fileData, ...rest } = att;
+      return rest;
+    });
+  }
+  if (obj.revisionHistory) {
+    obj.revisionHistory = obj.revisionHistory.map((rev: any) => {
+      if (rev.attachments) {
+        rev.attachments = rev.attachments.map((att: any) => {
+          const { fileData, ...rest } = att;
+          return rest;
+        });
+      }
+      return rev;
+    });
+  }
+  return obj;
+};
 
 // @desc    Get transaction proof by booking ID
 // @route   GET /api/transaction-proofs/booking/:bookingId
@@ -25,7 +50,7 @@ export const getTransactionProofByBooking = async (req: AuthRequest, res: Respon
       });
     }
 
-    res.status(200).json({ success: true, data: proof });
+    res.status(200).json({ success: true, data: stripFileData(proof) });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
@@ -42,7 +67,7 @@ export const getPendingTransactionProofs = async (req: AuthRequest, res: Respons
       .populate('submittedBy', 'name email')
       .sort({ submittedAt: -1 });
 
-    res.status(200).json({ success: true, count: proofs.length, data: proofs });
+    res.status(200).json({ success: true, count: proofs.length, data: proofs.map(stripFileData) });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
@@ -63,7 +88,7 @@ export const getAllTransactionProofs = async (req: AuthRequest, res: Response) =
       .populate('submittedBy', 'name email')
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ success: true, count: proofs.length, data: proofs });
+    res.status(200).json({ success: true, count: proofs.length, data: proofs.map(stripFileData) });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
@@ -96,20 +121,24 @@ export const submitPaymentProof = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, message: `Cannot submit proof when status is ${proof.status}` });
     }
 
-    // Handle file uploads
+    // Handle file uploads (memory storage — files are in buffer)
     const files = req.files as Express.Multer.File[];
     if (!files || files.length === 0) {
       return res.status(400).json({ success: false, message: 'At least one file is required' });
     }
 
-    const attachments = files.map(file => ({
-      filename: file.filename,
-      originalName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      path: file.path,
-      uploadedAt: new Date(),
-    }));
+    const attachments = files.map(file => {
+      const uniqueFilename = `${uuidv4()}${path.extname(file.originalname)}`;
+      return {
+        filename: uniqueFilename,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+        path: `uploads/proofs/${uniqueFilename}`,
+        fileData: file.buffer,
+        uploadedAt: new Date(),
+      };
+    });
 
     proof.attachments = attachments;
     proof.customerNotes = req.body.customerNotes || '';
@@ -129,7 +158,14 @@ export const submitPaymentProof = async (req: AuthRequest, res: Response) => {
     });
     await booking.save();
 
-    res.status(200).json({ success: true, data: proof });
+    // Return proof without fileData to reduce response size
+    const proofObj = proof.toObject();
+    proofObj.attachments = proofObj.attachments.map((att: any) => {
+      const { fileData, ...rest } = att;
+      return rest;
+    });
+
+    res.status(200).json({ success: true, data: proofObj });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
@@ -289,14 +325,18 @@ export const reviseTransactionProof = async (req: AuthRequest, res: Response) =>
       return res.status(400).json({ success: false, message: 'At least one file is required' });
     }
 
-    const attachments = files.map(file => ({
-      filename: file.filename,
-      originalName: file.originalname,
-      mimeType: file.mimetype,
-      size: file.size,
-      path: file.path,
-      uploadedAt: new Date(),
-    }));
+    const attachments = files.map(file => {
+      const uniqueFilename = `${uuidv4()}${path.extname(file.originalname)}`;
+      return {
+        filename: uniqueFilename,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+        path: `uploads/proofs/${uniqueFilename}`,
+        fileData: file.buffer,
+        uploadedAt: new Date(),
+      };
+    });
 
     proof.attachments = attachments;
     proof.customerNotes = req.body.customerNotes || '';
@@ -317,7 +357,13 @@ export const reviseTransactionProof = async (req: AuthRequest, res: Response) =>
     });
     await booking.save();
 
-    res.status(200).json({ success: true, data: proof });
+    const proofObj = proof.toObject();
+    proofObj.attachments = proofObj.attachments.map((att: any) => {
+      const { fileData, ...rest } = att;
+      return rest;
+    });
+
+    res.status(200).json({ success: true, data: proofObj });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
@@ -344,6 +390,42 @@ export const adjustTransactionItems = async (req: AuthRequest, res: Response) =>
     await proof.save();
 
     res.status(200).json({ success: true, data: proof });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
+// @desc    Serve attachment file from MongoDB
+// @route   GET /api/transaction-proofs/attachment/:proofId/:filename
+// @access  Public (file is accessed directly by browser)
+export const serveAttachment = async (req: Request, res: Response) => {
+  try {
+    const { proofId, filename } = req.params;
+
+    const proof = await TransactionProof.findById(proofId).select('attachments revisionHistory');
+    if (!proof) {
+      return res.status(404).json({ success: false, message: 'Transaction proof not found' });
+    }
+
+    // Search in current attachments
+    let attachment = proof.attachments.find((att: any) => att.filename === filename);
+
+    // If not found, search in revision history
+    if (!attachment) {
+      for (const revision of proof.revisionHistory) {
+        attachment = revision.attachments.find((att: any) => att.filename === filename);
+        if (attachment) break;
+      }
+    }
+
+    if (!attachment || !(attachment as any).fileData) {
+      return res.status(404).json({ success: false, message: 'Attachment not found' });
+    }
+
+    res.set('Content-Type', attachment.mimeType);
+    res.set('Content-Disposition', `inline; filename="${attachment.originalName}"`);
+    res.set('Content-Length', String((attachment as any).fileData.length));
+    res.send((attachment as any).fileData);
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }

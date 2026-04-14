@@ -14,6 +14,7 @@ export interface ITransactionAttachment {
   mimeType: string;
   size: number;
   path: string;
+  fileData?: Buffer;
   uploadedAt: Date;
 }
 
@@ -116,6 +117,9 @@ const TransactionProofSchema: Schema = new Schema(
         type: String,
         required: true,
       },
+      fileData: {
+        type: Buffer,
+      },
       uploadedAt: {
         type: Date,
         default: Date.now,
@@ -161,6 +165,7 @@ const TransactionProofSchema: Schema = new Schema(
         mimeType: String,
         size: Number,
         path: String,
+        fileData: Buffer,
         uploadedAt: Date,
       }],
       customerNotes: String,
