@@ -73,6 +73,7 @@ import { EmbeddedGoogleCalendar } from '../components/EmbeddedGoogleCalendar'
 import { CompletionProofModal } from '../components/CompletionProofModal'
 import { BulkCompletionWizard } from '../components/BulkCompletionWizard'
 import { CompletionReviewModal } from '../components/CompletionReviewModal'
+import { TransactionReviewModal } from '../components/TransactionReviewModal'
 import completionProofService, { CompletionProof } from '../services/completionProofService'
 import { AdminReviewsManager } from '../components/AdminReviewsManager'
 import { EnhancedReportsTab } from '../components/EnhancedReportsTab'
@@ -215,6 +216,7 @@ export function BookingDashboard(): React.ReactElement {
   const [reviewProof, setReviewProof] = useState<CompletionProof | null>(null)
   const [revisionMode, setRevisionMode] = useState<boolean>(false)
   const [revisionProof, setRevisionProof] = useState<CompletionProof | null>(null)
+  const [isTransactionReviewOpen, setIsTransactionReviewOpen] = useState<boolean>(false)
 
   // Dispatch & Reassign modal state
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState<boolean>(false)
@@ -590,6 +592,9 @@ export function BookingDashboard(): React.ReactElement {
         if (booking.status === 'rescheduled') backgroundColor = '#8b5cf6'
         if (booking.status === 'completed') backgroundColor = '#3b82f6'
         if (booking.status === 'pending_review') backgroundColor = '#6366f1'
+        if (booking.status === 'awaiting_payment') backgroundColor = '#d97706'
+        if (booking.status === 'payment_submitted') backgroundColor = '#4f46e5'
+        if (booking.status === 'verified') backgroundColor = '#059669'
 
         // Override color to grey for overdue bookings (past date, not completed/cancelled)
         const now = new Date()
@@ -1182,6 +1187,24 @@ export function BookingDashboard(): React.ReactElement {
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
             <CheckSquare className="w-3 h-3 mr-1" />
             Completed
+          </span>
+        )
+      case 'awaiting_payment':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+            Awaiting Payment
+          </span>
+        )
+      case 'payment_submitted':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+            Payment Submitted
+          </span>
+        )
+      case 'verified':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+            Verified
           </span>
         )
       default:
@@ -1960,6 +1983,9 @@ export function BookingDashboard(): React.ReactElement {
                   <option value="rescheduled">Rescheduled</option>
                   <option value="cancelled">Cancelled</option>
                   <option value="completed">Completed</option>
+                  <option value="awaiting_payment">Awaiting Payment</option>
+                  <option value="payment_submitted">Payment Submitted</option>
+                  <option value="verified">Verified</option>
                 </select>
               </div>
               <div className="md:col-span-2">
@@ -3273,6 +3299,60 @@ export function BookingDashboard(): React.ReactElement {
                               </div>
                             </div>
                           )}
+                          {/* Technician Fee */}
+                          {(selectedBooking as any).technicianFee && (
+                            <div className={`flex items-center justify-between p-3 rounded-lg border ${
+                              (selectedBooking as any).technicianFee.status === 'paid'
+                                ? 'bg-green-50 border-green-200'
+                                : (selectedBooking as any).technicianFee.status === 'waived'
+                                ? 'bg-gray-50 border-gray-200'
+                                : 'bg-amber-50 border-amber-200'
+                            }`}>
+                              <div>
+                                <div className="text-sm font-medium text-gray-700">Technician Fee</div>
+                                <div className="text-lg font-bold text-gray-900">
+                                  PHP {(selectedBooking as any).technicianFee.amount?.toFixed(2)}
+                                </div>
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                  (selectedBooking as any).technicianFee.status === 'paid' ? 'bg-green-100 text-green-800' :
+                                  (selectedBooking as any).technicianFee.status === 'waived' ? 'bg-gray-100 text-gray-600' :
+                                  'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {(selectedBooking as any).technicianFee.status.toUpperCase()}
+                                </span>
+                              </div>
+                              {(selectedBooking as any).technicianFee.status === 'pending' && (
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                    onClick={async () => {
+                                      try {
+                                        await bookingService.updateFeeStatus(selectedBooking._id, 'paid')
+                                        toast.success('Fee marked as paid')
+                                        fetchBookings()
+                                      } catch { toast.error('Failed to update fee') }
+                                    }}
+                                  >
+                                    Mark Paid
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                                    onClick={async () => {
+                                      try {
+                                        await bookingService.updateFeeStatus(selectedBooking._id, 'waived')
+                                        toast.success('Fee waived')
+                                        fetchBookings()
+                                      } catch { toast.error('Failed to update fee') }
+                                    }}
+                                  >
+                                    Waive
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
                           <div className="flex items-center">
                             <FileText className="h-5 w-5 text-gray-400 mr-2" />
                             <div>
@@ -3480,6 +3560,19 @@ export function BookingDashboard(): React.ReactElement {
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           Review Report
+                        </button>
+                      )}
+                      {selectedBooking.status === 'payment_submitted' && isSuperAdmin && (
+                        <button
+                          type="button"
+                          className="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:w-auto sm:text-sm"
+                          onClick={() => {
+                            setIsDetailModalOpen(false)
+                            setIsTransactionReviewOpen(true)
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Review Payment
                         </button>
                       )}
                       {selectedBooking.status === 'cancelled' && (
@@ -3801,6 +3894,24 @@ export function BookingDashboard(): React.ReactElement {
           onDecision={handleReviewDecision}
           booking={selectedBooking}
           proof={reviewProof}
+          darkMode={darkMode}
+        />
+      )}
+      {/* Transaction Review Modal (superadmin) */}
+      {isTransactionReviewOpen && selectedBooking && (
+        <TransactionReviewModal
+          bookingId={selectedBooking._id}
+          bookingDetails={{
+            company: selectedBooking.company,
+            contactName: selectedBooking.contactName,
+            purpose: selectedBooking.purpose,
+            date: selectedBooking.date,
+            time: selectedBooking.time,
+          }}
+          onClose={() => setIsTransactionReviewOpen(false)}
+          onActionComplete={() => {
+            fetchBookings()
+          }}
           darkMode={darkMode}
         />
       )}

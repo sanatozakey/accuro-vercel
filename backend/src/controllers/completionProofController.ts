@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import CompletionProof, { IAttachment } from '../models/CompletionProof';
 import Booking from '../models/Booking';
+import Quotation from '../models/Quotation';
+import TransactionProof from '../models/TransactionProof';
 import { AuthRequest } from '../middleware/auth';
 import ActivityLog from '../models/ActivityLog';
 import { NotificationService } from '../services/notificationService';
@@ -277,6 +279,53 @@ export const approveCompletionProof = async (req: AuthRequest, res: Response) =>
           );
         } catch (e) {
           console.error('Failed to notify user:', e);
+        }
+      }
+
+      // Auto-transition to awaiting_payment if booking has a linked quotation
+      if (booking.quotationId) {
+        try {
+          const quotation = await Quotation.findById(booking.quotationId);
+          if (quotation) {
+            booking.status = 'awaiting_payment';
+            pushStatusHistory(booking, 'awaiting_payment', req.user!._id, 'Awaiting payment proof - service completed');
+            await booking.save();
+
+            // Create TransactionProof skeleton with items from quotation
+            await TransactionProof.create({
+              bookingId: booking._id,
+              quotationId: quotation._id,
+              items: quotation.items.map((item: any) => ({
+                productId: item.productId,
+                productName: item.productName,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice || 0,
+                totalPrice: item.totalPrice || 0,
+              })),
+              totalAmount: quotation.totalAmount || 0,
+              currency: quotation.currency || 'PHP',
+              status: 'pending_upload',
+            });
+
+            // Notify customer about payment proof requirement
+            if (booking.userId) {
+              try {
+                await NotificationService.createNotification({
+                  userId: booking.userId.toString(),
+                  type: 'booking',
+                  title: 'Payment Proof Required',
+                  message: `Your service for "${booking.purpose}" has been completed. Please upload your payment proof (invoice/receipt) to verify the transaction.`,
+                  relatedId: booking._id.toString(),
+                  relatedType: 'booking',
+                  actionUrl: `/my-bookings`,
+                });
+              } catch (e) {
+                console.error('Failed to notify user about payment:', e);
+              }
+            }
+          }
+        } catch (transErr) {
+          console.error('Failed to create transaction proof:', transErr);
         }
       }
     }

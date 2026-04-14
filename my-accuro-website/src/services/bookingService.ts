@@ -52,7 +52,7 @@ export const getTechnicianRealName = (tech: TechnicianInfo): string => {
 export interface Booking extends BookingData {
   _id: string;
   userId?: string;
-  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'rescheduled' | 'pending_review';
+  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'rescheduled' | 'pending_review' | 'awaiting_payment' | 'payment_submitted' | 'verified';
   conclusion?: string;
   rescheduleReason?: string;
   originalDate?: string;
@@ -167,6 +167,12 @@ class BookingService {
   // Get technician assignments
   async getMyAssignments(params?: { status?: string; startDate?: string; endDate?: string }): Promise<BookingsResponse> {
     const response = await api.get<BookingsResponse>('/bookings/my-assignments', { params });
+    return response.data;
+  }
+
+  // Update technician fee status (admin/superadmin)
+  async updateFeeStatus(id: string, feeStatus: 'paid' | 'waived'): Promise<BookingResponse> {
+    const response = await api.put<BookingResponse>(`/bookings/${id}/fee-status`, { feeStatus });
     return response.data;
   }
 

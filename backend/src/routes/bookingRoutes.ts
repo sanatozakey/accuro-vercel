@@ -15,6 +15,7 @@ import {
   startBooking,
   getMyAssignments,
   checkTechnicianAvailability,
+  updateFeeStatus,
 } from '../controllers/bookingController';
 import { protect, authorize, technicianOrAbove, superAdminOnly } from '../middleware/auth';
 import {
@@ -56,5 +57,8 @@ router.put('/:id/reassign', protect, superAdminOnly, reassignTechnician);
 
 // Technician action routes
 router.put('/:id/start', protect, technicianOrAbove, startBooking);
+
+// Fee management (admin/superadmin)
+router.put('/:id/fee-status', protect, authorize('admin', 'superadmin'), updateFeeStatus);
 
 export default router;

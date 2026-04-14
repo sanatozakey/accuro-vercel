@@ -7,8 +7,10 @@ import {
   FileText,
   Package,
   LogIn,
+  LinkIcon,
 } from 'lucide-react'
 import bookingService from '../services/bookingService'
+import quotationService, { Quotation } from '../services/quotationService'
 import { TimeSlotPicker } from './TimeSlotPicker'
 import { CalendarDatePicker } from './CalendarDatePicker'
 import { useLocation } from 'react-router-dom'
@@ -37,6 +39,9 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
   })
   const [loading, setLoading] = useState(false)
   const [isQuoteRequest, setIsQuoteRequest] = useState(false)
+  const [acceptedQuotations, setAcceptedQuotations] = useState<Quotation[]>([])
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
+  const [quotationId, setQuotationId] = useState<string>('')
 
   // Auto-fill form with user data when component mounts or user changes
   useEffect(() => {
@@ -50,6 +55,15 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
       }))
     }
   }, [user])
+
+  // Fetch user's accepted quotations
+  useEffect(() => {
+    if (isAuthenticated) {
+      quotationService.getQuotations({ status: 'accepted' })
+        .then(res => setAcceptedQuotations(res.data || []))
+        .catch(() => setAcceptedQuotations([]))
+    }
+  }, [isAuthenticated])
 
   // Check if coming from cart quote request
   useEffect(() => {
@@ -119,7 +133,8 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
     setLoading(true)
 
     try {
-      const response = await bookingService.create(formData)
+      const submitData = { ...formData, ...(quotationId ? { quotationId } : {}) }
+      const response = await bookingService.create(submitData)
       const bookingData = response.data
 
       // Clear cart if this was a quote request
@@ -195,8 +210,96 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
     )
   }
 
+  const handleQuotationSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value
+    setQuotationId(id)
+    if (id) {
+      const q = acceptedQuotations.find(q => q._id === id)
+      if (q) {
+        setSelectedQuotation(q)
+        // Auto-fill product from quotation items
+        const productNames = q.items.map(item => item.productName).join(', ')
+        setFormData(prev => ({
+          ...prev,
+          product: productNames.length > 100 ? productNames.substring(0, 100) : productNames,
+          company: q.company || prev.company,
+          contactName: q.customerName || prev.contactName,
+          contactEmail: q.customerEmail || prev.contactEmail,
+          contactPhone: q.customerPhone || prev.contactPhone,
+        }))
+      }
+    } else {
+      setSelectedQuotation(null)
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Link a Quotation (Optional) */}
+      {acceptedQuotations.length > 0 && (
+        <div>
+          <label
+            htmlFor="quotation"
+            className="flex items-center text-gray-700 dark:text-gray-200 font-medium mb-2"
+          >
+            <LinkIcon className="h-4 w-4 mr-2 text-blue-600" />
+            Link a Quotation (Optional)
+          </label>
+          <select
+            id="quotation"
+            value={quotationId}
+            onChange={handleQuotationSelect}
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">None - General meeting</option>
+            {acceptedQuotations.map(q => (
+              <option key={q._id} value={q._id}>
+                {q.quotationNumber} - {q.items.map(i => i.productName).join(', ')} ({q.currency} {q.totalAmount?.toLocaleString()})
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Link an accepted quotation to this booking to track the full transaction lifecycle.
+          </p>
+
+          {/* Quotation Summary Card */}
+          {selectedQuotation && (
+            <div className="mt-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                  {selectedQuotation.quotationNumber}
+                </h4>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                  Accepted
+                </span>
+              </div>
+              <div className="space-y-1">
+                {selectedQuotation.items.map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-sm">
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {item.productName} x{item.quantity}
+                    </span>
+                    {item.totalPrice && (
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {selectedQuotation.currency} {item.totalPrice.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {selectedQuotation.totalAmount && (
+                <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-600 flex justify-between font-semibold text-sm">
+                  <span className="text-blue-800 dark:text-blue-200">Total</span>
+                  <span className="text-blue-800 dark:text-blue-200">
+                    {selectedQuotation.currency} {selectedQuotation.totalAmount.toLocaleString()}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Date and Time Selection - Side by Side Layout */}
       <div>
         <label className="flex items-center text-gray-700 dark:text-gray-200 font-medium mb-4">

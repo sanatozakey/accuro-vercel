@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Check, Clock, Calendar, XCircle, RefreshCw, Eye } from 'lucide-react';
+import { Check, Clock, Calendar, XCircle, RefreshCw, Eye, CreditCard, Upload, ShieldCheck } from 'lucide-react';
 import { useSocket } from '../contexts/SocketContext';
 
-export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled' | 'pending_review';
+export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled' | 'pending_review' | 'awaiting_payment' | 'payment_submitted' | 'verified';
 
 interface StatusHistoryEntry {
   status: string;
@@ -17,6 +17,7 @@ interface BookingStatusTrackerProps {
   statusHistory?: StatusHistoryEntry[];
   createdAt: string;
   compact?: boolean;
+  hasQuotation?: boolean;
   onStatusUpdate?: (newStatus: BookingStatus) => void;
 }
 
@@ -69,9 +70,34 @@ const STATUS_CONFIG: Record<BookingStatus, {
     bgColor: 'bg-orange-100 dark:bg-orange-900/30',
     borderColor: 'border-orange-300 dark:border-orange-700',
   },
+  awaiting_payment: {
+    label: 'Awaiting Payment',
+    icon: <CreditCard className="h-4 w-4" />,
+    color: 'text-amber-700 dark:text-amber-400',
+    bgColor: 'bg-amber-100 dark:bg-amber-900/30',
+    borderColor: 'border-amber-300 dark:border-amber-700',
+  },
+  payment_submitted: {
+    label: 'Payment Submitted',
+    icon: <Upload className="h-4 w-4" />,
+    color: 'text-indigo-700 dark:text-indigo-400',
+    bgColor: 'bg-indigo-100 dark:bg-indigo-900/30',
+    borderColor: 'border-indigo-300 dark:border-indigo-700',
+  },
+  verified: {
+    label: 'Verified',
+    icon: <ShieldCheck className="h-4 w-4" />,
+    color: 'text-emerald-700 dark:text-emerald-400',
+    bgColor: 'bg-emerald-100 dark:bg-emerald-900/30',
+    borderColor: 'border-emerald-300 dark:border-emerald-700',
+  },
 };
 
-const TIMELINE_STEPS: BookingStatus[] = ['pending', 'confirmed', 'pending_review', 'completed'];
+// Short lifecycle for bookings without a quotation
+const TIMELINE_STEPS_SHORT: BookingStatus[] = ['pending', 'confirmed', 'pending_review', 'completed'];
+
+// Full lifecycle for bookings linked to a quotation
+const TIMELINE_STEPS_FULL: BookingStatus[] = ['pending', 'confirmed', 'pending_review', 'completed', 'awaiting_payment', 'payment_submitted', 'verified'];
 
 export function BookingStatusTracker({
   bookingId,
@@ -79,11 +105,14 @@ export function BookingStatusTracker({
   statusHistory = [],
   createdAt,
   compact = false,
+  hasQuotation = false,
   onStatusUpdate,
 }: BookingStatusTrackerProps) {
   const [status, setStatus] = useState<BookingStatus>(currentStatus);
   const [history, setHistory] = useState<StatusHistoryEntry[]>(statusHistory);
   const { socket, isConnected } = useSocket();
+
+  const TIMELINE_STEPS = hasQuotation ? TIMELINE_STEPS_FULL : TIMELINE_STEPS_SHORT;
 
   // Handle real-time status updates via socket
   const handleStatusUpdate = useCallback((data: {
@@ -171,6 +200,10 @@ export function BookingStatusTracker({
             className={`h-full rounded-full transition-all duration-500 ${
               isCancelledOrRescheduled
                 ? 'bg-gray-400'
+                : currentIndex >= TIMELINE_STEPS.length - 1
+                ? 'bg-emerald-500'
+                : currentIndex >= 4
+                ? 'bg-indigo-500'
                 : currentIndex >= 3
                 ? 'bg-green-500'
                 : currentIndex >= 2
@@ -214,7 +247,7 @@ export function BookingStatusTracker({
                 {/* Step Label */}
                 <div className="mt-2 text-center">
                   <p
-                    className={`text-sm font-medium ${
+                    className={`text-xs font-medium ${
                       isActive
                         ? stepConfig.color
                         : 'text-gray-400 dark:text-gray-500'

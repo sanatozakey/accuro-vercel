@@ -21,7 +21,7 @@ export interface IBooking extends Document {
   location: string;
   product: string;
   additionalInfo?: string;
-  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'rescheduled' | 'pending_review';
+  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'rescheduled' | 'pending_review' | 'awaiting_payment' | 'payment_submitted' | 'verified';
   statusHistory: IStatusHistoryEntry[];
   conclusion?: string;
   cancellationReason?: string;
@@ -35,6 +35,12 @@ export interface IBooking extends Document {
   assignedBy?: any;
   // Quotation link
   quotationId?: any;
+  // Technician fee
+  technicianFee?: {
+    amount: number;
+    status: 'pending' | 'paid' | 'waived';
+    paidAt?: Date;
+  };
   // Google Calendar sync fields
   googleEventId?: string;
   googleSyncStatus: GoogleSyncStatus;
@@ -97,7 +103,7 @@ const BookingSchema: Schema = new Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'rescheduled', 'pending_review'],
+      enum: ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'rescheduled', 'pending_review', 'awaiting_payment', 'payment_submitted', 'verified'],
       default: 'pending',
     },
     statusHistory: [{
@@ -154,6 +160,21 @@ const BookingSchema: Schema = new Schema(
     quotationId: {
       type: Schema.Types.ObjectId,
       ref: 'Quotation',
+    },
+    // Technician fee
+    technicianFee: {
+      amount: {
+        type: Number,
+        min: 0,
+      },
+      status: {
+        type: String,
+        enum: ['pending', 'paid', 'waived'],
+        default: 'pending',
+      },
+      paidAt: {
+        type: Date,
+      },
     },
     // Google Calendar sync fields
     googleEventId: {

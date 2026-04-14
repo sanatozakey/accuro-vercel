@@ -92,7 +92,7 @@ export const getBookings = async (req: Request, res: Response) => {
     const bookings = await Booking.find(query)
       .sort({ date: 1, time: 1 })
       .populate('assignedTechnician', 'name firstName lastName email phone profilePicture technicianNumber specialization')
-      .populate('quotationId', 'quotationNumber totalAmount status');
+      .populate('quotationId', 'quotationNumber items totalAmount currency status');
 
     res.status(200).json({
       success: true,
@@ -114,7 +114,7 @@ export const getBooking = async (req: Request, res: Response) => {
   try {
     const booking = await Booking.findById(req.params.id)
       .populate('assignedTechnician', 'name firstName lastName email phone profilePicture technicianNumber specialization')
-      .populate('quotationId', 'quotationNumber totalAmount status');
+      .populate('quotationId', 'quotationNumber items totalAmount currency status');
 
     if (!booking) {
       return res.status(404).json({
@@ -171,6 +171,19 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
     if (req.user) {
       req.body.userId = req.user._id;
     }
+
+    // Compute technician fee based on purpose
+    const TECHNICIAN_FEE_MAP: Record<string, number> = {
+      'Calibration Services': 8,
+      'Technical Consultation': 5,
+      'Product Demonstration': 7,
+      'Maintenance Support': 8,
+      'Software Training': 6,
+      'General Inquiry': 3,
+      'Other': 5,
+    };
+    const feeAmount = TECHNICIAN_FEE_MAP[req.body.purpose] || 5;
+    req.body.technicianFee = { amount: feeAmount, status: 'pending' };
 
     const booking = await Booking.create(req.body);
 
@@ -510,7 +523,8 @@ export const getMyBookings = async (req: AuthRequest, res: Response) => {
   try {
     const bookings = await Booking.find({ userId: req.user!._id })
       .sort({ date: 1 })
-      .populate('assignedTechnician', 'name firstName lastName email phone profilePicture technicianNumber specialization');
+      .populate('assignedTechnician', 'name firstName lastName email phone profilePicture technicianNumber specialization')
+      .populate('quotationId', 'quotationNumber items totalAmount currency status');
 
     res.status(200).json({
       success: true,
@@ -1255,5 +1269,36 @@ export const checkTechnicianAvailability = async (req: AuthRequest, res: Respons
       success: false,
       message: error.message || 'Server error',
     });
+  }
+};
+
+// @desc    Update technician fee status (mark as paid or waived)
+// @route   PUT /api/bookings/:id/fee-status
+// @access  Admin/Superadmin
+export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const { feeStatus } = req.body;
+    if (!feeStatus || !['paid', 'waived'].includes(feeStatus)) {
+      return res.status(400).json({ success: false, message: 'feeStatus must be "paid" or "waived"' });
+    }
+
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    if (!booking.technicianFee) {
+      return res.status(400).json({ success: false, message: 'No technician fee on this booking' });
+    }
+
+    booking.technicianFee.status = feeStatus;
+    if (feeStatus === 'paid') {
+      booking.technicianFee.paidAt = new Date();
+    }
+    await booking.save();
+
+    res.status(200).json({ success: true, data: booking });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };

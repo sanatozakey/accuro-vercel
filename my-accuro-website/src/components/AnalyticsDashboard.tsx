@@ -30,6 +30,7 @@ import {
 } from 'recharts';
 import analyticsService from '../services/analyticsService';
 import bookingService from '../services/bookingService';
+import productService from '../services/productService';
 
 interface AnalyticsDashboardProps {
   darkMode?: boolean;
@@ -56,6 +57,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
   const [conversionFunnel, setConversionFunnel] = useState<any>(null);
   const [quoteData, setQuoteData] = useState<any>(null);
   const [activityTrend, setActivityTrend] = useState<ActivityTrendData[]>([]);
+  const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
 
   const [trendPeriod, setTrendPeriod] = useState<number>(30);
   const [isSampleData, setIsSampleData] = useState(false);
@@ -109,6 +111,14 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
         });
       }
       setActivityTrend(trendItems);
+
+      // Fetch low stock products
+      try {
+        const lowStockRes = await productService.getLowStockProducts();
+        setLowStockProducts(lowStockRes.data || []);
+      } catch {
+        setLowStockProducts([]);
+      }
     } catch (err: any) {
       console.error('Failed to load analytics:', err);
       setError(err.response?.data?.message || 'Failed to load analytics');
@@ -271,6 +281,41 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ darkMode = fals
               </div>
               <Mail className="h-8 w-8 sm:h-10 sm:w-10 text-orange-200 opacity-60" />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Low Stock Alerts */}
+      {lowStockProducts.length > 0 && (
+        <div className={`${darkMode ? 'bg-red-900/30 border-red-700' : 'bg-red-50 border-red-200'} border rounded-xl p-4 sm:p-6`}>
+          <div className="flex items-center gap-2 mb-3">
+            <AlertCircle className={`h-5 w-5 ${darkMode ? 'text-red-400' : 'text-red-600'}`} />
+            <h3 className={`text-lg font-semibold ${darkMode ? 'text-red-200' : 'text-red-800'}`}>
+              Low Stock Alert ({lowStockProducts.length} product{lowStockProducts.length > 1 ? 's' : ''})
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {lowStockProducts.slice(0, 6).map((product: any) => (
+              <div key={product._id} className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="min-w-0">
+                  <p className={`text-sm font-medium truncate ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                    {product.name}
+                  </p>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Threshold: {product.lowStockThreshold}
+                  </p>
+                </div>
+                <span className={`text-lg font-bold ml-3 ${
+                  product.stockQuantity === 0
+                    ? 'text-red-600'
+                    : product.stockQuantity <= product.lowStockThreshold
+                    ? 'text-orange-600'
+                    : 'text-gray-600'
+                }`}>
+                  {product.stockQuantity}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
