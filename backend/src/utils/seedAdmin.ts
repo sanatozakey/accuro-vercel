@@ -78,11 +78,19 @@ export const seedAdminUser = async () => {
         });
         console.log(`✅ ${tech.name} account created (${tech.email})`);
       } else {
-        // Ensure existing technician has a technicianNumber assigned
+        let changed = false;
+        if (exists.role !== 'technician') {
+          exists.role = 'technician';
+          changed = true;
+          console.log(`ℹ️  Promoted ${tech.email} to technician role`);
+        }
         if (!exists.technicianNumber) {
           exists.technicianNumber = tech.technicianNumber;
-          await exists.save();
+          changed = true;
           console.log(`ℹ️  Assigned technicianNumber ${tech.technicianNumber} to ${tech.email}`);
+        }
+        if (changed) {
+          await exists.save();
         } else {
           console.log(`ℹ️  ${tech.name} already exists (${tech.email})`);
         }
