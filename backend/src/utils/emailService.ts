@@ -334,6 +334,75 @@ class EmailService {
     });
   }
 
+  // Send technician fee payment receipt (to customer + technician)
+  async sendTechnicianFeeReceipt(data: {
+    recipient: 'customer' | 'technician';
+    recipientEmail: string;
+    recipientName: string;
+    bookingId: string;
+    company: string;
+    date: string;
+    time: string;
+    purpose: string;
+    location: string;
+    product: string;
+    amount: number;
+    breakdown?: { purposeFee: number; locationFee: number; productFee: number };
+    paidAt: Date;
+    referenceCode?: string;
+  }): Promise<void> {
+    const breakdown = data.breakdown || { purposeFee: 0, locationFee: 0, productFee: 0 };
+    const breakdownRows = `
+      <tr><td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 12px;">Purpose (${data.purpose})</td><td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 12px; text-align: right;">&#8369; ${breakdown.purposeFee.toFixed(2)}</td></tr>
+      <tr><td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 12px;">Location (${data.location})</td><td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 12px; text-align: right;">&#8369; ${breakdown.locationFee.toFixed(2)}</td></tr>
+      <tr><td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 12px;">Product (${data.product})</td><td style="padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 12px; text-align: right;">&#8369; ${breakdown.productFee.toFixed(2)}</td></tr>
+    `;
+
+    const title = data.recipient === 'customer' ? 'Technician Fee Receipt' : 'Technician Fee Payment Confirmation';
+    const introLine = data.recipient === 'customer'
+      ? 'Thank you for your payment. This serves as your official receipt for the technician consultation fee.'
+      : `A technician fee has been paid by ${data.company} for a booking you have been assigned to. Details below for your records.`;
+
+    const html = `
+      ${this.emailHeader(title)}
+        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 8px;">Hello ${data.recipientName},</p>
+        <p style="color: #374151; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">${introLine}</p>
+
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 20px;">
+          <tr><td colspan="2" style="padding: 14px 18px; background-color: #eff6ff; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #1e3a8a; font-size: 14px;">Receipt Details</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; width: 160px; color: #6b7280; font-size: 13px;">Receipt No.</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px; font-family: monospace;">${data.referenceCode || 'TF-' + data.bookingId.slice(-8).toUpperCase()}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Booking ID</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px; font-family: monospace;">${data.bookingId}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Company</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${data.company}</td></tr>
+          <tr><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #6b7280; font-size: 13px;">Meeting Date</td><td style="padding: 12px 18px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 13px;">${new Date(data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at ${data.time}</td></tr>
+          <tr><td style="padding: 12px 18px; color: #6b7280; font-size: 13px;">Paid On</td><td style="padding: 12px 18px; color: #1f2937; font-size: 13px;">${new Date(data.paidAt).toLocaleString('en-US')}</td></tr>
+        </table>
+
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 20px;">
+          <tr><td colspan="2" style="padding: 14px 18px; background-color: #f0fdf4; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #166534; font-size: 14px;">Fee Breakdown</td></tr>
+          ${breakdownRows}
+          <tr style="background-color: #f0fdf4;"><td style="padding: 14px 14px; color: #1e3a8a; font-size: 14px; font-weight: 700;">Total Paid</td><td style="padding: 14px 14px; color: #1e3a8a; font-size: 16px; font-weight: 700; text-align: right;">&#8369; ${data.amount.toFixed(2)}</td></tr>
+        </table>
+
+        <div style="background-color: #f0f9ff; padding: 14px 16px; border-left: 4px solid #0ea5e9; border-radius: 4px; margin: 20px 0;">
+          <p style="margin: 0; color: #075985; font-size: 13px;">
+            <strong>Payment Method:</strong> GCash<br>
+            <strong>Status:</strong> Verified by Accuro Admin
+          </p>
+        </div>
+
+        <p style="color: #6b7280; font-size: 12px; margin: 20px 0 0;">
+          Please keep this receipt for your records. If you have questions, contact us at <a href="mailto:${REPLY_TO_EMAIL}" style="color: #2563eb;">${REPLY_TO_EMAIL}</a>.
+        </p>
+      ${this.emailFooter()}
+    `;
+
+    await this.sendEmail({
+      to: data.recipientEmail,
+      subject: `${title} - Booking ${data.bookingId.slice(-8).toUpperCase()}`,
+      html,
+    });
+  }
+
   // Send password reset email
   async sendPasswordResetEmail(email: string, token: string, name: string): Promise<void> {
     const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;

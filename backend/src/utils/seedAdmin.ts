@@ -58,6 +58,12 @@ export const seedAdminUser = async () => {
         name: process.env.TECH3_NAME || 'Technician 3',
         technicianNumber: 3,
       },
+      {
+        email: process.env.TECH4_EMAIL || 'qebcbigornia@tip.edu.ph',
+        password: process.env.TECH4_PASSWORD || 'TechPassword123!',
+        name: process.env.TECH4_NAME || 'Technician 4',
+        technicianNumber: 4,
+      },
     ];
 
     for (const tech of technicians) {

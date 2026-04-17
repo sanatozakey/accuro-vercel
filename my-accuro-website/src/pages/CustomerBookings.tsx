@@ -386,9 +386,10 @@ export function CustomerBookings() {
                 )}
               </div>
 
-              {/* Technician Fee */}
-              {(selectedBooking as any).technicianFee && (() => {
+              {/* Technician Fee — only visible during awaiting_payment */}
+              {selectedBooking.status === 'awaiting_payment' && (selectedBooking as any).technicianFee && (() => {
                 const fee = (selectedBooking as any).technicianFee;
+                const breakdown = fee.breakdown || { purposeFee: 0, locationFee: 0, productFee: 0 };
                 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
                 return (
                   <div className={`border rounded-lg p-4 ${
@@ -428,8 +429,31 @@ export function CustomerBookings() {
                       </div>
                     </div>
 
+                    {/* Fee Matrix Breakdown */}
+                    <div className="mt-3 bg-white dark:bg-gray-800 rounded-md p-3 border border-amber-200 dark:border-amber-700">
+                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">Fee Breakdown</p>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Purpose: <span className="font-medium text-gray-800 dark:text-gray-200">{selectedBooking.purpose}</span></span>
+                          <span className="text-gray-900 dark:text-white">PHP {Number(breakdown.purposeFee || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Location: <span className="font-medium text-gray-800 dark:text-gray-200">{selectedBooking.location}</span></span>
+                          <span className="text-gray-900 dark:text-white">PHP {Number(breakdown.locationFee || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Product: <span className="font-medium text-gray-800 dark:text-gray-200">{selectedBooking.product}</span></span>
+                          <span className="text-gray-900 dark:text-white">PHP {Number(breakdown.productFee || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-1 mt-1 font-semibold">
+                          <span className="text-gray-900 dark:text-white">Total</span>
+                          <span className="text-gray-900 dark:text-white">PHP {fee.amount?.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Pending: Show QR payment + upload */}
-                    {fee.status === 'pending' && selectedBooking.status === 'confirmed' && (
+                    {fee.status === 'pending' && (
                       <div className="mt-3 space-y-3">
                         {/* Pay via GCash button */}
                         <button

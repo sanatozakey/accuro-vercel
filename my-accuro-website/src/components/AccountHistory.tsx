@@ -25,12 +25,18 @@ import {
   Info,
   ChevronLeft,
   ChevronRight,
+  CreditCard,
+  Upload,
+  ShieldCheck,
+  RefreshCw,
 } from 'lucide-react';
 import reviewService, { Review } from '../services/reviewService';
 import quotationService, { Quotation } from '../services/quotationService';
 import activityLogService, { ActivityLog } from '../services/activityLogService';
 import bookingService, { Booking } from '../services/bookingService';
 import { LoadingSpinner } from './LoadingSpinner';
+import { BookingStatusTracker } from './BookingStatusTracker';
+import { FeeReceiptModal } from './FeeReceiptModal';
 
 type TabType = 'bookings' | 'quotes' | 'reviews' | 'activity';
 
@@ -62,6 +68,12 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
   // Booking details modal state
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  // Technician fee payment state
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [feeReceipt, setFeeReceipt] = useState<File | null>(null);
+  const [uploadingFeeProof, setUploadingFeeProof] = useState(false);
+  const [showFeeReceipt, setShowFeeReceipt] = useState(false);
 
   // Quotation details modal state
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
@@ -106,7 +118,10 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
       switch (tab) {
         case 'bookings':
           const bookingsData = await bookingService.getMyBookings();
-          setBookings(bookingsData.data || []);
+          const sortedBookings = (bookingsData.data || []).slice().sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setBookings(sortedBookings);
           break;
         case 'reviews':
           const reviewsData = await reviewService.getMyReviews();
@@ -198,8 +213,32 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
       ),
       rescheduled: (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-          <Clock className="h-3 w-3 mr-1" />
+          <RefreshCw className="h-3 w-3 mr-1" />
           Rescheduled
+        </span>
+      ),
+      pending_review: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+          <Eye className="h-3 w-3 mr-1" />
+          Pending Review
+        </span>
+      ),
+      awaiting_payment: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+          <CreditCard className="h-3 w-3 mr-1" />
+          Awaiting Payment
+        </span>
+      ),
+      payment_submitted: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+          <Upload className="h-3 w-3 mr-1" />
+          Payment Submitted
+        </span>
+      ),
+      verified: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+          <ShieldCheck className="h-3 w-3 mr-1" />
+          Verified
         </span>
       ),
     };
@@ -898,6 +937,164 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
                 {getBookingStatusBadge(selectedBooking.status)}
               </div>
 
+              {/* Order Progress Tracker */}
+              <div className="mb-6 border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900">
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-blue-600" />
+                  Order Progress
+                </h4>
+                <BookingStatusTracker
+                  bookingId={selectedBooking._id}
+                  currentStatus={selectedBooking.status as any}
+                  statusHistory={(selectedBooking as any).statusHistory || []}
+                  createdAt={selectedBooking.createdAt}
+                  hasQuotation={!!(selectedBooking.quotationId && typeof selectedBooking.quotationId === 'object')}
+                />
+              </div>
+
+              {/* Technician Fee — visible during awaiting_payment (full matrix + QR) */}
+              {selectedBooking.status === 'awaiting_payment' && (selectedBooking as any).technicianFee && (() => {
+                const fee = (selectedBooking as any).technicianFee;
+                const breakdown = fee.breakdown || { purposeFee: 0, locationFee: 0, productFee: 0 };
+                const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+                return (
+                  <div className="mb-6 border rounded-lg p-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-5 w-5 text-amber-600" />
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">Technician Fee</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Service consultation fee</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">
+                          PHP {fee.amount?.toFixed(2)}
+                        </p>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                          fee.status === 'paid' ? 'bg-green-100 text-green-800' :
+                          fee.status === 'waived' ? 'bg-gray-100 text-gray-600' :
+                          'bg-amber-100 text-amber-800'
+                        }`}>
+                          {fee.status === 'paid' ? 'Paid' :
+                           fee.status === 'waived' ? 'Waived' :
+                           fee.proofSubmittedAt ? 'Proof Submitted' : 'Pending'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Fee Matrix Breakdown */}
+                    <div className="bg-white dark:bg-gray-800 rounded-md p-3 mb-3 border border-amber-200 dark:border-amber-700">
+                      <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">Fee Breakdown</p>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Purpose: <span className="font-medium text-gray-800 dark:text-gray-200">{selectedBooking.purpose}</span></span>
+                          <span className="text-gray-900 dark:text-white">PHP {Number(breakdown.purposeFee || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Location: <span className="font-medium text-gray-800 dark:text-gray-200">{selectedBooking.location}</span></span>
+                          <span className="text-gray-900 dark:text-white">PHP {Number(breakdown.locationFee || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600 dark:text-gray-400">Product: <span className="font-medium text-gray-800 dark:text-gray-200">{selectedBooking.product}</span></span>
+                          <span className="text-gray-900 dark:text-white">PHP {Number(breakdown.productFee || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-1 mt-1 font-semibold">
+                          <span className="text-gray-900 dark:text-white">Total</span>
+                          <span className="text-gray-900 dark:text-white">PHP {fee.amount?.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {fee.status === 'pending' && (
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => setShowQrModal(true)}
+                          className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
+                        >
+                          <CreditCard className="h-4 w-4" />
+                          Pay via GCash (PHP {fee.amount?.toFixed(2)})
+                        </button>
+
+                        {fee.proofSubmittedAt ? (
+                          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                            <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                              <CheckCircle className="h-4 w-4" />
+                              <p className="text-sm font-medium">Receipt submitted — awaiting admin verification</p>
+                            </div>
+                            <img
+                              src={`${API_URL}/bookings/${selectedBooking._id}/fee-proof`}
+                              alt="Payment receipt"
+                              className="mt-2 max-h-40 rounded-lg border cursor-pointer"
+                              onClick={() => window.open(`${API_URL}/bookings/${selectedBooking._id}/fee-proof`, '_blank')}
+                            />
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-700">
+                            <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                              After paying, upload your GCash receipt screenshot:
+                            </p>
+                            <div className="flex gap-2">
+                              <label className="flex-1 flex items-center justify-center gap-2 py-2 px-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-blue-400 transition text-sm">
+                                <Upload className="h-4 w-4 text-gray-500" />
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {feeReceipt ? feeReceipt.name : 'Choose receipt image'}
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => setFeeReceipt(e.target.files?.[0] || null)}
+                                />
+                              </label>
+                              {feeReceipt && (
+                                <button
+                                  onClick={async () => {
+                                    if (!feeReceipt) return;
+                                    try {
+                                      setUploadingFeeProof(true);
+                                      await bookingService.submitFeeProof(selectedBooking._id, feeReceipt);
+                                      toast.success('Receipt uploaded! Admin will verify your payment.');
+                                      setFeeReceipt(null);
+                                      const updated = await bookingService.getById(selectedBooking._id);
+                                      setSelectedBooking(updated.data);
+                                      loadTabData('bookings');
+                                    } catch (err: any) {
+                                      toast.error(err.response?.data?.message || 'Upload failed');
+                                    } finally {
+                                      setUploadingFeeProof(false);
+                                    }
+                                  }}
+                                  disabled={uploadingFeeProof}
+                                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                                >
+                                  {uploadingFeeProof ? 'Uploading...' : 'Submit'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {fee.status === 'paid' && (
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-green-600 dark:text-green-400">
+                          {fee.paidAt ? `Paid on ${new Date(fee.paidAt).toLocaleDateString()}` : 'Payment confirmed'}
+                        </p>
+                        <button
+                          onClick={() => setShowFeeReceipt(true)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          View Receipt
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* Company & Contact Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div className="space-y-4">
@@ -1066,6 +1263,52 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
             </div>
           </div>
         </div>
+      )}
+
+      {/* GCash QR Modal (technician fee) */}
+      {showQrModal && selectedBooking && (selectedBooking as any).technicianFee && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" onClick={() => setShowQrModal(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-blue-600 text-white p-4 text-center">
+              <h3 className="text-lg font-bold">Pay via GCash</h3>
+              <p className="text-blue-100 text-sm mt-1">Scan the QR code to pay</p>
+            </div>
+            <div className="p-6 flex flex-col items-center">
+              <img
+                src="/images/payment/gcash-qr.png"
+                alt="GCash QR Code"
+                className="w-64 h-auto rounded-lg shadow"
+              />
+              <div className="mt-4 text-center">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  PHP {(selectedBooking as any).technicianFee.amount?.toFixed(2)}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Technician consultation fee</p>
+              </div>
+              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg w-full">
+                <p className="text-xs text-amber-700 dark:text-amber-300 text-center">
+                  After paying, close this and upload your GCash receipt screenshot.
+                </p>
+              </div>
+            </div>
+            <div className="p-4 border-t dark:border-gray-700">
+              <button
+                onClick={() => setShowQrModal(false)}
+                className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fee Receipt Modal */}
+      {showFeeReceipt && selectedBooking && (selectedBooking as any).technicianFee && (
+        <FeeReceiptModal
+          booking={selectedBooking as any}
+          onClose={() => setShowFeeReceipt(false)}
+        />
       )}
 
       {/* Quotation Details Modal */}

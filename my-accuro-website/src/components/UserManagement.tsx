@@ -379,11 +379,15 @@ export function UserManagement({ darkMode = false }: UserManagementProps) {
       const updateData: UpdateUserData = {
         name: formData.name,
         email: formData.email,
-        role: formData.role,
         phone: formData.phone,
         company: formData.company,
       };
       await userService.update(editingUser._id, updateData);
+
+      if (formData.role !== editingUser.role) {
+        await userService.changeRole(editingUser._id, formData.role);
+      }
+
       toast.success('User updated successfully!');
       setShowEditDialog(false);
       setEditingUser(null);

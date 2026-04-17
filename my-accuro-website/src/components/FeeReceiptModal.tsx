@@ -8,12 +8,19 @@ interface FeeReceiptProps {
     contactName: string;
     contactEmail: string;
     purpose: string;
+    location?: string;
+    product?: string;
     date: string;
     time: string;
     technicianFee: {
       amount: number;
       status: string;
       paidAt?: string;
+      breakdown?: {
+        purposeFee: number;
+        locationFee: number;
+        productFee: number;
+      };
     };
     createdAt: string;
   };
@@ -155,13 +162,30 @@ export function FeeReceiptModal({ booking, onClose, darkMode = false }: FeeRecei
               </div>
             </div>
 
-            {/* Total */}
+            {/* Total with matrix breakdown */}
             <div className="total-section" style={{ padding: '20px 0' }}>
-              <div className="section-title" style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#9ca3af', marginBottom: '10px' }}>Payment Summary</div>
-              <div className="row" style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
-                <span className="label" style={{ fontSize: '13px', color: '#6b7280' }}>Technician Consultation Fee</span>
-                <span className="value" style={{ fontSize: '13px', color: '#1a1a1a', fontWeight: 500 }}>PHP {fee.amount.toFixed(2)}</span>
-              </div>
+              <div className="section-title" style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#9ca3af', marginBottom: '10px' }}>Fee Breakdown</div>
+              {fee.breakdown ? (
+                <>
+                  <div className="row" style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                    <span className="label" style={{ fontSize: '13px', color: '#6b7280' }}>Purpose ({booking.purpose})</span>
+                    <span className="value" style={{ fontSize: '13px', color: '#1a1a1a', fontWeight: 500 }}>PHP {Number(fee.breakdown.purposeFee || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="row" style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                    <span className="label" style={{ fontSize: '13px', color: '#6b7280' }}>Location ({booking.location || '—'})</span>
+                    <span className="value" style={{ fontSize: '13px', color: '#1a1a1a', fontWeight: 500 }}>PHP {Number(fee.breakdown.locationFee || 0).toFixed(2)}</span>
+                  </div>
+                  <div className="row" style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                    <span className="label" style={{ fontSize: '13px', color: '#6b7280' }}>Product ({booking.product || '—'})</span>
+                    <span className="value" style={{ fontSize: '13px', color: '#1a1a1a', fontWeight: 500 }}>PHP {Number(fee.breakdown.productFee || 0).toFixed(2)}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="row" style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                  <span className="label" style={{ fontSize: '13px', color: '#6b7280' }}>Technician Consultation Fee</span>
+                  <span className="value" style={{ fontSize: '13px', color: '#1a1a1a', fontWeight: 500 }}>PHP {fee.amount.toFixed(2)}</span>
+                </div>
+              )}
               <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '2px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <span style={{ fontSize: '16px', fontWeight: 600, color: '#1a1a1a' }}>Total Paid</span>
                 <span style={{ fontSize: '24px', fontWeight: 800, color: '#1e40af' }}>PHP {fee.amount.toFixed(2)}</span>

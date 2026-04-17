@@ -44,6 +44,11 @@ export interface IBooking extends Document {
     proofMimeType?: string;
     proofData?: Buffer;
     proofSubmittedAt?: Date;
+    breakdown?: {
+      purposeFee: number;
+      locationFee: number;
+      productFee: number;
+    };
   };
   // Google Calendar sync fields
   googleEventId?: string;
@@ -183,6 +188,11 @@ const BookingSchema: Schema = new Schema(
       proofMimeType: String,
       proofData: Buffer,
       proofSubmittedAt: Date,
+      breakdown: {
+        purposeFee: { type: Number, default: 0 },
+        locationFee: { type: Number, default: 0 },
+        productFee: { type: Number, default: 0 },
+      },
     },
     // Google Calendar sync fields
     googleEventId: {

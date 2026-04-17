@@ -7,6 +7,7 @@ import ActivityLog from '../models/ActivityLog';
 import recommendationService from '../services/recommendationService';
 import { NotificationService } from '../services/notificationService';
 import googleCalendarService from '../services/googleCalendarService';
+import { computeTechnicianFee } from '../utils/technicianFee';
 
 // Conditional socket import for serverless compatibility
 let socketService: any = { emitToUser: () => {}, emitToAdmins: () => {} };
@@ -172,18 +173,17 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       req.body.userId = req.user._id;
     }
 
-    // Compute technician fee based on purpose
-    const TECHNICIAN_FEE_MAP: Record<string, number> = {
-      'Calibration Services': 8,
-      'Technical Consultation': 5,
-      'Product Demonstration': 7,
-      'Maintenance Support': 8,
-      'Software Training': 6,
-      'General Inquiry': 3,
-      'Other': 5,
+    // Compute technician fee from matrix (purpose + location + product), capped at ₱30
+    const feeBreakdown = computeTechnicianFee(req.body.purpose, req.body.location, req.body.product);
+    req.body.technicianFee = {
+      amount: feeBreakdown.total,
+      status: 'pending',
+      breakdown: {
+        purposeFee: feeBreakdown.purposeFee,
+        locationFee: feeBreakdown.locationFee,
+        productFee: feeBreakdown.productFee,
+      },
     };
-    const feeAmount = TECHNICIAN_FEE_MAP[req.body.purpose] || 5;
-    req.body.technicianFee = { amount: feeAmount, status: 'pending' };
 
     const booking = await Booking.create(req.body);
 
@@ -1291,11 +1291,58 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, message: 'No technician fee on this booking' });
     }
 
+    const wasAlreadyPaid = booking.technicianFee.status === 'paid';
     booking.technicianFee.status = feeStatus;
     if (feeStatus === 'paid') {
       booking.technicianFee.paidAt = new Date();
     }
     await booking.save();
+
+    // Email receipts only on transition into "paid" (first time)
+    if (feeStatus === 'paid' && !wasAlreadyPaid) {
+      try {
+        const populatedBooking = await Booking.findById(booking._id).populate('assignedTechnician', 'name email');
+        const fee = populatedBooking?.technicianFee;
+        if (populatedBooking && fee) {
+          const breakdown = fee.breakdown ? {
+            purposeFee: Number(fee.breakdown.purposeFee) || 0,
+            locationFee: Number(fee.breakdown.locationFee) || 0,
+            productFee: Number(fee.breakdown.productFee) || 0,
+          } : undefined;
+          const baseReceipt = {
+            bookingId: populatedBooking._id.toString(),
+            company: populatedBooking.company,
+            date: populatedBooking.date.toString(),
+            time: populatedBooking.time,
+            purpose: populatedBooking.purpose,
+            location: populatedBooking.location,
+            product: populatedBooking.product,
+            amount: fee.amount,
+            breakdown,
+            paidAt: fee.paidAt || new Date(),
+          };
+          // Customer receipt
+          await emailService.sendTechnicianFeeReceipt({
+            ...baseReceipt,
+            recipient: 'customer',
+            recipientEmail: populatedBooking.contactEmail,
+            recipientName: populatedBooking.contactName,
+          });
+          // Technician receipt (if assigned)
+          const tech: any = populatedBooking.assignedTechnician;
+          if (tech?.email) {
+            await emailService.sendTechnicianFeeReceipt({
+              ...baseReceipt,
+              recipient: 'technician',
+              recipientEmail: tech.email,
+              recipientName: tech.name || 'Technician',
+            });
+          }
+        }
+      } catch (emailErr) {
+        console.error('Failed to send technician fee receipt emails:', emailErr);
+      }
+    }
 
     // Strip proof binary from response
     const bookingObj = booking.toObject();
