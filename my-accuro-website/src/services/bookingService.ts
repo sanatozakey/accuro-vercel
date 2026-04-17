@@ -171,8 +171,15 @@ class BookingService {
   }
 
   // Update technician fee status (admin/superadmin)
-  async updateFeeStatus(id: string, feeStatus: 'paid' | 'waived'): Promise<BookingResponse> {
-    const response = await api.put<BookingResponse>(`/bookings/${id}/fee-status`, { feeStatus });
+  async updateFeeStatus(
+    id: string,
+    feeStatus: 'paid' | 'waived' | 'pending',
+    revertReason?: string
+  ): Promise<BookingResponse> {
+    const response = await api.put<BookingResponse>(`/bookings/${id}/fee-status`, {
+      feeStatus,
+      ...(revertReason ? { revertReason } : {}),
+    });
     return response.data;
   }
 

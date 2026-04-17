@@ -3327,19 +3327,30 @@ export function BookingDashboard(): React.ReactElement {
                                   </div>
                                   {fee.status === 'pending' && (
                                     <div className="flex gap-2">
-                                      <button
-                                        type="button"
-                                        className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
-                                        onClick={async () => {
-                                          try {
-                                            await bookingService.updateFeeStatus(selectedBooking._id, 'paid')
-                                            toast.success('Fee marked as paid')
-                                            fetchBookings()
-                                          } catch { toast.error('Failed to update fee') }
-                                        }}
-                                      >
-                                        Mark Paid
-                                      </button>
+                                      {fee.proofSubmittedAt ? (
+                                        <button
+                                          type="button"
+                                          className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                          onClick={async () => {
+                                            try {
+                                              await bookingService.updateFeeStatus(selectedBooking._id, 'paid')
+                                              toast.success('Fee marked as paid')
+                                              fetchBookings()
+                                            } catch (err: any) {
+                                              toast.error(err?.response?.data?.message || 'Failed to update fee')
+                                            }
+                                          }}
+                                        >
+                                          Mark Paid
+                                        </button>
+                                      ) : (
+                                        <span
+                                          className="px-3 py-1 text-xs bg-amber-100 text-amber-800 rounded cursor-not-allowed"
+                                          title="Client has not uploaded a GCash receipt yet. Mark Paid is locked until they submit proof of payment."
+                                        >
+                                          Awaiting receipt from client
+                                        </span>
+                                      )}
                                       <button
                                         type="button"
                                         className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
@@ -3370,6 +3381,46 @@ export function BookingDashboard(): React.ReactElement {
                                     />
                                   </div>
                                 )}
+                              </div>
+                            );
+                          })()}
+                          {/* Revert fee — visible once booking is completed but admin needs to un-mark payment */}
+                          {selectedBooking.status === 'completed' && (selectedBooking as any).technicianFee && ['paid', 'waived'].includes((selectedBooking as any).technicianFee.status) && (() => {
+                            const fee = (selectedBooking as any).technicianFee;
+                            return (
+                              <div className="p-3 rounded-lg border bg-blue-50 border-blue-200">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-700">Technician Fee</div>
+                                    <div className="text-lg font-bold text-gray-900">PHP {fee.amount?.toFixed(2)}</div>
+                                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                      fee.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                                    }`}>
+                                      {fee.status === 'paid' ? 'PAID' : 'WAIVED'}
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    className="px-3 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700"
+                                    title="Move this booking back to awaiting payment. The uploaded receipt is kept."
+                                    onClick={async () => {
+                                      const reason = window.prompt(
+                                        `Revert this booking back to "awaiting payment"?\n\nOptional reason (will be logged in status history):`,
+                                        ''
+                                      );
+                                      if (reason === null) return; // cancelled
+                                      try {
+                                        await bookingService.updateFeeStatus(selectedBooking._id, 'pending', reason || undefined)
+                                        toast.success('Booking reverted to awaiting payment')
+                                        fetchBookings()
+                                      } catch (err: any) {
+                                        toast.error(err?.response?.data?.message || 'Failed to revert fee status')
+                                      }
+                                    }}
+                                  >
+                                    Revert to awaiting payment
+                                  </button>
+                                </div>
                               </div>
                             );
                           })()}

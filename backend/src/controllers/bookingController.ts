@@ -1277,9 +1277,9 @@ export const checkTechnicianAvailability = async (req: AuthRequest, res: Respons
 // @access  Admin/Superadmin
 export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
   try {
-    const { feeStatus } = req.body;
-    if (!feeStatus || !['paid', 'waived'].includes(feeStatus)) {
-      return res.status(400).json({ success: false, message: 'feeStatus must be "paid" or "waived"' });
+    const { feeStatus, revertReason } = req.body;
+    if (!feeStatus || !['paid', 'waived', 'pending'].includes(feeStatus)) {
+      return res.status(400).json({ success: false, message: 'feeStatus must be "paid", "waived", or "pending"' });
     }
 
     const booking = await Booking.findById(req.params.id);
@@ -1291,10 +1291,24 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, message: 'No technician fee on this booking' });
     }
 
-    const wasAlreadyPaid = booking.technicianFee.status === 'paid';
+    const previousFeeStatus = booking.technicianFee.status;
+    const wasAlreadyPaid = previousFeeStatus === 'paid';
+
+    // Enforce: cannot mark paid without a customer-submitted receipt
+    if (feeStatus === 'paid' && !wasAlreadyPaid && !booking.technicianFee.proofSubmittedAt) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot mark paid — customer has not submitted a payment receipt yet',
+      });
+    }
+
     booking.technicianFee.status = feeStatus;
     if (feeStatus === 'paid') {
       booking.technicianFee.paidAt = new Date();
+    }
+    if (feeStatus === 'pending') {
+      // Reverting: clear paidAt so a future Mark Paid records a fresh timestamp
+      booking.technicianFee.paidAt = undefined;
     }
 
     // Advance booking status when fee clears and booking is waiting on payment.
@@ -1306,6 +1320,19 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
         changedAt: new Date(),
         changedBy: req.user!._id,
         note: feeStatus === 'paid' ? 'Technician fee payment confirmed' : 'Technician fee waived',
+      });
+    }
+
+    // Revert: fee back to pending → booking back to awaiting_payment
+    if (feeStatus === 'pending' && previousFeeStatus !== 'pending' && booking.status === 'completed') {
+      booking.status = 'awaiting_payment';
+      (booking as any).statusHistory.push({
+        status: 'awaiting_payment',
+        changedAt: new Date(),
+        changedBy: req.user!._id,
+        note: revertReason
+          ? `Reverted to awaiting payment: ${revertReason}`
+          : 'Reverted to awaiting payment by admin',
       });
     }
 
