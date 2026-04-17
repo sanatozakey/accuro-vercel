@@ -1,10 +1,28 @@
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
+import mongoose from 'mongoose';
 import TransactionProof from '../models/TransactionProof';
 import Booking from '../models/Booking';
 import Quotation from '../models/Quotation';
 import Product from '../models/Product';
+
+// Resolve a product from a transaction item. `productId` is stored as a String and
+// may be a Mongo ObjectId, a slug (e.g. "logical"), or missing — fall back to name.
+const resolveProductFromItem = async (item: { productId?: string; productName?: string }) => {
+  const candidates: any[] = [];
+  if (item.productId) {
+    if (mongoose.Types.ObjectId.isValid(item.productId)) {
+      candidates.push({ _id: new mongoose.Types.ObjectId(item.productId) });
+    }
+    candidates.push({ name: item.productId });
+  }
+  if (item.productName) {
+    candidates.push({ name: item.productName });
+  }
+  if (candidates.length === 0) return null;
+  return Product.findOne({ $or: candidates });
+};
 
 interface AuthRequest extends Request {
   user?: any;
@@ -186,6 +204,37 @@ export const approveTransactionProof = async (req: AuthRequest, res: Response) =
       return res.status(400).json({ success: false, message: 'Only pending_review proofs can be approved' });
     }
 
+    // Pre-scan inventory: resolve every tracked item, abort if any has insufficient stock.
+    // Skipped entirely if this proof already deducted (idempotency — re-approval shouldn't double-deduct).
+    const resolvedItems: { item: typeof proof.items[number]; product: any }[] = [];
+    const shortfall: { productName: string; requested: number; available: number }[] = [];
+
+    if (!proof.inventoryDeducted) {
+      for (const item of proof.items) {
+        const product = await resolveProductFromItem(item);
+        if (!product || !product.trackInventory) {
+          resolvedItems.push({ item, product: null });
+          continue;
+        }
+        if (product.stockQuantity < item.quantity) {
+          shortfall.push({
+            productName: product.name,
+            requested: item.quantity,
+            available: product.stockQuantity,
+          });
+        }
+        resolvedItems.push({ item, product });
+      }
+
+      if (shortfall.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Insufficient stock to approve — restock or adjust items first',
+          shortfall,
+        });
+      }
+    }
+
     // Update proof status
     proof.status = 'approved';
     proof.reviewedBy = req.user!._id;
@@ -193,25 +242,22 @@ export const approveTransactionProof = async (req: AuthRequest, res: Response) =
     proof.reviewedAt = new Date();
     proof.reviewFeedback = req.body.reviewFeedback || '';
 
-    // Deduct inventory
+    // Deduct inventory (idempotent — skip if already deducted)
     const lowStockWarnings: string[] = [];
-    for (const item of proof.items) {
-      if (!item.productName) continue;
+    if (!proof.inventoryDeducted) {
+      for (const { item, product } of resolvedItems) {
+        if (!product) continue;
+        product.stockQuantity = Math.max(0, product.stockQuantity - item.quantity);
+        await product.save();
 
-      // productId is a slug (e.g. "logical"), not a MongoDB ObjectId — look up by name
-      const product = await Product.findOne({ name: item.productName });
-      if (!product || !product.trackInventory) continue;
-
-      product.stockQuantity = Math.max(0, product.stockQuantity - item.quantity);
-      await product.save();
-
-      if (product.stockQuantity <= product.lowStockThreshold) {
-        lowStockWarnings.push(`${product.name}: ${product.stockQuantity} remaining (threshold: ${product.lowStockThreshold})`);
+        if (product.stockQuantity <= product.lowStockThreshold) {
+          lowStockWarnings.push(`${product.name}: ${product.stockQuantity} remaining (threshold: ${product.lowStockThreshold})`);
+        }
       }
+      proof.inventoryDeducted = true;
+      proof.inventoryDeductedAt = new Date();
     }
 
-    proof.inventoryDeducted = true;
-    proof.inventoryDeductedAt = new Date();
     await proof.save();
 
     // Update booking status to verified

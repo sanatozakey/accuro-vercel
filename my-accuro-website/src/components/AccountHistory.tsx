@@ -82,6 +82,10 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
     setTimeout(() => {
       setShowPaymentCompleted(false);
       setShowQrModal(false);
+      // Auto-open the technician-fee receipt after payment submission
+      if (selectedBooking && (selectedBooking as any).technicianFee) {
+        setShowFeeReceipt(true);
+      }
     }, 2200);
   };
 
