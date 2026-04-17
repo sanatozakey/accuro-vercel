@@ -1,6 +1,7 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import User from '../models/User';
 
 interface DecodedToken {
   id: string;
@@ -46,6 +47,11 @@ class SocketService {
 
         // Attach user ID to socket
         (socket as any).userId = decoded.id;
+
+        // Load role so we can room-join admins/superadmins
+        const user = await User.findById(decoded.id).select('role');
+        (socket as any).userRole = user?.role || 'user';
+
         next();
       } catch (error) {
         console.error('Socket authentication failed:', error);
@@ -56,13 +62,19 @@ class SocketService {
     // Connection handling
     this.io.on('connection', (socket: Socket) => {
       const userId = (socket as any).userId;
-      console.log(`User connected: ${userId} (socket: ${socket.id})`);
+      const userRole = (socket as any).userRole;
+      console.log(`User connected: ${userId} role=${userRole} (socket: ${socket.id})`);
 
       // Add socket to user's socket set
       this.addUserSocket(userId, socket.id);
 
       // Join user to their personal room
       socket.join(`user:${userId}`);
+
+      // Admins and superadmins join the broadcast room for chat/dispatch events
+      if (userRole === 'admin' || userRole === 'superadmin') {
+        socket.join('admins');
+      }
 
       // Handle disconnection
       socket.on('disconnect', (reason) => {
