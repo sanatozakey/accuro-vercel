@@ -22,6 +22,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { products as staticProducts, Product as StaticProduct } from '../data/products'
 import quotationService, { CreateQuotationData, QuotationItem } from '../services/quotationService'
 import { useCart } from '../contexts/CartContext'
+import { QuotationReceiptModal } from '../components/QuotationReceiptModal'
 
 interface SelectedItem {
   productId: string
@@ -58,6 +59,14 @@ export function RequestQuotation() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [quotationNumber, setQuotationNumber] = useState('')
+  const [submittedSnapshot, setSubmittedSnapshot] = useState<{
+    items: SelectedItem[]
+    company: string
+    phone: string
+    additionalRequirements: string
+    submittedAt: string
+  } | null>(null)
+  const [showReceipt, setShowReceipt] = useState(false)
 
   // Pre-populate from quote list (MiniCart) if available
   useEffect(() => {
@@ -196,6 +205,13 @@ export function RequestQuotation() {
 
       const response = await quotationService.createQuotation(data)
       if (response.success) {
+        setSubmittedSnapshot({
+          items: [...selectedItems],
+          company,
+          phone,
+          additionalRequirements,
+          submittedAt: response.data?.createdAt || new Date().toISOString(),
+        })
         clearCart() // Clear the quote list after successful submission
         setSubmitted(true)
         setQuotationNumber(response.data?.quotationNumber || '')
@@ -231,7 +247,7 @@ export function RequestQuotation() {
               Our team will review your request and prepare a detailed quotation. You'll receive
               a notification once it's ready.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4 flex-wrap">
               <Link
                 to="/quotations"
                 className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
@@ -245,6 +261,7 @@ export function RequestQuotation() {
                   setSelectedItems([])
                   setAdditionalRequirements('')
                   setQuotationNumber('')
+                  setSubmittedSnapshot(null)
                 }}
                 className="inline-flex items-center justify-center px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition"
               >
@@ -252,6 +269,17 @@ export function RequestQuotation() {
                 Submit Another Request
               </button>
             </div>
+            {submittedSnapshot && quotationNumber && (
+              <div className="flex justify-center mb-8">
+                <button
+                  onClick={() => setShowReceipt(true)}
+                  className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 underline underline-offset-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  View / Download Receipt
+                </button>
+              </div>
+            )}
 
             {/* What's Next */}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
@@ -285,6 +313,25 @@ export function RequestQuotation() {
             </div>
           </div>
         </div>
+        {showReceipt && submittedSnapshot && quotationNumber && (
+          <QuotationReceiptModal
+            onClose={() => setShowReceipt(false)}
+            quotation={{
+              quotationNumber,
+              customerName: user?.name || '',
+              customerEmail: user?.email || '',
+              customerPhone: submittedSnapshot.phone,
+              company: submittedSnapshot.company,
+              items: submittedSnapshot.items.map((i) => ({
+                productName: i.productName,
+                quantity: i.quantity,
+                specifications: i.specifications,
+              })),
+              additionalRequirements: submittedSnapshot.additionalRequirements,
+              submittedAt: submittedSnapshot.submittedAt,
+            }}
+          />
+        )}
       </div>
     )
   }

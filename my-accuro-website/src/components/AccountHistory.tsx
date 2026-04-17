@@ -37,6 +37,7 @@ import bookingService, { Booking } from '../services/bookingService';
 import { LoadingSpinner } from './LoadingSpinner';
 import { BookingStatusTracker } from './BookingStatusTracker';
 import { FeeReceiptModal } from './FeeReceiptModal';
+import { QuotationReceiptModal } from './QuotationReceiptModal';
 
 type TabType = 'bookings' | 'quotes' | 'reviews' | 'activity';
 
@@ -74,10 +75,20 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
   const [feeReceipt, setFeeReceipt] = useState<File | null>(null);
   const [uploadingFeeProof, setUploadingFeeProof] = useState(false);
   const [showFeeReceipt, setShowFeeReceipt] = useState(false);
+  const [showPaymentCompleted, setShowPaymentCompleted] = useState(false);
+
+  const handleCloseQrWithAnimation = () => {
+    setShowPaymentCompleted(true);
+    setTimeout(() => {
+      setShowPaymentCompleted(false);
+      setShowQrModal(false);
+    }, 2200);
+  };
 
   // Quotation details modal state
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
+  const [showQuotationReceipt, setShowQuotationReceipt] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [showDeclineModal, setShowDeclineModal] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
@@ -1267,38 +1278,74 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
 
       {/* GCash QR Modal (technician fee) */}
       {showQrModal && selectedBooking && (selectedBooking as any).technicianFee && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" onClick={() => setShowQrModal(false)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" onClick={handleCloseQrWithAnimation}>
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="bg-blue-600 text-white p-4 text-center">
-              <h3 className="text-lg font-bold">Pay via GCash</h3>
-              <p className="text-blue-100 text-sm mt-1">Scan the QR code to pay</p>
-            </div>
-            <div className="p-6 flex flex-col items-center">
-              <img
-                src="/images/payment/gcash-qr.png"
-                alt="GCash QR Code"
-                className="w-64 h-auto rounded-lg shadow"
-              />
-              <div className="mt-4 text-center">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  PHP {(selectedBooking as any).technicianFee.amount?.toFixed(2)}
+            {showPaymentCompleted ? (
+              <div className="flex flex-col items-center justify-center px-8 py-16 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-gray-800 dark:to-gray-900">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-full bg-green-400/30 animate-ping" />
+                  <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg animate-[scaleIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)_both]">
+                    <svg className="w-12 h-12 text-white" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="26" cy="26" r="25" stroke="white" strokeWidth="2" strokeOpacity="0.3" />
+                      <path
+                        d="M14 27 L22 35 L38 18"
+                        stroke="white"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeDasharray="48"
+                        strokeDashoffset="48"
+                        style={{ animation: 'checkDraw 0.6s 0.3s ease-out forwards' }}
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="mt-6 text-xl font-bold text-gray-900 dark:text-white animate-[fadeUp_0.4s_0.5s_ease-out_both]">
+                  Payment Completed
+                </h3>
+                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400 animate-[fadeUp_0.4s_0.7s_ease-out_both]">
+                  Please upload your GCash receipt to confirm.
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Technician consultation fee</p>
+                <style>{`
+                  @keyframes scaleIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+                  @keyframes checkDraw { to { stroke-dashoffset: 0; } }
+                  @keyframes fadeUp { 0% { transform: translateY(8px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+                `}</style>
               </div>
-              <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg w-full">
-                <p className="text-xs text-amber-700 dark:text-amber-300 text-center">
-                  After paying, close this and upload your GCash receipt screenshot.
-                </p>
-              </div>
-            </div>
-            <div className="p-4 border-t dark:border-gray-700">
-              <button
-                onClick={() => setShowQrModal(false)}
-                className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition"
-              >
-                Close
-              </button>
-            </div>
+            ) : (
+              <>
+                <div className="bg-blue-600 text-white p-4 text-center">
+                  <h3 className="text-lg font-bold">Pay via GCash</h3>
+                  <p className="text-blue-100 text-sm mt-1">Scan the QR code to pay</p>
+                </div>
+                <div className="p-6 flex flex-col items-center">
+                  <img
+                    src="/images/payment/gcash-qr.png"
+                    alt="GCash QR Code"
+                    className="w-64 h-auto rounded-lg shadow"
+                  />
+                  <div className="mt-4 text-center">
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      PHP {(selectedBooking as any).technicianFee.amount?.toFixed(2)}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Technician consultation fee</p>
+                  </div>
+                  <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg w-full">
+                    <p className="text-xs text-amber-700 dark:text-amber-300 text-center">
+                      After paying, close this and upload your GCash receipt screenshot.
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4 border-t dark:border-gray-700">
+                  <button
+                    onClick={handleCloseQrWithAnimation}
+                    className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition"
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1540,18 +1587,48 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
                   </div>
                 )}
               </div>
-              <button
-                onClick={() => {
-                  setIsQuotationModalOpen(false);
-                  setSelectedQuotation(null);
-                }}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowQuotationReceipt(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  Receipt
+                </button>
+                <button
+                  onClick={() => {
+                    setIsQuotationModalOpen(false);
+                    setSelectedQuotation(null);
+                  }}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Quotation Receipt Modal */}
+      {showQuotationReceipt && selectedQuotation && (
+        <QuotationReceiptModal
+          onClose={() => setShowQuotationReceipt(false)}
+          quotation={{
+            quotationNumber: selectedQuotation.quotationNumber,
+            customerName: selectedQuotation.customerName,
+            customerEmail: selectedQuotation.customerEmail,
+            customerPhone: selectedQuotation.customerPhone,
+            company: selectedQuotation.company,
+            items: selectedQuotation.items.map((i: any) => ({
+              productName: i.productName,
+              quantity: i.quantity,
+              specifications: i.specifications,
+            })),
+            additionalRequirements: selectedQuotation.additionalRequirements,
+            submittedAt: selectedQuotation.createdAt,
+          }}
+        />
       )}
 
       {/* Decline Reason Modal */}

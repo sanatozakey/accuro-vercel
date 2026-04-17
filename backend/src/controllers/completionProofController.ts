@@ -14,6 +14,16 @@ const pushStatusHistory = (booking: any, status: string, changedBy: any, note: s
   booking.statusHistory.push({ status, changedAt: new Date(), changedBy, note });
 };
 
+// Helper: compose booking.conclusion from the full service report
+const composeConclusion = (sr: any): string => {
+  const parts: string[] = [];
+  if (sr?.workPerformed) parts.push(`Work Performed:\n${sr.workPerformed}`);
+  if (sr?.equipmentUsed) parts.push(`Equipment Used:\n${sr.equipmentUsed}`);
+  if (sr?.issuesFound) parts.push(`Issues Found:\n${sr.issuesFound}`);
+  if (sr?.recommendations) parts.push(`Recommendations:\n${sr.recommendations}`);
+  return parts.join('\n\n');
+};
+
 // Ensure upload directory exists
 const uploadDir = path.join(__dirname, '../../uploads/proofs');
 if (!fs.existsSync(uploadDir)) {
@@ -147,7 +157,7 @@ export const createCompletionProof = async (req: AuthRequest, res: Response) => 
       // Admin/technician: move to pending review
       booking.status = 'pending_review';
     }
-    booking.conclusion = parsedServiceReport.workPerformed;
+    booking.conclusion = composeConclusion(parsedServiceReport);
     pushStatusHistory(booking, booking.status, req.user!._id,
       isSuperAdmin ? 'Booking completed with proof by superadmin' : 'Completion report submitted for review');
     await booking.save();
@@ -248,7 +258,7 @@ export const approveCompletionProof = async (req: AuthRequest, res: Response) =>
       const previousStatus = booking.status;
       booking.status = 'completed';
       booking.canReview = true;
-      booking.conclusion = proof.serviceReport.workPerformed;
+      booking.conclusion = composeConclusion(proof.serviceReport);
       pushStatusHistory(booking, 'completed', req.user!._id, 'Completion report approved by superadmin');
       await booking.save();
 
@@ -548,7 +558,7 @@ export const reviseCompletionProof = async (req: AuthRequest, res: Response) => 
     const booking = await Booking.findById(proof.bookingId);
     if (booking) {
       booking.status = 'pending_review';
-      booking.conclusion = parsedServiceReport.workPerformed;
+      booking.conclusion = composeConclusion(parsedServiceReport);
       pushStatusHistory(booking, 'pending_review', req.user!._id, 'Revised completion report resubmitted for review');
       await booking.save();
 

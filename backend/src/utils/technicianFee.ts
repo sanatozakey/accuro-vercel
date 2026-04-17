@@ -12,8 +12,8 @@ export const PURPOSE_FEE: Record<string, number> = {
 };
 
 export const LOCATION_FEE: Record<string, number> = {
-  'Accuro Office': 0,
-  'Virtual Meeting': 0,
+  'Accuro Office': 2,
+  'Virtual Meeting': 1,
   'Client Site': 5,
   'Other': 3,
 };

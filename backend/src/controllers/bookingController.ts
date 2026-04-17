@@ -1296,6 +1296,19 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
     if (feeStatus === 'paid') {
       booking.technicianFee.paidAt = new Date();
     }
+
+    // Advance booking status when fee clears and booking is waiting on payment.
+    // Only do this on the transition into 'paid'/'waived' (not on repeated calls).
+    if (!wasAlreadyPaid && (feeStatus === 'paid' || feeStatus === 'waived') && booking.status === 'awaiting_payment') {
+      booking.status = 'completed';
+      (booking as any).statusHistory.push({
+        status: 'completed',
+        changedAt: new Date(),
+        changedBy: req.user!._id,
+        note: feeStatus === 'paid' ? 'Technician fee payment confirmed' : 'Technician fee waived',
+      });
+    }
+
     await booking.save();
 
     // Email receipts only on transition into "paid" (first time)
