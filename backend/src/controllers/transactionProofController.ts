@@ -57,7 +57,7 @@ const stripFileData = (proof: any) => {
 // @access  Private
 export const getTransactionProofByBooking = async (req: AuthRequest, res: Response) => {
   try {
-    const proof = await TransactionProof.findOne({ bookingId: req.params.bookingId })
+    let proof = await TransactionProof.findOne({ bookingId: req.params.bookingId })
       .populate('quotationId', 'quotationNumber')
       .populate('submittedBy', 'name email')
       .populate('reviewedBy', 'name email');
@@ -67,6 +67,42 @@ export const getTransactionProofByBooking = async (req: AuthRequest, res: Respon
         success: false,
         message: 'Transaction proof not found for this booking',
       });
+    }
+
+    // Self-heal: if proof is pending_upload but the booking has already had its
+    // technician fee marked paid/waived, lift that receipt in so the Review
+    // Payment modal can approve & deduct. Handles bookings that got stuck
+    // before the auto-lift was added.
+    if (proof.status === 'pending_upload') {
+      const booking = await Booking.findById(proof.bookingId).select(
+        'technicianFee status'
+      );
+      const fee: any = (booking as any)?.technicianFee;
+      if (fee && (fee.status === 'paid' || fee.status === 'waived')) {
+        if (fee.status === 'paid' && fee.proofData) {
+          const originalName = fee.proofFilename || 'fee-receipt.png';
+          const ext = path.extname(originalName) || '.png';
+          const uniqueFilename = `${uuidv4()}${ext}`;
+          proof.attachments = [
+            {
+              filename: uniqueFilename,
+              originalName,
+              mimeType: fee.proofMimeType || 'image/png',
+              size: fee.proofData.length,
+              path: `uploads/proofs/${uniqueFilename}`,
+              fileData: fee.proofData,
+              uploadedAt: fee.proofSubmittedAt || new Date(),
+            } as any,
+          ];
+          proof.customerNotes = 'Auto-linked from technician fee receipt';
+        } else if (fee.status === 'waived') {
+          proof.customerNotes = 'Technician fee waived — no receipt required';
+        }
+        proof.status = 'pending_review';
+        if (req.user?._id) proof.submittedBy = req.user._id;
+        proof.submittedAt = new Date();
+        await proof.save();
+      }
     }
 
     res.status(200).json({ success: true, data: stripFileData(proof) });

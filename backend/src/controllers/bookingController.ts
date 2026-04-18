@@ -1,4 +1,6 @@
 import { Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import path from 'path';
 import Booking from '../models/Booking';
 import TransactionProof from '../models/TransactionProof';
 import User from '../models/User';
@@ -1329,16 +1331,26 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
     // 'payment_submitted' so the superadmin can still approve items + deduct inventory
     // via the Review Payment flow. Otherwise (no items to approve) go straight to
     // 'verified' since there is nothing left to do.
+    // Look up an in-flight TransactionProof — we may need to advance the timeline
+    // and/or lift the fee receipt into it so the Review Payment modal can approve.
+    const pendingTxProof = (feeStatus === 'paid' || feeStatus === 'waived')
+      ? await TransactionProof.findOne({
+          bookingId: booking._id,
+          status: { $in: ['pending_upload', 'pending_review', 'rejected'] },
+        })
+      : null;
+
+    // Advance booking status when fee clears and booking is waiting on payment.
+    // Only do this on the transition into 'paid'/'waived' (not on repeated calls).
+    // If a pending TransactionProof exists (quotation items), advance to
+    // 'payment_submitted' so the superadmin can still approve items + deduct
+    // inventory via the Review Payment flow. Otherwise (no items to approve) go
+    // straight to 'verified' since there is nothing left to do.
     if (
       !wasAlreadyPaid &&
       (feeStatus === 'paid' || feeStatus === 'waived') &&
       booking.status === 'awaiting_payment'
     ) {
-      const pendingTxProof = await TransactionProof.findOne({
-        bookingId: booking._id,
-        status: { $in: ['pending_upload', 'pending_review', 'rejected'] },
-      }).select('_id status');
-
       const nextStatus = pendingTxProof ? 'payment_submitted' : 'verified';
       booking.status = nextStatus;
       (booking as any).statusHistory.push({
@@ -1354,6 +1366,42 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
             ? 'Technician fee waived — awaiting item approval'
             : 'Technician fee waived',
       });
+    }
+
+    // Lift the technician-fee receipt into the TransactionProof so the Review
+    // Payment modal shows an Approve & Deduct action. Without this the proof
+    // would stay at pending_upload (there is no separate customer upload step)
+    // and the modal hides its approve button. Idempotent: runs whenever fee is
+    // paid/waived and the proof is still at pending_upload, so previously-stuck
+    // bookings self-repair on the next Mark Paid / Waive call.
+    if (
+      pendingTxProof &&
+      pendingTxProof.status === 'pending_upload' &&
+      (feeStatus === 'paid' || feeStatus === 'waived')
+    ) {
+      if (feeStatus === 'paid' && booking.technicianFee.proofData) {
+        const originalName = booking.technicianFee.proofFilename || 'fee-receipt.png';
+        const ext = path.extname(originalName) || '.png';
+        const uniqueFilename = `${uuidv4()}${ext}`;
+        pendingTxProof.attachments = [
+          {
+            filename: uniqueFilename,
+            originalName,
+            mimeType: booking.technicianFee.proofMimeType || 'image/png',
+            size: booking.technicianFee.proofData.length,
+            path: `uploads/proofs/${uniqueFilename}`,
+            fileData: booking.technicianFee.proofData,
+            uploadedAt: booking.technicianFee.proofSubmittedAt || new Date(),
+          } as any,
+        ];
+        pendingTxProof.customerNotes = 'Auto-linked from technician fee receipt';
+      } else if (feeStatus === 'waived') {
+        pendingTxProof.customerNotes = 'Technician fee waived — no receipt required';
+      }
+      pendingTxProof.status = 'pending_review';
+      pendingTxProof.submittedBy = req.user!._id;
+      pendingTxProof.submittedAt = new Date();
+      await pendingTxProof.save();
     }
 
     // Revert: fee back to pending → booking back to awaiting_payment
@@ -1373,6 +1421,24 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
           ? `Reverted to awaiting payment: ${revertReason}`
           : 'Reverted to awaiting payment by admin',
       });
+
+      // If the TransactionProof was auto-linked from the fee receipt, roll it
+      // back to pending_upload so a fresh Mark Paid re-attaches the latest
+      // receipt. Don't touch proofs that were customer-submitted directly.
+      const linkedTxProof = await TransactionProof.findOne({
+        bookingId: booking._id,
+        status: 'pending_review',
+        customerNotes: { $in: [
+          'Auto-linked from technician fee receipt',
+          'Technician fee waived — no receipt required',
+        ] },
+      });
+      if (linkedTxProof) {
+        linkedTxProof.status = 'pending_upload';
+        linkedTxProof.attachments = [] as any;
+        linkedTxProof.submittedAt = undefined as any;
+        await linkedTxProof.save();
+      }
     }
 
     await booking.save();
