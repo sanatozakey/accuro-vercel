@@ -20,6 +20,8 @@ import {
   FileText,
   MoreVertical,
   Minus,
+  PackagePlus,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -91,6 +93,19 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [stockEditProduct, setStockEditProduct] = useState<Product | null>(null);
   const [newStockValue, setNewStockValue] = useState<number>(0);
+
+  // Bulk restock dialog
+  const [showBulkRestockDialog, setShowBulkRestockDialog] = useState(false);
+  const [bulkRestockRows, setBulkRestockRows] = useState<Array<{
+    productId: string;
+    name: string;
+    currentStock: number;
+    delta: number;
+    lowStockThreshold: number;
+    trackInventory: boolean;
+  }>>([]);
+  const [bulkRestockSaving, setBulkRestockSaving] = useState(false);
+  const [enablingTracking, setEnablingTracking] = useState(false);
 
   // Form states
   const [formData, setFormData] = useState<CreateProductData>({
@@ -484,6 +499,77 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
     }
   };
 
+  const openBulkRestockDialog = () => {
+    if (selectedProducts.size === 0) {
+      toast.error('Select at least one product to restock');
+      return;
+    }
+    const rows = filteredProducts
+      .filter((p) => selectedProducts.has(p._id))
+      .map((p) => ({
+        productId: p._id,
+        name: p.name,
+        currentStock: p.stockQuantity || 0,
+        delta: 0,
+        lowStockThreshold: p.lowStockThreshold ?? 10,
+        trackInventory: p.trackInventory ?? true,
+      }));
+    setBulkRestockRows(rows);
+    setShowBulkRestockDialog(true);
+  };
+
+  const handleBulkRestockSubmit = async () => {
+    const updates = bulkRestockRows
+      .map((r) => {
+        const hasStockChange = r.delta !== 0;
+        return {
+          productId: r.productId,
+          ...(hasStockChange ? { stockQuantity: Math.max(0, r.currentStock + r.delta) } : {}),
+          lowStockThreshold: r.lowStockThreshold,
+          trackInventory: r.trackInventory,
+        };
+      });
+
+    try {
+      setBulkRestockSaving(true);
+      const res = await productService.bulkUpdateStock(updates);
+      const { successful, failed } = res.data;
+      const unitsAdded = bulkRestockRows.reduce((sum, r) => sum + Math.max(0, r.delta), 0);
+      if (failed === 0) {
+        toast.success(`Restocked ${successful} product${successful !== 1 ? 's' : ''}${unitsAdded > 0 ? ` — +${unitsAdded} units` : ''}`);
+      } else {
+        toast.error(`${successful} updated, ${failed} failed`);
+      }
+      setShowBulkRestockDialog(false);
+      setSelectedProducts(new Set());
+      fetchProducts();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Bulk restock failed');
+    } finally {
+      setBulkRestockSaving(false);
+    }
+  };
+
+  const handleEnableAllTracking = async () => {
+    if (!window.confirm('Enable inventory tracking on every product? This is a one-time migration for products created before tracking was enabled by default.')) {
+      return;
+    }
+    try {
+      setEnablingTracking(true);
+      const res = await productService.enableAllInventoryTracking();
+      if (res.modifiedCount === 0) {
+        toast.success('All products already have tracking enabled');
+      } else {
+        toast.success(`Enabled tracking on ${res.modifiedCount} product${res.modifiedCount !== 1 ? 's' : ''}`);
+      }
+      fetchProducts();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to enable tracking');
+    } finally {
+      setEnablingTracking(false);
+    }
+  };
+
   const addFeature = () => {
     if (featureInput.trim()) {
       setFormData({
@@ -611,6 +697,17 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Products</h1>
             <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEnableAllTracking}
+                disabled={enablingTracking}
+                title="One-time migration — turns on inventory tracking for products created before it was the default"
+                className={darkMode ? 'border-gray-600 text-gray-300' : ''}
+              >
+                <ShieldCheck className="h-4 w-4 mr-2" />
+                {enablingTracking ? 'Enabling…' : 'Enable tracking on all'}
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -742,6 +839,14 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
                 {selectedProducts.size} product{selectedProducts.size !== 1 ? 's' : ''} selected
               </span>
               <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={openBulkRestockDialog}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <PackagePlus className="h-4 w-4 mr-1" />
+                  Bulk Restock
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -1368,6 +1473,115 @@ export function ProductManagement({ isInline = false, darkMode = false }: Produc
             </Button>
             <Button onClick={handleStockUpdate}>
               Update Stock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Restock Dialog */}
+      <Dialog open={showBulkRestockDialog} onOpenChange={setShowBulkRestockDialog}>
+        <DialogContent className={`max-w-3xl ${darkMode ? 'bg-gray-800 border-gray-700' : ''}`}>
+          <DialogHeader>
+            <DialogTitle className={darkMode ? 'text-white' : ''}>Bulk Restock</DialogTitle>
+            <DialogDescription className={darkMode ? 'text-gray-400' : ''}>
+              Enter the quantity received for each product. Leave at 0 to skip stock changes but still apply threshold/tracking updates.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[60vh] overflow-y-auto -mx-6 px-6">
+            <div className={`grid grid-cols-12 gap-3 px-3 py-2 text-xs font-medium uppercase tracking-wider ${darkMode ? 'text-gray-400 bg-gray-900/50' : 'text-gray-500 bg-gray-50'} rounded`}>
+              <div className="col-span-4">Product</div>
+              <div className="col-span-2 text-center">Current</div>
+              <div className="col-span-2 text-center">+ Add</div>
+              <div className="col-span-2 text-center">Low-stock</div>
+              <div className="col-span-2 text-center">Track</div>
+            </div>
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {bulkRestockRows.map((row, idx) => {
+                const projected = Math.max(0, row.currentStock + row.delta);
+                return (
+                  <div key={row.productId} className="grid grid-cols-12 gap-3 items-center px-3 py-3">
+                    <div className={`col-span-4 text-sm font-medium ${darkMode ? 'text-gray-100' : 'text-gray-900'} truncate`} title={row.name}>
+                      {row.name}
+                    </div>
+                    <div className={`col-span-2 text-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {row.currentStock}
+                      <span className="ml-1 text-xs opacity-60">→ {projected}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={row.delta}
+                        onChange={(e) => {
+                          const v = Math.max(0, parseInt(e.target.value) || 0);
+                          setBulkRestockRows((prev) => prev.map((r, i) => i === idx ? { ...r, delta: v } : r));
+                        }}
+                        className={`text-center ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={row.lowStockThreshold}
+                        onChange={(e) => {
+                          const v = Math.max(0, parseInt(e.target.value) || 0);
+                          setBulkRestockRows((prev) => prev.map((r, i) => i === idx ? { ...r, lowStockThreshold: v } : r));
+                        }}
+                        className={`text-center ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+                      />
+                    </div>
+                    <div className="col-span-2 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setBulkRestockRows((prev) => prev.map((r, i) => i === idx ? { ...r, trackInventory: !r.trackInventory } : r))}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${row.trackInventory ? 'bg-blue-600' : darkMode ? 'bg-gray-600' : 'bg-gray-300'}`}
+                        title={row.trackInventory ? 'Inventory tracked — deducts on approval' : 'Tracking off — deductions will skip this item'}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${row.trackInventory ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className={`flex items-center justify-between rounded-md px-3 py-2 text-sm ${darkMode ? 'bg-gray-900/50 text-gray-300' : 'bg-blue-50 text-blue-900'}`}>
+            <span>
+              {bulkRestockRows.length} product{bulkRestockRows.length !== 1 ? 's' : ''} selected
+            </span>
+            <span>
+              +{bulkRestockRows.reduce((s, r) => s + Math.max(0, r.delta), 0)} units to add
+            </span>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowBulkRestockDialog(false)}
+              disabled={bulkRestockSaving}
+              className={darkMode ? 'border-gray-600 text-gray-300' : ''}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBulkRestockSubmit}
+              disabled={bulkRestockSaving || bulkRestockRows.length === 0}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {bulkRestockSaving ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <PackagePlus className="h-4 w-4 mr-2" />
+                  Apply Restock
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

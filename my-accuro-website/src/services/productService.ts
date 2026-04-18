@@ -111,6 +111,27 @@ class ProductService {
     return response.data;
   }
 
+  async bulkUpdateStock(
+    updates: Array<{
+      productId: string;
+      stockQuantity?: number;
+      lowStockThreshold?: number;
+      trackInventory?: boolean;
+    }>
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data: { successful: number; failed: number; errors: Array<{ productId: string; error: string }> };
+  }> {
+    const response = await api.put('/products/bulk-stock', { updates });
+    return response.data;
+  }
+
+  async enableAllInventoryTracking(): Promise<{ success: boolean; message: string; modifiedCount: number }> {
+    const response = await api.post('/products/enable-all-tracking');
+    return response.data;
+  }
+
   async getLowStockProducts(threshold?: number): Promise<ProductsResponse> {
     const response = await api.get<ProductsResponse>('/products/low-stock', {
       params: threshold ? { threshold } : undefined,

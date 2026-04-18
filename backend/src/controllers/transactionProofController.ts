@@ -6,6 +6,7 @@ import TransactionProof from '../models/TransactionProof';
 import Booking from '../models/Booking';
 import Quotation from '../models/Quotation';
 import Product from '../models/Product';
+import ActivityLog from '../models/ActivityLog';
 
 // Resolve a product from a transaction item. `productId` is stored as a String and
 // may be a Mongo ObjectId, a slug (e.g. "logical"), or missing — fall back to name.
@@ -206,14 +207,23 @@ export const approveTransactionProof = async (req: AuthRequest, res: Response) =
 
     // Pre-scan inventory: resolve every tracked item, abort if any has insufficient stock.
     // Skipped entirely if this proof already deducted (idempotency — re-approval shouldn't double-deduct).
-    const resolvedItems: { item: typeof proof.items[number]; product: any }[] = [];
+    type ResolvedItem = {
+      item: typeof proof.items[number];
+      product: any;
+      skipReason?: 'not_found' | 'not_tracked';
+    };
+    const resolvedItems: ResolvedItem[] = [];
     const shortfall: { productName: string; requested: number; available: number }[] = [];
 
     if (!proof.inventoryDeducted) {
       for (const item of proof.items) {
         const product = await resolveProductFromItem(item);
-        if (!product || !product.trackInventory) {
-          resolvedItems.push({ item, product: null });
+        if (!product) {
+          resolvedItems.push({ item, product: null, skipReason: 'not_found' });
+          continue;
+        }
+        if (!product.trackInventory) {
+          resolvedItems.push({ item, product, skipReason: 'not_tracked' });
           continue;
         }
         if (product.stockQuantity < item.quantity) {
@@ -244,11 +254,50 @@ export const approveTransactionProof = async (req: AuthRequest, res: Response) =
 
     // Deduct inventory (idempotent — skip if already deducted)
     const lowStockWarnings: string[] = [];
+    const skippedItems: { productName: string; quantity: number; reason: string }[] = [];
+    let deductedCount = 0;
+
     if (!proof.inventoryDeducted) {
-      for (const { item, product } of resolvedItems) {
+      for (const { item, product, skipReason } of resolvedItems) {
+        if (skipReason === 'not_found') {
+          skippedItems.push({
+            productName: item.productName || item.productId || 'Unknown',
+            quantity: item.quantity,
+            reason: 'Product not found in catalog',
+          });
+          continue;
+        }
+        if (skipReason === 'not_tracked') {
+          skippedItems.push({
+            productName: product.name,
+            quantity: item.quantity,
+            reason: 'Inventory tracking disabled',
+          });
+          continue;
+        }
         if (!product) continue;
-        product.stockQuantity = Math.max(0, product.stockQuantity - item.quantity);
+
+        const previousQty = product.stockQuantity;
+        product.stockQuantity = Math.max(0, previousQty - item.quantity);
         await product.save();
+        deductedCount++;
+
+        // Per-deduction audit entry
+        try {
+          await ActivityLog.create({
+            user: req.user!._id,
+            userName: req.user!.name,
+            userEmail: req.user!.email,
+            action: 'INVENTORY_DEDUCTED',
+            resourceType: 'product',
+            resourceId: product._id.toString(),
+            details: `Proof ${proof._id}: ${product.name} ${previousQty} → ${product.stockQuantity} (-${item.quantity})`,
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent'],
+          });
+        } catch (logErr) {
+          console.error('Failed to log inventory deduction:', logErr);
+        }
 
         if (product.stockQuantity <= product.lowStockThreshold) {
           lowStockWarnings.push(`${product.name}: ${product.stockQuantity} remaining (threshold: ${product.lowStockThreshold})`);
@@ -276,7 +325,13 @@ export const approveTransactionProof = async (req: AuthRequest, res: Response) =
     res.status(200).json({
       success: true,
       data: proof,
+      deductionSummary: {
+        totalItems: proof.items.length,
+        deducted: deductedCount,
+        skipped: skippedItems.length,
+      },
       lowStockWarnings: lowStockWarnings.length > 0 ? lowStockWarnings : undefined,
+      skippedItems: skippedItems.length > 0 ? skippedItems : undefined,
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Server error' });

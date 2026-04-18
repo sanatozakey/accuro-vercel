@@ -60,7 +60,22 @@ export function TransactionReviewModal({
         await transactionProofService.adjustItems(proof._id, editedItems);
       }
       const res = await transactionProofService.approve(proof._id, feedback);
-      toast.success('Transaction approved and inventory updated!');
+      const summary = res.deductionSummary;
+      if (summary) {
+        const { totalItems, deducted, skipped } = summary;
+        if (skipped === 0) {
+          toast.success(`Approved — ${deducted} of ${totalItems} items deducted from inventory`);
+        } else {
+          toast.success(`Approved — ${deducted} of ${totalItems} items deducted (${skipped} skipped)`);
+        }
+      } else {
+        toast.success('Transaction approved');
+      }
+      if (res.skippedItems && res.skippedItems.length > 0) {
+        res.skippedItems.forEach((s: { productName: string; quantity: number; reason: string }) => {
+          toast(`Skipped: ${s.productName} ×${s.quantity} — ${s.reason}`, { icon: 'ℹ️', duration: 6000 });
+        });
+      }
       if (res.lowStockWarnings && res.lowStockWarnings.length > 0) {
         res.lowStockWarnings.forEach((warning: string) => {
           toast(`Low stock: ${warning}`, { icon: '⚠️', duration: 5000 });

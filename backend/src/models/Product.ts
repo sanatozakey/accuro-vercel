@@ -94,7 +94,7 @@ const ProductSchema: Schema = new Schema(
     },
     trackInventory: {
       type: Boolean,
-      default: false,
+      default: true,
     },
   },
   {

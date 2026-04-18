@@ -645,6 +645,44 @@ export const bulkUpdateStock = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// @desc    One-time migration: enable inventory tracking on every product
+// @route   POST /api/products/enable-all-tracking
+// @access  Private/Admin
+export const enableAllInventoryTracking = async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await Product.updateMany(
+      { trackInventory: { $ne: true } },
+      { $set: { trackInventory: true } }
+    );
+
+    if (req.user) {
+      try {
+        await ActivityLog.create({
+          user: req.user._id,
+          userName: req.user.name,
+          userEmail: req.user.email,
+          action: 'INVENTORY_TRACKING_MIGRATION',
+          resourceType: 'product',
+          resourceId: 'bulk',
+          details: `Enabled inventory tracking on ${result.modifiedCount} product(s)`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+        });
+      } catch (logError) {
+        console.error('Failed to log activity:', logError);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Inventory tracking enabled on ${result.modifiedCount} product(s)`,
+      modifiedCount: result.modifiedCount,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
 // @desc    Get products with stock info
 // @route   GET /api/products/with-stock
 // @access  Public

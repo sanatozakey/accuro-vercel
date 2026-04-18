@@ -13,6 +13,7 @@ import {
   bulkUpdateStock,
   getProductsWithStock,
   getLowStockProducts,
+  enableAllInventoryTracking,
 } from '../controllers/productController';
 import { protect, adminOnly } from '../middleware/auth';
 import {
@@ -44,6 +45,7 @@ router.post(
 router.post('/bulk/import', protect, adminOnly, bulkImportProducts);
 
 // Stock management routes
+router.post('/enable-all-tracking', protect, adminOnly, enableAllInventoryTracking);
 router.put('/bulk-stock', protect, adminOnly, bulkUpdateStock);
 router.put('/:id/stock', protect, adminOnly, updateStock);
 
