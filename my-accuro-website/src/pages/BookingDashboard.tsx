@@ -3299,8 +3299,8 @@ export function BookingDashboard(): React.ReactElement {
                               </div>
                             </div>
                           )}
-                          {/* Technician Fee — visible only during awaiting_payment */}
-                          {selectedBooking.status === 'awaiting_payment' && (selectedBooking as any).technicianFee && (() => {
+                          {/* Technician Fee — visible while awaiting payment or after proof has been submitted */}
+                          {(selectedBooking.status === 'awaiting_payment' || selectedBooking.status === 'payment_submitted') && (selectedBooking as any).technicianFee && (() => {
                             const fee = (selectedBooking as any).technicianFee;
                             const feeProofUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/bookings/${selectedBooking._id}/fee-proof`;
                             return (
@@ -3384,8 +3384,8 @@ export function BookingDashboard(): React.ReactElement {
                               </div>
                             );
                           })()}
-                          {/* Revert fee — visible once booking is completed but admin needs to un-mark payment */}
-                          {selectedBooking.status === 'completed' && (selectedBooking as any).technicianFee && ['paid', 'waived'].includes((selectedBooking as any).technicianFee.status) && (() => {
+                          {/* Revert fee — visible once booking is verified (or legacy completed) but admin needs to un-mark payment */}
+                          {(selectedBooking.status === 'verified' || selectedBooking.status === 'completed') && (selectedBooking as any).technicianFee && ['paid', 'waived'].includes((selectedBooking as any).technicianFee.status) && (() => {
                             const fee = (selectedBooking as any).technicianFee;
                             return (
                               <div className="p-3 rounded-lg border bg-blue-50 border-blue-200">

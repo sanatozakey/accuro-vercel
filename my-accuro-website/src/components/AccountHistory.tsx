@@ -976,8 +976,8 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
                 />
               </div>
 
-              {/* Technician Fee — visible during awaiting_payment (full matrix + QR) */}
-              {selectedBooking.status === 'awaiting_payment' && (selectedBooking as any).technicianFee && (() => {
+              {/* Technician Fee — visible during awaiting_payment or payment_submitted (full matrix + QR) */}
+              {(selectedBooking.status === 'awaiting_payment' || selectedBooking.status === 'payment_submitted') && (selectedBooking as any).technicianFee && (() => {
                 const fee = (selectedBooking as any).technicianFee;
                 const breakdown = fee.breakdown || { purposeFee: 0, locationFee: 0, productFee: 0 };
                 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';

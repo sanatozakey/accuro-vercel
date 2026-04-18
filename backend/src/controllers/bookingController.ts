@@ -1324,10 +1324,15 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
 
     // Advance booking status when fee clears and booking is waiting on payment.
     // Only do this on the transition into 'paid'/'waived' (not on repeated calls).
-    if (!wasAlreadyPaid && (feeStatus === 'paid' || feeStatus === 'waived') && booking.status === 'awaiting_payment') {
-      booking.status = 'completed';
+    // Terminal state is 'verified' (final step in the payment-bearing timeline).
+    if (
+      !wasAlreadyPaid &&
+      (feeStatus === 'paid' || feeStatus === 'waived') &&
+      (booking.status === 'awaiting_payment' || booking.status === 'payment_submitted')
+    ) {
+      booking.status = 'verified';
       (booking as any).statusHistory.push({
-        status: 'completed',
+        status: 'verified',
         changedAt: new Date(),
         changedBy: req.user!._id,
         note: feeStatus === 'paid' ? 'Technician fee payment confirmed' : 'Technician fee waived',
@@ -1335,7 +1340,12 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
     }
 
     // Revert: fee back to pending → booking back to awaiting_payment
-    if (feeStatus === 'pending' && previousFeeStatus !== 'pending' && booking.status === 'completed') {
+    // Support both new ('verified') and legacy ('completed') terminal states for backward compat.
+    if (
+      feeStatus === 'pending' &&
+      previousFeeStatus !== 'pending' &&
+      (booking.status === 'verified' || booking.status === 'completed')
+    ) {
       booking.status = 'awaiting_payment';
       (booking as any).statusHistory.push({
         status: 'awaiting_payment',
@@ -1560,6 +1570,18 @@ export const submitFeeProof = async (req: AuthRequest, res: Response) => {
     booking.technicianFee.proofMimeType = file.mimetype;
     booking.technicianFee.proofData = file.buffer;
     booking.technicianFee.proofSubmittedAt = new Date();
+
+    // Advance timeline: awaiting_payment → payment_submitted once receipt is uploaded
+    if (booking.status === 'awaiting_payment') {
+      booking.status = 'payment_submitted';
+      (booking as any).statusHistory.push({
+        status: 'payment_submitted',
+        changedAt: new Date(),
+        changedBy: req.user?._id,
+        note: 'Customer submitted payment receipt',
+      });
+    }
+
     await booking.save();
 
     res.status(200).json({ success: true, message: 'Payment proof submitted successfully' });
