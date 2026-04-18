@@ -1102,17 +1102,27 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
                     )}
 
                     {fee.status === 'paid' && (
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-green-600 dark:text-green-400">
-                          {fee.paidAt ? `Paid on ${new Date(fee.paidAt).toLocaleDateString()}` : 'Payment confirmed'}
-                        </p>
-                        <button
-                          onClick={() => setShowFeeReceipt(true)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          View Receipt
-                        </button>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-green-600 dark:text-green-400">
+                            {fee.paidAt ? `Paid on ${new Date(fee.paidAt).toLocaleDateString()}` : 'Payment confirmed'}
+                          </p>
+                          <button
+                            onClick={() => setShowFeeReceipt(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                            View Receipt
+                          </button>
+                        </div>
+                        {selectedBooking.status === 'payment_submitted' && (
+                          <div className="flex items-start gap-2 p-2 rounded-md bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
+                            <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-indigo-700 dark:text-indigo-300">
+                              Awaiting final verification from our team. Your order will move to Verified once reviewed.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

@@ -3384,8 +3384,8 @@ export function BookingDashboard(): React.ReactElement {
                               </div>
                             );
                           })()}
-                          {/* Revert fee — visible once booking is verified (or legacy completed) but admin needs to un-mark payment */}
-                          {(selectedBooking.status === 'verified' || selectedBooking.status === 'completed') && (selectedBooking as any).technicianFee && ['paid', 'waived'].includes((selectedBooking as any).technicianFee.status) && (() => {
+                          {/* Revert fee — visible once payment is acknowledged (payment_submitted / verified / legacy completed) but admin needs to un-mark payment */}
+                          {['payment_submitted', 'verified', 'completed'].includes(selectedBooking.status) && (selectedBooking as any).technicianFee && ['paid', 'waived'].includes((selectedBooking as any).technicianFee.status) && (() => {
                             const fee = (selectedBooking as any).technicianFee;
                             return (
                               <div className="p-3 rounded-lg border bg-blue-50 border-blue-200">

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Booking from '../models/Booking';
+import TransactionProof from '../models/TransactionProof';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import emailService from '../utils/emailService';
@@ -1324,27 +1325,44 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
 
     // Advance booking status when fee clears and booking is waiting on payment.
     // Only do this on the transition into 'paid'/'waived' (not on repeated calls).
-    // Terminal state is 'verified' (final step in the payment-bearing timeline).
+    // If booking has a pending TransactionProof (quotation items), advance to
+    // 'payment_submitted' so the superadmin can still approve items + deduct inventory
+    // via the Review Payment flow. Otherwise (no items to approve) go straight to
+    // 'verified' since there is nothing left to do.
     if (
       !wasAlreadyPaid &&
       (feeStatus === 'paid' || feeStatus === 'waived') &&
-      (booking.status === 'awaiting_payment' || booking.status === 'payment_submitted')
+      booking.status === 'awaiting_payment'
     ) {
-      booking.status = 'verified';
+      const pendingTxProof = await TransactionProof.findOne({
+        bookingId: booking._id,
+        status: { $in: ['pending_upload', 'pending_review', 'rejected'] },
+      }).select('_id status');
+
+      const nextStatus = pendingTxProof ? 'payment_submitted' : 'verified';
+      booking.status = nextStatus;
       (booking as any).statusHistory.push({
-        status: 'verified',
+        status: nextStatus,
         changedAt: new Date(),
         changedBy: req.user!._id,
-        note: feeStatus === 'paid' ? 'Technician fee payment confirmed' : 'Technician fee waived',
+        note:
+          feeStatus === 'paid'
+            ? pendingTxProof
+              ? 'Technician fee payment confirmed — awaiting item approval'
+              : 'Technician fee payment confirmed'
+            : pendingTxProof
+            ? 'Technician fee waived — awaiting item approval'
+            : 'Technician fee waived',
       });
     }
 
     // Revert: fee back to pending → booking back to awaiting_payment
-    // Support both new ('verified') and legacy ('completed') terminal states for backward compat.
+    // Accept any post-payment state: 'payment_submitted' (new), 'verified' (terminal),
+    // and 'completed' (legacy) for backward compat.
     if (
       feeStatus === 'pending' &&
       previousFeeStatus !== 'pending' &&
-      (booking.status === 'verified' || booking.status === 'completed')
+      ['payment_submitted', 'verified', 'completed'].includes(booking.status)
     ) {
       booking.status = 'awaiting_payment';
       (booking as any).statusHistory.push({
@@ -1570,18 +1588,6 @@ export const submitFeeProof = async (req: AuthRequest, res: Response) => {
     booking.technicianFee.proofMimeType = file.mimetype;
     booking.technicianFee.proofData = file.buffer;
     booking.technicianFee.proofSubmittedAt = new Date();
-
-    // Advance timeline: awaiting_payment → payment_submitted once receipt is uploaded
-    if (booking.status === 'awaiting_payment') {
-      booking.status = 'payment_submitted';
-      (booking as any).statusHistory.push({
-        status: 'payment_submitted',
-        changedAt: new Date(),
-        changedBy: req.user?._id,
-        note: 'Customer submitted payment receipt',
-      });
-    }
-
     await booking.save();
 
     res.status(200).json({ success: true, message: 'Payment proof submitted successfully' });
