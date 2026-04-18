@@ -326,9 +326,16 @@ export function TransactionReviewModal({
               </div>
             )}
 
-            {/* Review Actions */}
-            {proof.status === 'pending_review' && (
+            {/* Review Actions — available for pending_review or pending_upload
+                (the auto-linked flow leaves the proof at pending_upload, since
+                 there is no separate customer upload step for the transaction proof). */}
+            {(proof.status === 'pending_review' || proof.status === 'pending_upload') && (
               <div className="space-y-3">
+                {proof.status === 'pending_upload' && (
+                  <div className={`text-xs p-2 rounded-md ${darkMode ? 'bg-purple-900/20 text-purple-300 border border-purple-800' : 'bg-purple-50 text-purple-700 border border-purple-200'}`}>
+                    No separate transaction receipt was uploaded — approve using the technician-fee receipt on file.
+                  </div>
+                )}
                 <textarea
                   value={feedback}
                   onChange={(e) => setFeedback(e.target.value)}

@@ -237,8 +237,14 @@ export const approveTransactionProof = async (req: AuthRequest, res: Response) =
       return res.status(404).json({ success: false, message: 'Transaction proof not found' });
     }
 
-    if (proof.status !== 'pending_review') {
-      return res.status(400).json({ success: false, message: 'Only pending_review proofs can be approved' });
+    // Accept pending_review (normal customer-upload flow) and pending_upload
+    // (admin-driven flow where the technician fee receipt doubles as proof and
+    // no separate customer upload step occurred).
+    if (proof.status !== 'pending_review' && proof.status !== 'pending_upload') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot approve proof in status ${proof.status}`,
+      });
     }
 
     // Pre-scan inventory: resolve every tracked item, abort if any has insufficient stock.
@@ -390,8 +396,12 @@ export const rejectTransactionProof = async (req: AuthRequest, res: Response) =>
       return res.status(404).json({ success: false, message: 'Transaction proof not found' });
     }
 
-    if (proof.status !== 'pending_review') {
-      return res.status(400).json({ success: false, message: 'Only pending_review proofs can be rejected' });
+    // Accept pending_review and pending_upload (see approve for rationale).
+    if (proof.status !== 'pending_review' && proof.status !== 'pending_upload') {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot reject proof in status ${proof.status}`,
+      });
     }
 
     // Save current state to revision history
