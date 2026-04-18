@@ -1399,7 +1399,7 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
         pendingTxProof.customerNotes = 'Technician fee waived — no receipt required';
       }
       pendingTxProof.status = 'pending_review';
-      pendingTxProof.submittedBy = req.user!._id;
+      pendingTxProof.submittedBy = req.user!._id as any;
       pendingTxProof.submittedAt = new Date();
       await pendingTxProof.save();
     }
