@@ -214,6 +214,15 @@ export function AccountHistory({ className = '', userId }: AccountHistoryProps) 
           Confirmed
         </span>
       ),
+      in_progress: (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 ring-1 ring-red-300">
+          <span className="relative flex h-2 w-2 mr-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+          </span>
+          In Progress
+        </span>
+      ),
       completed: (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
           <CheckCircle className="h-3 w-3 mr-1" />

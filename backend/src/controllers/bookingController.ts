@@ -23,6 +23,17 @@ const BOOKING_LIMITS = {
   MAX_BOOKINGS_PER_DAY: 20, // Maximum total bookings allowed per day
 };
 
+// Pick the best human-readable name for a populated technician User.
+// Prefers first+last, then "Technician N", then name, then a final fallback.
+const resolveTechnicianDisplayName = (tech: any): string => {
+  if (!tech) return 'Technician';
+  const full = [tech.firstName, tech.lastName].filter(Boolean).join(' ').trim();
+  if (full && full !== 'Technician') return full;
+  if (tech.technicianNumber) return `Technician ${tech.technicianNumber}`;
+  if (tech.name) return tech.name;
+  return 'Technician';
+};
+
 /**
  * Helper function to check if a time slot is available
  * @param date - The date to check
@@ -1341,7 +1352,10 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
     // Email receipts only on transition into "paid" (first time)
     if (feeStatus === 'paid' && !wasAlreadyPaid) {
       try {
-        const populatedBooking = await Booking.findById(booking._id).populate('assignedTechnician', 'name email');
+        const populatedBooking = await Booking.findById(booking._id).populate(
+          'assignedTechnician',
+          'name firstName lastName email technicianNumber'
+        );
         const fee = populatedBooking?.technicianFee;
         if (populatedBooking && fee) {
           const breakdown = fee.breakdown ? {
@@ -1368,19 +1382,35 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
             recipientEmail: populatedBooking.contactEmail,
             recipientName: populatedBooking.contactName,
           });
-          // Technician receipt (if assigned)
+          console.info(
+            `[fee-receipt] Customer receipt sent for booking ${booking._id} → ${populatedBooking.contactEmail}`
+          );
+
+          // Technician receipt (if assigned and has email)
           const tech: any = populatedBooking.assignedTechnician;
-          if (tech?.email) {
+          if (!tech) {
+            console.warn(
+              `[fee-receipt] Technician receipt skipped for booking ${booking._id}: no assignedTechnician`
+            );
+          } else if (!tech.email) {
+            console.warn(
+              `[fee-receipt] Technician receipt skipped for booking ${booking._id}: technician ${tech._id} has no email`
+            );
+          } else {
+            const technicianName = resolveTechnicianDisplayName(tech);
             await emailService.sendTechnicianFeeReceipt({
               ...baseReceipt,
               recipient: 'technician',
               recipientEmail: tech.email,
-              recipientName: tech.name || 'Technician',
+              recipientName: technicianName,
             });
+            console.info(
+              `[fee-receipt] Technician receipt sent for booking ${booking._id} → ${tech.email} (${technicianName})`
+            );
           }
         }
       } catch (emailErr) {
-        console.error('Failed to send technician fee receipt emails:', emailErr);
+        console.error(`[fee-receipt] Failed to send technician fee receipt emails for booking ${booking._id}:`, emailErr);
       }
     }
 
@@ -1391,6 +1421,117 @@ export const updateFeeStatus = async (req: AuthRequest, res: Response) => {
     }
 
     res.status(200).json({ success: true, data: bookingObj });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
+// @desc    Resend the technician-fee receipt email to customer and/or technician
+// @route   POST /api/bookings/:id/resend-fee-receipt
+// @access  Admin/Superadmin
+export const resendFeeReceipt = async (req: AuthRequest, res: Response) => {
+  try {
+    const target: 'customer' | 'technician' | 'both' = req.body?.target || 'both';
+    if (!['customer', 'technician', 'both'].includes(target)) {
+      return res.status(400).json({ success: false, message: 'target must be customer, technician, or both' });
+    }
+
+    const booking = await Booking.findById(req.params.id).populate(
+      'assignedTechnician',
+      'name firstName lastName email technicianNumber'
+    );
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    const fee = booking.technicianFee;
+    if (!fee || fee.status !== 'paid') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot resend — booking fee is not in paid state',
+      });
+    }
+
+    const breakdown = fee.breakdown
+      ? {
+          purposeFee: Number(fee.breakdown.purposeFee) || 0,
+          locationFee: Number(fee.breakdown.locationFee) || 0,
+          productFee: Number(fee.breakdown.productFee) || 0,
+        }
+      : undefined;
+
+    const baseReceipt = {
+      bookingId: booking._id.toString(),
+      company: booking.company,
+      date: booking.date.toString(),
+      time: booking.time,
+      purpose: booking.purpose,
+      location: booking.location,
+      product: booking.product,
+      amount: fee.amount,
+      breakdown,
+      paidAt: fee.paidAt || new Date(),
+    };
+
+    const results: { customer?: string; technician?: string } = {};
+
+    if (target === 'customer' || target === 'both') {
+      try {
+        await emailService.sendTechnicianFeeReceipt({
+          ...baseReceipt,
+          recipient: 'customer',
+          recipientEmail: booking.contactEmail,
+          recipientName: booking.contactName,
+        });
+        results.customer = `sent to ${booking.contactEmail}`;
+        console.info(`[fee-receipt:resend] Customer receipt resent for booking ${booking._id} → ${booking.contactEmail}`);
+      } catch (err: any) {
+        results.customer = `failed: ${err.message || 'unknown error'}`;
+        console.error(`[fee-receipt:resend] Customer resend failed for booking ${booking._id}:`, err);
+      }
+    }
+
+    if (target === 'technician' || target === 'both') {
+      const tech: any = booking.assignedTechnician;
+      if (!tech) {
+        results.technician = 'skipped: no technician assigned';
+      } else if (!tech.email) {
+        results.technician = 'skipped: technician has no email on file';
+      } else {
+        try {
+          const technicianName = resolveTechnicianDisplayName(tech);
+          await emailService.sendTechnicianFeeReceipt({
+            ...baseReceipt,
+            recipient: 'technician',
+            recipientEmail: tech.email,
+            recipientName: technicianName,
+          });
+          results.technician = `sent to ${tech.email} (${technicianName})`;
+          console.info(`[fee-receipt:resend] Technician receipt resent for booking ${booking._id} → ${tech.email}`);
+        } catch (err: any) {
+          results.technician = `failed: ${err.message || 'unknown error'}`;
+          console.error(`[fee-receipt:resend] Technician resend failed for booking ${booking._id}:`, err);
+        }
+      }
+    }
+
+    try {
+      await ActivityLog.create({
+        user: req.user!._id,
+        userName: req.user!.name,
+        userEmail: req.user!.email,
+        action: 'FEE_RECEIPT_RESENT',
+        resourceType: 'booking',
+        resourceId: booking._id.toString(),
+        details: `Resent (${target}): ${JSON.stringify(results)}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+    } catch (logErr) {
+      console.error('Failed to log fee receipt resend:', logErr);
+    }
+
+    res.status(200).json({ success: true, target, results });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }

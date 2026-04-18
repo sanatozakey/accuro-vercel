@@ -18,6 +18,7 @@ import {
   updateFeeStatus,
   submitFeeProof,
   serveFeeProof,
+  resendFeeReceipt,
 } from '../controllers/bookingController';
 import { protect, authorize, technicianOrAbove, superAdminOnly } from '../middleware/auth';
 import {
@@ -65,5 +66,6 @@ router.put('/:id/start', protect, technicianOrAbove, startBooking);
 router.put('/:id/fee-status', protect, authorize('admin', 'superadmin'), updateFeeStatus);
 router.post('/:id/fee-proof', protect, proofUploadMemory.single('receipt'), submitFeeProof);
 router.get('/:id/fee-proof', serveFeeProof);
+router.post('/:id/resend-fee-receipt', protect, authorize('admin', 'superadmin'), resendFeeReceipt);
 
 export default router;

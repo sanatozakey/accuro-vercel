@@ -193,6 +193,19 @@ class BookingService {
     return response.data;
   }
 
+  // Resend technician fee receipt email (admin/superadmin)
+  async resendFeeReceipt(
+    id: string,
+    target: 'customer' | 'technician' | 'both' = 'both'
+  ): Promise<{
+    success: boolean;
+    target: 'customer' | 'technician' | 'both';
+    results: { customer?: string; technician?: string };
+  }> {
+    const response = await api.post(`/bookings/${id}/resend-fee-receipt`, { target });
+    return response.data;
+  }
+
   // Check technician availability for a date/time (superadmin only)
   async checkTechnicianAvailability(date: string, time: string): Promise<{ success: boolean; data: TechnicianAvailability[] }> {
     const response = await api.get('/bookings/technician-availability', {

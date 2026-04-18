@@ -3389,7 +3389,7 @@ export function BookingDashboard(): React.ReactElement {
                             const fee = (selectedBooking as any).technicianFee;
                             return (
                               <div className="p-3 rounded-lg border bg-blue-50 border-blue-200">
-                                <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center justify-between gap-3 flex-wrap">
                                   <div>
                                     <div className="text-sm font-medium text-gray-700">Technician Fee</div>
                                     <div className="text-lg font-bold text-gray-900">PHP {fee.amount?.toFixed(2)}</div>
@@ -3399,27 +3399,54 @@ export function BookingDashboard(): React.ReactElement {
                                       {fee.status === 'paid' ? 'PAID' : 'WAIVED'}
                                     </span>
                                   </div>
-                                  <button
-                                    type="button"
-                                    className="px-3 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700"
-                                    title="Move this booking back to awaiting payment. The uploaded receipt is kept."
-                                    onClick={async () => {
-                                      const reason = window.prompt(
-                                        `Revert this booking back to "awaiting payment"?\n\nOptional reason (will be logged in status history):`,
-                                        ''
-                                      );
-                                      if (reason === null) return; // cancelled
-                                      try {
-                                        await bookingService.updateFeeStatus(selectedBooking._id, 'pending', reason || undefined)
-                                        toast.success('Booking reverted to awaiting payment')
-                                        fetchBookings()
-                                      } catch (err: any) {
-                                        toast.error(err?.response?.data?.message || 'Failed to revert fee status')
-                                      }
-                                    }}
-                                  >
-                                    Revert to awaiting payment
-                                  </button>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {fee.status === 'paid' && (
+                                      <button
+                                        type="button"
+                                        className="px-3 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                                        title="Resend the fee receipt email to the assigned technician."
+                                        onClick={async () => {
+                                          if (!window.confirm('Resend the fee receipt email to the assigned technician?')) return;
+                                          try {
+                                            const res = await bookingService.resendFeeReceipt(selectedBooking._id, 'technician');
+                                            const outcome = res?.results?.technician || 'no response';
+                                            if (outcome.startsWith('sent')) {
+                                              toast.success(`Technician receipt ${outcome}`);
+                                            } else if (outcome.startsWith('skipped')) {
+                                              toast(outcome, { icon: 'ℹ️' });
+                                            } else {
+                                              toast.error(`Resend result: ${outcome}`);
+                                            }
+                                          } catch (err: any) {
+                                            toast.error(err?.response?.data?.message || 'Failed to resend receipt')
+                                          }
+                                        }}
+                                      >
+                                        Resend to technician
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      className="px-3 py-1 text-xs bg-amber-600 text-white rounded hover:bg-amber-700"
+                                      title="Move this booking back to awaiting payment. The uploaded receipt is kept."
+                                      onClick={async () => {
+                                        const reason = window.prompt(
+                                          `Revert this booking back to "awaiting payment"?\n\nOptional reason (will be logged in status history):`,
+                                          ''
+                                        );
+                                        if (reason === null) return; // cancelled
+                                        try {
+                                          await bookingService.updateFeeStatus(selectedBooking._id, 'pending', reason || undefined)
+                                          toast.success('Booking reverted to awaiting payment')
+                                          fetchBookings()
+                                        } catch (err: any) {
+                                          toast.error(err?.response?.data?.message || 'Failed to revert fee status')
+                                        }
+                                      }}
+                                    >
+                                      Revert to awaiting payment
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             );
